@@ -238,6 +238,14 @@
       .upload input { display: none; }
       .chosen { color: var(--green); font-size: 12px; margin-top: 7px; }
       .form-actions { display: flex; gap: 10px; margin-top: 23px; }
+      .notice { margin-top: 22px; border: 1px solid #c9a07a77; background: #c9a07a14; border-radius: 16px; padding: 16px 18px; line-height: 1.9; }
+      .notice h4 { color: var(--ice); font-size: 17px; margin-bottom: 6px; }
+      .notice ul { padding-inline-start: 20px; color: #ffffffcc; }
+      .notice li { margin-top: 4px; }
+      .notice li b { color: var(--ice); }
+      .ack { display: flex; gap: 11px; align-items: flex-start; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #c9a07a55; cursor: pointer; font-weight: 700; line-height: 1.8; }
+      .ack input { width: 21px; height: 21px; margin-top: 4px; flex: none; accent-color: #c9a07a; cursor: pointer; }
+      #submitBtn:disabled { opacity: 0.45; cursor: not-allowed; }
       .track-box { max-width: 620px; margin-top: 30px; }
       .track-result { margin-top: 18px; display: none; }
       .track-result.show { display: block; animation: rise 0.45s both; }
@@ -581,6 +589,16 @@
                 </small>
               </div>
             </div>
+            <div class="notice" id="noticeBox" style="display: none" role="alert">
+              <h4>⚠️ تنبيه مهم قبل تأكيد الطلب</h4>
+              <ul>
+                <li>تأكد من <b>جميع بياناتك</b> (اسم المحوّل، ورابط السيرفر، ويوزر أو آيدي المستلم) قبل الضغط على تأكيد.</li>
+                <li id="noticeNitro">النيترو: تأكد من <b>اليوزر أو الآيدي</b> اللي كتبته، لأن النيترو يوصل للحساب المكتوب في الطلب.</li>
+                <li id="noticeBoost">البوستات: تأكد من <b>السيرفر</b> اللي حطيته، لأن البوستات <b>توصله فوراً</b> بعد التنفيذ.</li>
+                <li><b>الإدارة غير مسؤولة ولا متحملة</b> أي خطأ ينتج عن بيانات غير صحيحة أدخلها العميل.</li>
+              </ul>
+              <label class="ack"><input type="checkbox" id="ackCheck" onchange="syncSubmit()" /><span>أقرّ بأني راجعت بياناتي وتأكدت منها، وأوافق على أن الإدارة غير مسؤولة عن أي خطأ فيها.</span></label>
+            </div>
             <div class="form-actions">
               <button class="btn" onclick="go('cart')">رجوع للسلة</button>
               <button id="submitBtn" class="btn primary" style="flex: 1" onclick="submitOrder()">تأكيد الطلب ←</button>
@@ -766,6 +784,26 @@
         if (f) f.style.display = cart["boosts"] ? "" : "none";
         const n = document.getElementById("nitroUserField");
         if (n) n.style.display = cart["nitro"] ? "" : "none";
+        updateNotice();
+      }
+      // التنبيه والإقرار يظهرون فقط لو في السلة نيترو أو بوستات
+      const needsAck = () => !!(cart["nitro"] || cart["boosts"]);
+      function updateNotice() {
+        const box = document.getElementById("noticeBox");
+        if (!box) return;
+        const need = needsAck();
+        box.style.display = need ? "" : "none";
+        document.getElementById("noticeNitro").style.display = cart["nitro"] ? "" : "none";
+        document.getElementById("noticeBoost").style.display = cart["boosts"] ? "" : "none";
+        if (!need) document.getElementById("ackCheck").checked = false;
+        syncSubmit();
+      }
+      function syncSubmit() {
+        const btn = document.getElementById("submitBtn");
+        if (!btn) return;
+        const ack = document.getElementById("ackCheck");
+        btn.disabled = needsAck() && !ack.checked;
+        btn.textContent = needsAck() ? "أوافق وأؤكد الطلب ←" : "تأكيد الطلب ←";
       }
       document.addEventListener("click", (e) => {
         const b = e.target.closest(".seg button");
@@ -972,6 +1010,7 @@
         const n = document.getElementById("transferor").value.trim();
         if (!items().length) return toast("السلة فارغة");
         if (n.length < 2) return toast("اكتب اسم المحوّل");
+        if (needsAck() && !document.getElementById("ackCheck").checked) return toast("اقرأ التنبيه ووافق عليه أولاً");
         const sl = document.getElementById("serverLink").value.trim();
         if (cart["boosts"] && !/^(https?:\/\/)?(www\.)?(discord\.gg|discord(app)?\.com\/invite)\/[\w-]+\/?$/i.test(sl))
           return toast("اكتب رابط السيرفر (رابط دعوة ديسكورد)");
@@ -991,6 +1030,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               transferor: n,
+              agreed: needsAck() ? document.getElementById("ackCheck").checked : false,
               serverLink: cart["boosts"] ? sl : "",
               nitroFor: cart["nitro"] ? nFor : "",
               nitroType: cart["nitro"] ? nType : "",
@@ -1007,12 +1047,13 @@
           document.getElementById("transferor").value = "";
           document.getElementById("serverLink").value = "";
           document.getElementById("nitroUser").value = "";
+          document.getElementById("ackCheck").checked = false;
           renderConfirmation(data);
           go("confirmation");
         } catch (e) {
           toast(e.message === "Failed to fetch" ? "تعذر الاتصال بالسيرفر" : e.message);
         } finally {
-          btn.disabled = false;
+          syncSubmit();
         }
       }
       function renderConfirmation(o) {
