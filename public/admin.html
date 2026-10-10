@@ -69,6 +69,16 @@
   th { color:var(--muted); font-weight:500; background:var(--panel2); }
   td input[type=text], td input[type=number] { width:100%; height:36px; border:1px solid var(--line); background:var(--bg); border-radius:8px; padding:0 10px; }
   td input[type=number] { width:90px; }
+  .addbox { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:20px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .addbox h3 { grid-column:1/-1; font-size:16px; color:var(--ice); }
+  .addbox label { display:block; font-size:13px; color:var(--muted); margin-bottom:5px; }
+  .addbox input[type=text], .addbox input[type=number], .addbox textarea { width:100%; border:1px solid var(--line); background:var(--bg); border-radius:10px; padding:10px 12px; color:var(--text); font:inherit; }
+  .addbox textarea { min-height:80px; resize:vertical; }
+  .addbox .full { grid-column:1/-1; }
+  .imgpick { display:flex; align-items:center; gap:14px; }
+  .imgpick img { width:84px; height:84px; object-fit:contain; border:1px dashed var(--line); border-radius:12px; background:var(--bg); }
+  .thumb { width:44px; height:44px; object-fit:contain; border-radius:8px; background:var(--bg); vertical-align:middle; margin-left:8px; }
+  @media (max-width:700px) { .addbox { grid-template-columns:1fr; } }
   .toast { position:fixed; bottom:20px; left:20px; background:var(--panel2); border:1px solid #ddc4ae55; border-radius:12px; padding:11px 16px; opacity:0; transform:translateY(10px); transition:.2s; pointer-events:none; }
   .toast.show { opacity:1; transform:none; }
   .scroll { overflow-x:auto; }
@@ -77,14 +87,14 @@
 </style>
 </head>
 <body>
-
+ 
 <section id="loginView" class="login hidden">
   <img src="assets/logo.png" alt="" />
   <h1>لوحة الإدارة</h1>
   <p id="loginMsg">الدخول للمشرفين فقط. سجّل الدخول بحساب Discord اللي عنده الرتبة المخصصة.</p>
   <a class="btn primary" href="/auth/login" style="display:inline-block;text-decoration:none">الدخول بحساب Discord</a>
 </section>
-
+ 
 <div id="appView" class="hidden">
   <header class="bar">
     <div class="bar-in">
@@ -100,7 +110,7 @@
       <button class="tab on" data-tab="orders" role="tab">الطلبات</button>
       <button class="tab" data-tab="products" role="tab">المنتجات والأسعار</button>
     </div>
-
+ 
     <section id="ordersTab">
       <div class="stats" id="stats"></div>
       <div class="tools">
@@ -109,21 +119,36 @@
       </div>
       <div id="ordersList"></div>
     </section>
-
+ 
     <section id="productsTab" class="hidden">
+      <form class="addbox" id="addForm">
+        <h3>＋ إضافة منتج جديد</h3>
+        <div><label for="npName">اسم المنتج</label><input type="text" id="npName" maxlength="80" required /></div>
+        <div><label for="npPrice">السعر (ر.س)</label><input type="number" id="npPrice" min="0" step="1" required /></div>
+        <div><label for="npCat">التصنيف (اختياري)</label><input type="text" id="npCat" maxlength="40" placeholder="مثال: خدمات" /></div>
+        <div class="full"><label for="npDesc">الوصف</label><textarea id="npDesc" maxlength="300"></textarea></div>
+        <div class="full">
+          <label>صورة المنتج</label>
+          <div class="imgpick">
+            <img id="npPreview" alt="" hidden />
+            <input type="file" id="npFile" accept="image/png,image/jpeg,image/webp" />
+          </div>
+        </div>
+        <div class="full"><button type="submit" class="btn primary" id="npSubmit">إضافة المنتج</button></div>
+      </form>
       <p class="muted" style="color:var(--muted);margin-bottom:14px">عدّل الاسم أو السعر أو أوقف المنتج، ثم اضغط حفظ. التغيير يظهر في المتجر مباشرة.</p>
-      <div class="scroll"><table><thead><tr><th>المنتج</th><th>السعر (ر.س)</th><th>ظاهر في المتجر</th><th></th></tr></thead><tbody id="prodBody"></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th>المنتج</th><th>السعر (ر.س)</th><th>ظاهر في المتجر</th><th></th><th></th></tr></thead><tbody id="prodBody"></tbody></table></div>
     </section>
   </main>
 </div>
-
+ 
 <div id="toast" class="toast"></div>
-
+ 
 <script>
 const LABEL = { new:"جديد", accepted:"مقبول", delivered:"تم التسليم", rejected:"مرفوض" };
 const FILTERS = [["all","الكل"],["new","جدد"],["accepted","مقبولة"],["delivered","مسلّمة"],["rejected","مرفوضة"]];
 let orders = [], products = [], filter = "all", me = null, timer;
-
+ 
 const $ = (id) => document.getElementById(id);
 function h(tag, attrs, ...kids) {           // بناء عناصر بدون innerHTML (حماية من XSS)
   const e = document.createElement(tag);
@@ -137,7 +162,7 @@ function h(tag, attrs, ...kids) {           // بناء عناصر بدون inne
 }
 const money = (n) => Number(n).toLocaleString("ar-SA") + " ر.س";
 let tt; function toast(t){ const e=$("toast"); e.textContent=t; e.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>e.classList.remove("show"),2600); }
-
+ 
 async function api(url, opts = {}) {
   const r = await fetch(url, { ...opts, headers: { "Content-Type":"application/json", "X-Requested-With":"admin-panel" }, body: opts.body ? JSON.stringify(opts.body) : undefined });
   if (r.status === 401 || r.status === 403) { showLogin(r.status === 403 ? "denied" : ""); throw new Error("auth"); }
@@ -145,7 +170,7 @@ async function api(url, opts = {}) {
   if (!r.ok) throw new Error(data.error || "خطأ");
   return data;
 }
-
+ 
 function showLogin(err) {
   clearInterval(timer);
   $("appView").classList.add("hidden");
@@ -153,7 +178,7 @@ function showLogin(err) {
   const msgs = { denied:"هذا الحساب ما عنده الرتبة المطلوبة.", state:"انتهت جلسة تسجيل الدخول، حاول مرة ثانية.", oauth:"تعذر تسجيل الدخول عبر Discord، حاول مرة ثانية.", setup:"إعدادات ديسكورد ناقصة في ملف .env." };
   if (msgs[err]) { const m = $("loginMsg"); m.textContent = msgs[err]; m.className = "err"; }
 }
-
+ 
 /* ---------- الطلبات ---------- */
 function renderStats() {
   const today = new Date().toDateString();
@@ -206,7 +231,7 @@ async function setStatus(id, status, btn) {
     renderStats(); renderOrders(); toast("تم تحديث الحالة: " + LABEL[status]);
   } catch (e) { if (e.message !== "auth") toast(e.message); btn.disabled = false; }
 }
-
+ 
 /* ---------- المنتجات ---------- */
 function renderProducts() {
   $("prodBody").replaceChildren(...products.map((p) => {
@@ -219,11 +244,64 @@ function renderProducts() {
       catch (e) { if (e.message !== "auth") toast(e.message); }
       save.disabled = false;
     } }, "حفظ");
-    return h("tr", {}, h("td", {}, name), h("td", {}, price), h("td", {}, active), h("td", {}, save));
+    const del = p.id.startsWith("p-") ? h("button", { class:"btn bad", onclick: async () => {
+      if (!confirm("حذف المنتج «" + p.name + "» نهائياً؟")) return;
+      try { await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"DELETE" }); products = products.filter((x) => x.id !== p.id); renderProducts(); toast("تم الحذف"); }
+      catch (e) { if (e.message !== "auth") toast(e.message); }
+    } }, "حذف") : null;
+    const thumb = h("img", { class:"thumb", src:p.image, alt:"" });
+    return h("tr", {}, h("td", {}, thumb, name), h("td", {}, price), h("td", {}, active), h("td", {}, save), h("td", {}, del));
   }));
 }
+/* ---------- إضافة منتج ---------- */
+let npImage = "";
+// نصغّر الصورة ونضغطها في المتصفح عشان تنحفظ خفيفة (حد أقصى 600px)
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let max = 600, out = "";
+      for (let tries = 0; tries < 4; tries++) {
+        const sc = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * sc)); c.height = Math.max(1, Math.round(img.height * sc));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        out = c.toDataURL("image/webp", 0.82);
+        if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/jpeg", 0.8);
+        if (out.length <= 200000) return resolve(out);
+        max = Math.round(max * 0.75);
+      }
+      reject(new Error("الصورة كبيرة، جرّب صورة أصغر"));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("تعذر قراءة الصورة")); };
+    img.src = url;
+  });
+}
+$("npFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  npImage = "";
+  $("npPreview").hidden = true;
+  if (!f) return;
+  try { npImage = await compressImage(f); $("npPreview").src = npImage; $("npPreview").hidden = false; }
+  catch (err) { toast(err.message); e.target.value = ""; }
+});
+$("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!npImage) return toast("اختر صورة للمنتج");
+  const btn = $("npSubmit"); btn.disabled = true;
+  try {
+    const p = await api("/api/admin/products", { method:"POST", body:{
+      name:$("npName").value, price:$("npPrice").value, category:$("npCat").value, description:$("npDesc").value, image:npImage } });
+    products.push(p); renderProducts();
+    e.target.reset(); npImage = ""; $("npPreview").hidden = true;
+    toast("تمت إضافة «" + p.name + "» وصار يظهر في المتجر");
+  } catch (err) { if (err.message !== "auth") toast(err.message); }
+  btn.disabled = false;
+});
+ 
 async function loadProducts() { try { products = await api("/api/admin/products"); renderProducts(); } catch (e) { if (e.message !== "auth") toast(e.message); } }
-
+ 
 /* ---------- تشغيل ---------- */
 document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
@@ -232,7 +310,7 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
   if (t.dataset.tab === "products") loadProducts();
 }));
 $("search").addEventListener("input", renderOrders);
-
+ 
 (async function init() {
   const err = new URLSearchParams(location.search).get("error");
   if (err) { showLogin(err); history.replaceState(null, "", "/admin"); return; }
@@ -246,3 +324,4 @@ $("search").addEventListener("input", renderOrders);
 </script>
 </body>
 </html>
+ 

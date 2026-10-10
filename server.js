@@ -15,7 +15,7 @@ const SESSION_MS = 12 * 60 * 60 * 1000;
 
 const app = express();
 app.disable("x-powered-by");
-app.use("/api/admin/products", express.json({ limit: "400kb" })); // صور المنتجات تنرسل مضغوطة داخل الطلب
+app.use("/api/admin/products", express.json({ limit: "600kb" })); // صور المنتجات (تنضغط في المتصفح قبل الرفع)
 app.use(express.json({ limit: "20kb" }));
 app.use((req, res, next) => {
   res.set({ "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "same-origin" });
@@ -66,7 +66,7 @@ function limit(max, windowMs) {
 setInterval(() => hits.clear(), 60 * 60 * 1000).unref();
 
 /* ---------- API المتجر (عام) ---------- */
-const publicProduct = ({ id, group, name, category, description, price, image }) => ({ id, group, name, category, description, price, image });
+const publicProduct = ({ id, group, name, category, description, price, image, note }) => ({ id, group, name, category, description, price, image, note: note || "" });
 const publicOrder = (o) => ({
   id: o.id, date: o.createdAt, status: o.status, transferor: o.transferor,
   serverLink: o.serverLink, nitroUser: o.nitroUser, nitroId: o.nitroId || "", items: o.items, total: o.total,
@@ -146,7 +146,7 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
 app.get("/api/me", async (req, res) => {
   const c = readCustomer(req);
   if (!c) return res.status(401).json({ error: "غير مسجّل" });
-  res.json({ id: c.uid, name: c.name, avatar: c.avatar, inGuild: await bot.isMember(c.uid), isStaff: await bot.isStaff(c.uid) });
+  res.json({ id: c.uid, name: c.name, avatar: c.avatar, inGuild: await bot.isMember(c.uid), staff: await bot.isStaff(c.uid) });
 });
 
 app.get("/api/my/orders", (req, res) => {
@@ -161,30 +161,25 @@ app.get("/api/orders/:id", limit(120, 10 * 60 * 1000), (req, res) => {
   res.json(publicOrder(o));
 });
 
-/* ---------- تسجيل الدخول بديسكورد (للعميل وللإدارة) ---------- */
-function startAuth(purpose) {
-  return (req, res) => {
-    if (!CLIENT_ID || !CLIENT_SECRET) return res.redirect(purpose === "customer" ? "/?auth=setup" : "/admin?error=setup");
-    const state = crypto.randomBytes(16).toString("hex");
-    setCookie(res, "oauth_state", state, 10 * 60 * 1000);
-    setCookie(res, "oauth_purpose", purpose, 10 * 60 * 1000);
-    const q = new URLSearchParams({
-      client_id: CLIENT_ID, redirect_uri: BASE_URL + "/auth/callback",
-      response_type: "code", scope: "identify", state,
-    });
-    res.redirect("https://discord.com/oauth2/authorize?" + q);
-  };
-}
-app.get("/auth/login", startAuth("admin"));
-app.get("/auth/customer", startAuth("customer"));
+/* ---------- تسجيل الدخول بديسكورد ---------- */
+// الكل يسجّل من نفس المكان. اللي عنده رتبة الإدارة (أو المالك) يفتح له النظام اللوحة تلقائياً.
+app.get("/auth/customer", (req, res) => {
+  if (!CLIENT_ID || !CLIENT_SECRET) return res.redirect("/?auth=setup");
+  const state = crypto.randomBytes(16).toString("hex");
+  setCookie(res, "oauth_state", state, 10 * 60 * 1000);
+  const q = new URLSearchParams({
+    client_id: CLIENT_ID, redirect_uri: BASE_URL + "/auth/callback",
+    response_type: "code", scope: "identify", state, prompt: "none",
+  });
+  res.redirect("https://discord.com/oauth2/authorize?" + q);
+});
 
 app.get("/auth/callback", async (req, res) => {
   const ck = cookies(req);
-  const purpose = ck.oauth_purpose === "customer" ? "customer" : "admin";
-  const fail = (code) => res.redirect(purpose === "customer" ? "/?auth=error" : "/admin?error=" + code);
+  const fail = () => res.redirect("/?auth=error");
   try {
     const { code, state } = req.query;
-    if (!code || !state || state !== ck.oauth_state) return fail("state");
+    if (!code || !state || state !== ck.oauth_state) return fail();
     const tr = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -194,47 +189,54 @@ app.get("/auth/callback", async (req, res) => {
       }),
     });
     const tok = await tr.json();
-    if (!tok.access_token) return fail("oauth");
+    if (!tok.access_token) return fail();
     const ur = await fetch("https://discord.com/api/users/@me", { headers: { Authorization: "Bearer " + tok.access_token } });
     const u = await ur.json();
-    if (!u.id) return fail("oauth");
+    if (!u.id) return fail();
     setCookie(res, "oauth_state", "", 0);
-    setCookie(res, "oauth_purpose", "", 0);
     const name = u.global_name || u.username;
-    if (purpose === "customer") {
-      setCookie(res, "customer", makeToken({ uid: u.id, name, avatar: u.avatar || null, exp: Date.now() + CUSTOMER_MS }), CUSTOMER_MS);
-      return res.redirect("/?auth=ok");
-    }
-    if (!(await bot.isStaff(u.id))) return res.redirect("/admin?error=denied");
-    setCookie(res, "session", makeToken({ uid: u.id, name, avatar: u.avatar || null, exp: Date.now() + SESSION_MS }), SESSION_MS);
-    res.redirect("/admin");
+    setCookie(res, "customer", makeToken({ uid: u.id, name, avatar: u.avatar || null, exp: Date.now() + CUSTOMER_MS }), CUSTOMER_MS);
+    res.redirect("/?auth=ok");
   } catch (e) {
     console.error("[auth]", e.message);
-    fail("oauth");
+    fail();
   }
 });
 
-app.get("/auth/logout", (req, res) => {
-  setCookie(res, "session", "", 0);
-  res.redirect("/admin");
-});
-app.get("/auth/customer/logout", (req, res) => {
+// خروج واحد: يمسح حساب العميل وجلسة الإدارة معاً
+const logout = (req, res) => {
   setCookie(res, "customer", "", 0);
+  setCookie(res, "session", "", 0);
   res.redirect("/");
-});
+};
+app.get("/auth/logout", logout);
+app.get("/auth/customer/logout", logout);
 
 /* ---------- API الإدارة (محمي) ---------- */
 async function requireStaff(req, res, next) {
   const s = readToken(cookies(req).session);
-  if (!s) return res.status(401).json({ error: "سجّل الدخول" });
-  if (!(await bot.isStaff(s.uid))) return res.status(403).json({ error: "ما عندك صلاحية" });
+  // 401 حتى لو سُحبت الرتبة: الواجهة ترجّعه للمتجر بدون ما تكشف وجود لوحة
+  if (!s || !(await bot.isStaff(s.uid))) return res.status(401).json({ error: "غير مصرّح" });
   if (req.method !== "GET" && req.get("X-Requested-With") !== "admin-panel") return res.status(403).json({ error: "طلب مرفوض" });
   req.staff = s;
   next();
 }
+// المنتجات والأسعار للمالك فقط (OWNER_ID في .env)
+function requireOwner(req, res, next) {
+  if (!bot.isOwner(req.staff.uid)) return res.status(403).json({ error: "هذه الصلاحية للمالك فقط" });
+  next();
+}
+const wrap = (fn) => async (req, res) => {
+  try { await fn(req, res); }
+  catch (e) {
+    if (e.status) return res.status(e.status).json({ error: e.message });
+    console.error("[server]", e);
+    res.status(500).json({ error: "خطأ في السيرفر" });
+  }
+};
 
 app.get("/api/admin/me", requireStaff, (req, res) =>
-  res.json({ id: req.staff.uid, name: req.staff.name, avatar: req.staff.avatar }));
+  res.json({ id: req.staff.uid, name: req.staff.name, avatar: req.staff.avatar, owner: bot.isOwner(req.staff.uid) }));
 
 app.get("/api/admin/orders", requireStaff, (req, res) =>
   res.json(db.listOrders().map(adminOrder)));
@@ -250,45 +252,61 @@ app.patch("/api/admin/orders/:id", requireStaff, async (req, res) => {
   res.json(adminOrder(o));
 });
 
-app.get("/api/admin/products", requireStaff, (req, res) => res.json(db.getProducts()));
+app.get("/api/admin/products", requireStaff, requireOwner, (req, res) => res.json(db.getProducts()));
 
-const IMG_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-const cleanImage = (v) => (typeof v === "string" && v.length <= 250000 && IMG_RE.test(v) ? v : "");
+app.post("/api/admin/products", requireStaff, requireOwner, wrap(async (req, res) => {
+  res.status(201).json(await db.createProduct(req.body || {}));
+}));
 
-app.post("/api/admin/products", requireStaff, (req, res) => {
-  const b = req.body || {};
-  const name = String(b.name || "").trim().slice(0, 80);
-  const price = Number(b.price);
-  if (name.length < 2) return res.status(400).json({ error: "اكتب اسم المنتج" });
-  if (!Number.isFinite(price) || price < 0 || price > 100000) return res.status(400).json({ error: "السعر غير صحيح" });
-  const image = cleanImage(b.image);
-  if (!image) return res.status(400).json({ error: "الصورة غير صالحة أو كبيرة (جرّب صورة أصغر)" });
-  const p = db.addProduct({
-    id: "p-" + crypto.randomBytes(5).toString("hex"), group: "main", name,
-    category: String(b.category || "").trim().slice(0, 40) || "منتج جديد",
-    description: String(b.description || "").trim().slice(0, 300), price, image, active: true,
-  });
-  res.status(201).json(p);
-});
-
-app.delete("/api/admin/products/:id", requireStaff, (req, res) => {
-  const id = String(req.params.id);
-  if (!id.startsWith("p-")) return res.status(400).json({ error: "المنتجات الأساسية ما تنحذف، تقدر توقفها فقط" });
-  if (!db.deleteProduct(id)) return res.status(404).json({ error: "المنتج غير موجود" });
-  res.json({ ok: true });
-});
-
-app.patch("/api/admin/products/:id", requireStaff, (req, res) => {
-  const body = { ...(req.body || {}) };
-  if (body.image !== undefined) body.image = cleanImage(body.image);
-  const p = db.updateProduct(String(req.params.id), body);
+app.patch("/api/admin/products/:id", requireStaff, requireOwner, wrap(async (req, res) => {
+  const p = await db.updateProduct(String(req.params.id), req.body || {});
   if (!p) return res.status(404).json({ error: "المنتج غير موجود" });
   res.json(p);
-});
+}));
+
+app.post("/api/admin/products/:id/move", requireStaff, requireOwner, wrap(async (req, res) => {
+  const dir = req.body && req.body.dir;
+  if (dir !== "up" && dir !== "down") return res.status(400).json({ error: "اتجاه غير صالح" });
+  const list = db.moveProduct(String(req.params.id), dir);
+  if (!list) return res.status(404).json({ error: "المنتج غير موجود" });
+  res.json(list);
+}));
+
+app.delete("/api/admin/products/:id", requireStaff, requireOwner, wrap(async (req, res) => {
+  if (!db.deleteProduct(String(req.params.id))) return res.status(404).json({ error: "المنتج غير موجود" });
+  res.json({ ok: true });
+}));
 
 /* ---------- الملفات ---------- */
-app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
+// صور المنتجات اللي ترفعها من اللوحة (كل صورة لها آيدي فريد فنقدر نكاشيها)
+app.get("/img/:id", async (req, res) => {
+  const img = await db.getImage(String(req.params.id));
+  if (!img) return res.status(404).end();
+  res.set({ "Content-Type": img.mime, "Cache-Control": "public, max-age=31536000, immutable" });
+  res.send(img.buf);
+});
+
+// صفحة الإدارة خارج public: ما تنعرض إلا لصاحب الرتبة أو المالك، وغيرهم يشوف 404 عادي (ولا كأنها موجودة)
+app.get("/admin", async (req, res, next) => {
+  const ck = cookies(req);
+  let s = readToken(ck.session);
+  if (!s) {
+    const c = readToken(ck.customer);
+    if (c) s = { uid: c.uid, name: c.name, avatar: c.avatar || null };
+  }
+  if (!s || !(await bot.isStaff(s.uid))) return next();
+  setCookie(res, "session", makeToken({ uid: s.uid, name: s.name, avatar: s.avatar || null, exp: Date.now() + SESSION_MS }), SESSION_MS);
+  res.set("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "private", "admin.html"));
+});
 app.use(express.static(path.join(__dirname, "public"), { index: "index.html" }));
+
+// أخطاء الـ API بصيغة JSON (حجم كبير / JSON خربان)
+app.use((err, req, res, next) => {
+  if (err.type === "entity.too.large") return res.status(413).json({ error: "الحجم كبير، جرّب صورة أصغر" });
+  if (err.type === "entity.parse.failed") return res.status(400).json({ error: "بيانات غير صالحة" });
+  next(err);
+});
 
 db.ready.then(() => bot.startBot()).then(() => {
   app.listen(PORT, () => {

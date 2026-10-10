@@ -417,7 +417,6 @@
         </nav>
         <div class="nav-actions">
           <span id="navUser"></span>
-          <a class="btn" href="/admin">لوحة الإدارة</a>
           <button class="cart-btn" onclick="go('cart')">السلة <span id="count" class="badge">0</span></button>
         </div>
       </div>
@@ -491,11 +490,7 @@
             <span class="muted mono">SECURE CART / 2026</span>
           </div>
           <div id="productsGrid" class="grid"></div>
-          <div class="product-dots" aria-label="مؤشر قائمة المنتجات">
-            <button class="product-dot active" type="button" aria-label="المنتج الأول" aria-current="true"></button>
-            <button class="product-dot" type="button" aria-label="المنتج الثاني"></button>
-            <button class="product-dot" type="button" aria-label="المنتج الثالث"></button>
-          </div>
+          <div class="product-dots" id="productDots" aria-label="مؤشر قائمة المنتجات"></div>
 
           <div class="section-divider"></div>
 
@@ -694,6 +689,12 @@
         if (me) {
           const b = el("button", "btn", "👤 " + me.name);
           b.onclick = () => go("tracking");
+          if (me.staff) {
+            // يظهر فقط لأصحاب رتبة الإدارة (أو المالك)، وغيرهم ما يشوفونه إطلاقاً
+            const adm = el("a", "btn", "لوحة الإدارة");
+            adm.href = "/admin";
+            n.append(adm);
+          }
           n.append(b);
         } else {
           const a = el("a", "btn", "دخول");
@@ -821,7 +822,7 @@
                       <div class="price">
                         ${Number(p.price)}<small> ر.س</small>
                       </div>
-                      ${p.id === "nitro" || p.id === "boosts" ? '<small class="price-note">ملاحظة: السعر غير ثابت</small>' : ""}
+                      ${p.note ? '<small class="price-note">' + esc(p.note) + "</small>" : ""}
                     </div>
                     <button class="add" onclick="add('${esc(p.id)}')">
                       أضف إلى السلة
@@ -838,6 +839,22 @@
         document.getElementById("accountsGrid").innerHTML = accountProducts
           .map((p, i) => renderProductCard(p, i, false))
           .join("");
+        const dots = document.getElementById("productDots");
+        if (dots) {
+          dots.textContent = "";
+          dots.style.display = products.length > 1 ? "" : "none";
+          products.forEach((p, i) => {
+            const d = el("button", "product-dot" + (i === 0 ? " active" : ""));
+            d.type = "button";
+            d.setAttribute("aria-label", "المنتج " + (i + 1));
+            d.onclick = () => {
+              const card = document.getElementById("productsGrid").children[i];
+              if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+              dots.querySelectorAll(".product-dot").forEach((x, j) => x.classList.toggle("active", j === i));
+            };
+            dots.append(d);
+          });
+        }
         const pc = document.getElementById("productsCount");
         if (pc) pc.textContent = products.length + " منتجات متاحة";
         const ac = document.getElementById("accountsCount");

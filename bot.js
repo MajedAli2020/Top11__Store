@@ -15,8 +15,11 @@ const staffCache = new Map(); // userId -> { ok, at }
 
 const botEnabled = () => ready;
 
+// المالك = الآيدي اللي في OWNER_ID بملف .env (هو الوحيد اللي يتحكم بالمنتجات والأسعار)
+const isOwner = (userId) => !!OWNER_ID && String(userId) === String(OWNER_ID);
+
 async function isStaff(userId) {
-  if (OWNER_ID && userId === OWNER_ID) return true;
+  if (isOwner(userId)) return true;
   if (!ready) return false;
   const hit = staffCache.get(userId);
   if (hit && Date.now() - hit.at < 30_000) return hit.ok;
@@ -186,4 +189,4 @@ function startBot() {
   });
 }
 
-module.exports = { notifyCustomer, isMember, startBot, notifyNewOrder, syncOrderMessage, isStaff, botEnabled };
+module.exports = { notifyCustomer, isMember, startBot, notifyNewOrder, syncOrderMessage, isStaff, isOwner, botEnabled };
