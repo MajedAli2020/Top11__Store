@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>لوحة الإدارة | توب ستور</title>
+<link rel="icon" type="image/png" href="assets/logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#0b0907; --panel:#15110d; --panel2:#1d1711; --line:#3a2d20; --text:#f7f1ea; --muted:#a8967f; --accent:#c9a07a; --ice:#ecd5bb; --green:#72c7a0; --red:#d0645f; --amber:#e0b36a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { min-height:100vh; background:var(--bg); color:var(--text); font-family:Tajawal,Arial,sans-serif; }
+  button, input { font:inherit; color:inherit; }
+  button { cursor:pointer; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .hidden { display:none !important; }
+  .bar { position:sticky; top:0; z-index:10; background:#15100cf0; border-bottom:1px solid var(--line); }
+  .bar-in { max-width:1100px; margin:auto; padding:12px 18px; display:flex; align-items:center; gap:14px; }
+  .bar img.logo { width:38px; height:38px; border-radius:50%; }
+  .bar h1 { font-size:17px; flex:1; }
+  .me { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:14px; }
+  .me img { width:28px; height:28px; border-radius:50%; }
+  .wrap { max-width:1100px; margin:auto; padding:22px 18px 60px; }
+  .btn { border:1px solid var(--line); background:transparent; border-radius:10px; padding:8px 14px; transition:background .15s,border-color .15s; }
+  .btn:hover { background:#ffffff0d; border-color:#ddc4ae66; }
+  .btn.primary { border:0; background:var(--accent); color:#15100c; font-weight:800; }
+  .btn.primary:hover { background:#d6b08d; }
+  .btn.ok { border-color:#72c7a077; color:var(--green); }
+  .btn.bad { border-color:#d0645f77; color:var(--red); }
+  .btn:disabled { opacity:.5; cursor:wait; }
+  .login { max-width:420px; margin:14vh auto 0; padding:34px; border:1px solid var(--line); border-radius:20px; background:var(--panel); text-align:center; }
+  .login img { width:86px; height:86px; border-radius:50%; margin-bottom:14px; }
+  .login p { color:var(--muted); margin:8px 0 22px; line-height:1.8; }
+  .login .err { color:var(--red); margin:0 0 16px; }
+  .tabs { display:flex; gap:6px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+  .tab { border:0; background:none; padding:10px 16px; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tab.on { color:var(--ice); border-color:var(--accent); font-weight:700; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  .stat b { display:block; font-size:26px; color:var(--ice); }
+  .stat span { color:var(--muted); font-size:13px; }
+  .tools { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  .tools input { flex:1; min-width:200px; height:40px; border:1px solid var(--line); background:var(--panel); border-radius:10px; padding:0 12px; }
+  .chip { border:1px solid var(--line); background:transparent; border-radius:99px; padding:6px 13px; font-size:13px; color:var(--muted); }
+  .chip.on { background:var(--accent); color:#15100c; border-color:var(--accent); font-weight:700; }
+  .order { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-bottom:12px; }
+  .order.is-new { border-color:#c9a07a99; }
+  .o-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .o-id { font-family:Consolas,monospace; direction:ltr; font-weight:700; color:var(--ice); letter-spacing:1px; }
+  .o-date { color:var(--muted); font-size:13px; flex:1; }
+  .pill { border-radius:99px; padding:3px 11px; font-size:12px; font-weight:700; border:1px solid; }
+  .pill.new { color:var(--amber); border-color:#e0b36a77; }
+  .pill.accepted { color:var(--green); border-color:#72c7a077; }
+  .pill.delivered { color:#8ad6b5; border-color:#8ad6b577; background:#72c7a01a; }
+  .pill.rejected { color:var(--red); border-color:#d0645f77; }
+  .o-body { display:grid; grid-template-columns:1fr 1fr; gap:6px 24px; margin:12px 0; font-size:14px; }
+  .o-body .k { color:var(--muted); }
+  .o-items { grid-column:1/-1; border-top:1px solid var(--line); padding-top:10px; }
+  .o-items div { display:flex; justify-content:space-between; padding:2px 0; }
+  .o-total { font-weight:800; color:var(--ice); border-top:1px dashed var(--line); margin-top:6px; padding-top:8px !important; }
+  .o-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .o-warn { color:var(--amber); border:1px solid #e0b36a55; background:#e0b36a12; border-radius:10px; padding:8px 12px; font-size:13px; margin-bottom:10px; }
+  .o-hist { color:var(--muted); font-size:12px; margin-top:10px; }
+  .empty { text-align:center; color:var(--muted); padding:50px 10px; border:1px dashed var(--line); border-radius:16px; }
+  table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--line); font-size:14px; }
+  th { color:var(--muted); font-weight:500; background:var(--panel2); }
+  td input[type=text], td input[type=number] { width:100%; height:36px; border:1px solid var(--line); background:var(--bg); border-radius:8px; padding:0 10px; }
+  td input[type=number] { width:90px; }
+  .toast { position:fixed; bottom:20px; left:20px; background:var(--panel2); border:1px solid #ddc4ae55; border-radius:12px; padding:11px 16px; opacity:0; transform:translateY(10px); transition:.2s; pointer-events:none; }
+  .toast.show { opacity:1; transform:none; }
+  .scroll { overflow-x:auto; }
+  @media (max-width:700px) { .stats { grid-template-columns:repeat(2,1fr); } .o-body { grid-template-columns:1fr; } .me span { display:none; } }
+  @media (prefers-reduced-motion:reduce) { * { transition-duration:.01ms !important; } }
+</style>
+</head>
+<body>
+
+<section id="loginView" class="login hidden">
+  <img src="assets/logo.png" alt="" />
+  <h1>لوحة الإدارة</h1>
+  <p id="loginMsg">الدخول للمشرفين فقط. سجّل الدخول بحساب Discord اللي عنده الرتبة المخصصة.</p>
+  <a class="btn primary" href="/auth/login" style="display:inline-block;text-decoration:none">الدخول بحساب Discord</a>
+</section>
+
+<div id="appView" class="hidden">
+  <header class="bar">
+    <div class="bar-in">
+      <img class="logo" src="assets/logo.png" alt="" />
+      <h1>لوحة إدارة توب ستور</h1>
+      <div class="me"><img id="meAvatar" alt="" /><span id="meName"></span></div>
+      <a class="btn" href="/" style="text-decoration:none">المتجر</a>
+      <a class="btn" href="/auth/logout" style="text-decoration:none">خروج</a>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="orders" role="tab">الطلبات</button>
+      <button class="tab" data-tab="products" role="tab">المنتجات والأسعار</button>
+    </div>
+
+    <section id="ordersTab">
+      <div class="stats" id="stats"></div>
+      <div class="tools">
+        <input id="search" type="search" placeholder="ابحث برقم الطلب أو اسم المحوّل" />
+        <div id="chips"></div>
+      </div>
+      <div id="ordersList"></div>
+    </section>
+
+    <section id="productsTab" class="hidden">
+      <p class="muted" style="color:var(--muted);margin-bottom:14px">عدّل الاسم أو السعر أو أوقف المنتج، ثم اضغط حفظ. التغيير يظهر في المتجر مباشرة.</p>
+      <div class="scroll"><table><thead><tr><th>المنتج</th><th>السعر (ر.س)</th><th>ظاهر في المتجر</th><th></th></tr></thead><tbody id="prodBody"></tbody></table></div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const LABEL = { new:"جديد", accepted:"مقبول", delivered:"تم التسليم", rejected:"مرفوض" };
+const FILTERS = [["all","الكل"],["new","جدد"],["accepted","مقبولة"],["delivered","مسلّمة"],["rejected","مرفوضة"]];
+let orders = [], products = [], filter = "all", me = null, timer;
+
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, ...kids) {           // بناء عناصر بدون innerHTML (حماية من XSS)
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? "" : v);
+  }
+  kids.flat().forEach((c) => c != null && e.append(c.nodeType ? c : document.createTextNode(c)));
+  return e;
+}
+const money = (n) => Number(n).toLocaleString("ar-SA") + " ر.س";
+let tt; function toast(t){ const e=$("toast"); e.textContent=t; e.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>e.classList.remove("show"),2600); }
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, { ...opts, headers: { "Content-Type":"application/json", "X-Requested-With":"admin-panel" }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  if (r.status === 401 || r.status === 403) { showLogin(r.status === 403 ? "denied" : ""); throw new Error("auth"); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || "خطأ");
+  return data;
+}
+
+function showLogin(err) {
+  clearInterval(timer);
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  const msgs = { denied:"هذا الحساب ما عنده الرتبة المطلوبة.", state:"انتهت جلسة تسجيل الدخول، حاول مرة ثانية.", oauth:"تعذر تسجيل الدخول عبر Discord، حاول مرة ثانية.", setup:"إعدادات ديسكورد ناقصة في ملف .env." };
+  if (msgs[err]) { const m = $("loginMsg"); m.textContent = msgs[err]; m.className = "err"; }
+}
+
+/* ---------- الطلبات ---------- */
+function renderStats() {
+  const today = new Date().toDateString();
+  const todays = orders.filter((o) => new Date(o.date).toDateString() === today);
+  const sum = (arr) => arr.filter((o) => o.status !== "rejected").reduce((s, o) => s + o.total, 0);
+  const cell = (n, l) => h("div", { class:"stat" }, h("b", {}, n), h("span", {}, l));
+  $("stats").replaceChildren(
+    cell(orders.filter((o) => o.status === "new").length, "طلبات جديدة"),
+    cell(orders.filter((o) => o.status === "accepted").length, "قيد التنفيذ"),
+    cell(todays.length, "طلبات اليوم"),
+    cell(money(sum(todays)), "مبيعات اليوم")
+  );
+}
+function renderChips() {
+  $("chips").replaceChildren(...FILTERS.map(([k, l]) => h("button", { class:"chip" + (filter === k ? " on" : ""), onclick:() => { filter = k; renderChips(); renderOrders(); } }, l)));
+}
+function orderCard(o) {
+  const row = (k, v) => v ? [h("div", { class:"k" }, k), h("div", {}, v)] : [];
+  const act = (status, label, cls) => h("button", { class:"btn " + cls, onclick:(e) => setStatus(o.id, status, e.target) }, label);
+  const actions = [];
+  if (o.status === "new") actions.push(act("accepted", "قبول", "ok"), act("rejected", "رفض", "bad"));
+  if (o.status === "accepted") actions.push(act("delivered", "تم التسليم", "primary"), act("rejected", "رفض", "bad"));
+  if (o.status === "rejected" || o.status === "delivered") actions.push(act("new", "إعادة فتح", ""));
+  const last = o.history[o.history.length - 1];
+  return h("article", { class:"order" + (o.status === "new" ? " is-new" : "") },
+    h("div", { class:"o-head" }, h("span", { class:"o-id" }, o.id), h("span", { class:"o-date" }, new Date(o.date).toLocaleString("ar-SA")), h("span", { class:"pill " + o.status }, LABEL[o.status])),
+    h("div", { class:"o-body" },
+      row("حساب Discord", o.customer ? o.customer.name + " — " + o.customer.id : ""),
+      row("اسم المحوّل", o.transferor), row("مستلم النيترو", o.nitroUser), o.nitroId ? h("a", { href:"discord://-/users/" + o.nitroId, class:"o-dm" }, "فتح الخاص مع المستلم") : null, row("رابط السيرفر", o.serverLink),
+      h("div", { class:"o-items" },
+        o.items.map((i) => h("div", {}, h("span", {}, i.name + " × " + i.quantity), h("span", {}, money(i.price * i.quantity)))),
+        h("div", { class:"o-total" }, h("span", {}, "الإجمالي"), h("span", {}, money(o.total))))),
+    o.lastDm && o.lastDm.ok === false ? h("div", { class:"o-warn" }, "⚠️ تعذر إرسال رسالة خاصة للعميل (الخاص مغلق أو ما هو داخل السيرفر). كلّمه في التكت.") : null,
+    h("div", { class:"o-actions" }, actions),
+    last && last.status !== "new" ? h("div", { class:"o-hist" }, "آخر تحديث: " + last.by + " — " + new Date(last.at).toLocaleString("ar-SA")) : null);
+}
+function renderOrders() {
+  const q = $("search").value.trim().toLowerCase();
+  const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
+  $("ordersList").replaceChildren(...(list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
+}
+async function loadOrders() {
+  try { orders = await api("/api/admin/orders"); renderStats(); renderOrders(); } catch (e) { if (e.message !== "auth") toast(e.message); }
+}
+async function setStatus(id, status, btn) {
+  btn.disabled = true;
+  try {
+    const u = await api("/api/admin/orders/" + encodeURIComponent(id), { method:"PATCH", body:{ status } });
+    orders = orders.map((o) => (o.id === id ? u : o));
+    renderStats(); renderOrders(); toast("تم تحديث الحالة: " + LABEL[status]);
+  } catch (e) { if (e.message !== "auth") toast(e.message); btn.disabled = false; }
+}
+
+/* ---------- المنتجات ---------- */
+function renderProducts() {
+  $("prodBody").replaceChildren(...products.map((p) => {
+    const name = h("input", { type:"text", value:p.name, "aria-label":"اسم المنتج" });
+    const price = h("input", { type:"number", min:"0", step:"1", value:p.price, "aria-label":"السعر" });
+    const active = h("input", { type:"checkbox", checked:p.active, "aria-label":"ظاهر في المتجر" });
+    const save = h("button", { class:"btn primary", onclick: async () => {
+      save.disabled = true;
+      try { Object.assign(p, await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"PATCH", body:{ name:name.value, price:price.value, active:active.checked } })); toast("تم حفظ " + p.name); }
+      catch (e) { if (e.message !== "auth") toast(e.message); }
+      save.disabled = false;
+    } }, "حفظ");
+    return h("tr", {}, h("td", {}, name), h("td", {}, price), h("td", {}, active), h("td", {}, save));
+  }));
+}
+async function loadProducts() { try { products = await api("/api/admin/products"); renderProducts(); } catch (e) { if (e.message !== "auth") toast(e.message); } }
+
+/* ---------- تشغيل ---------- */
+document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+  $("ordersTab").classList.toggle("hidden", t.dataset.tab !== "orders");
+  $("productsTab").classList.toggle("hidden", t.dataset.tab !== "products");
+  if (t.dataset.tab === "products") loadProducts();
+}));
+$("search").addEventListener("input", renderOrders);
+
+(async function init() {
+  const err = new URLSearchParams(location.search).get("error");
+  if (err) { showLogin(err); history.replaceState(null, "", "/admin"); return; }
+  try { me = await api("/api/admin/me"); } catch (e) { if (e.message === "auth") { if ($("loginView").classList.contains("hidden")) showLogin(""); } return; }
+  $("meName").textContent = me.name;
+  if (me.avatar) $("meAvatar").src = `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=64`; else $("meAvatar").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  renderChips(); loadOrders();
+  timer = setInterval(loadOrders, 15000);
+})();
+</script>
+</body>
+</html>

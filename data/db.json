@@ -1,0 +1,391 @@
+{
+  "orders": [
+    {
+      "id": "TOP-MMQ7UQJYK",
+      "createdAt": "2026-10-10T16:46:46.842Z",
+      "status": "rejected",
+      "transferor": "ماجد",
+      "serverLink": "",
+      "nitroUser": "نفس العميل (! ᴍᴀᴊᴇᴅ) — ID: 1241144201199226965",
+      "nitroId": "1241144201199226965",
+      "items": [
+        {
+          "id": "nitro",
+          "name": "نيترو دسكورد",
+          "price": 22,
+          "quantity": 1
+        }
+      ],
+      "total": 22,
+      "history": [
+        {
+          "status": "new",
+          "by": "customer",
+          "at": "2026-10-10T16:46:46.842Z"
+        },
+        {
+          "status": "accepted",
+          "by": "! ᴍᴀᴊᴇᴅ (الموقع)",
+          "at": "2026-10-10T16:48:05.097Z"
+        },
+        {
+          "status": "rejected",
+          "by": "! ᴍᴀᴊᴇᴅ (الموقع)",
+          "at": "2026-10-10T16:48:22.714Z"
+        }
+      ],
+      "customer": {
+        "id": "1241144201199226965",
+        "name": "! ᴍᴀᴊᴇᴅ",
+        "avatar": "fad602cd2d2c39bac7d6ccba96064c03"
+      },
+      "notify": {
+        "channelId": "1519380932346380309",
+        "messageId": "1558521192548274289"
+      },
+      "lastDm": {
+        "status": "rejected",
+        "ok": true,
+        "at": "2026-10-10T16:48:25.922Z"
+      }
+    },
+    {
+      "id": "TOP-MKSVL96T8",
+      "createdAt": "2026-10-10T16:45:16.977Z",
+      "status": "delivered",
+      "transferor": "خالد ال ذيبان",
+      "serverLink": "",
+      "nitroUser": "ID: 1334992328204484789",
+      "nitroId": "1334992328204484789",
+      "items": [
+        {
+          "id": "nitro",
+          "name": "نيترو دسكورد",
+          "price": 22,
+          "quantity": 1
+        }
+      ],
+      "total": 22,
+      "history": [
+        {
+          "status": "new",
+          "by": "customer",
+          "at": "2026-10-10T16:45:16.977Z"
+        },
+        {
+          "status": "accepted",
+          "by": ".v.d (Discord)",
+          "at": "2026-10-10T16:45:52.755Z"
+        },
+        {
+          "status": "delivered",
+          "by": ".v.d (Discord)",
+          "at": "2026-10-10T16:46:07.759Z"
+        }
+      ],
+      "customer": {
+        "id": "1241144201199226965",
+        "name": "! ᴍᴀᴊᴇᴅ",
+        "avatar": "fad602cd2d2c39bac7d6ccba96064c03"
+      },
+      "notify": {
+        "channelId": "1519380932346380309",
+        "messageId": "1558520814662328331"
+      },
+      "lastDm": {
+        "status": "delivered",
+        "ok": true,
+        "at": "2026-10-10T16:46:09.515Z"
+      }
+    },
+    {
+      "id": "TOP-EA8VMN3RG",
+      "createdAt": "2026-10-10T12:53:07.570Z",
+      "status": "delivered",
+      "transferor": "فواز",
+      "serverLink": "",
+      "nitroUser": "ID: 749686736644210788",
+      "nitroId": "749686736644210788",
+      "items": [
+        {
+          "id": "nitro",
+          "name": "نيترو دسكورد",
+          "price": 22,
+          "quantity": 1
+        }
+      ],
+      "total": 22,
+      "history": [
+        {
+          "status": "new",
+          "by": "customer",
+          "at": "2026-10-10T12:53:07.570Z"
+        },
+        {
+          "status": "accepted",
+          "by": ".v.d (Discord)",
+          "at": "2026-10-10T12:53:28.579Z"
+        },
+        {
+          "status": "delivered",
+          "by": ".v.d (Discord)",
+          "at": "2026-10-10T12:54:03.879Z"
+        }
+      ],
+      "customer": {
+        "id": "1241144201199226965",
+        "name": "! ᴍᴀᴊᴇᴅ",
+        "avatar": "fad602cd2d2c39bac7d6ccba96064c03"
+      },
+      "notify": {
+        "channelId": "1519380932346380309",
+        "messageId": "1558462389769343048"
+      },
+      "lastDm": {
+        "status": "delivered",
+        "ok": true,
+        "at": "2026-10-10T12:54:05.292Z"
+      }
+    },
+    {
+      "id": "TOP-DV5A55H2R",
+      "createdAt": "2026-10-10T12:41:23.069Z",
+      "status": "delivered",
+      "transferor": "ماجد",
+      "serverLink": "https://discord.gg/k7efhtBtX",
+      "nitroUser": "@n58p",
+      "items": [
+        {
+          "id": "nitro",
+          "name": "نيترو دسكورد",
+          "price": 22,
+          "quantity": 1
+        },
+        {
+          "id": "boosts",
+          "name": "14 بوست شهر",
+          "price": 15,
+          "quantity": 1
+        },
+        {
+          "id": "sources",
+          "name": "سورسات",
+          "price": 99,
+          "quantity": 1
+        }
+      ],
+      "total": 136,
+      "history": [
+        {
+          "status": "new",
+          "by": "customer",
+          "at": "2026-10-10T12:41:23.069Z"
+        },
+        {
+          "status": "accepted",
+          "by": ".v.d (Discord)",
+          "at": "2026-10-10T12:41:42.895Z"
+        },
+        {
+          "status": "delivered",
+          "by": "! ᴍᴀᴊᴇᴅ (الموقع)",
+          "at": "2026-10-10T16:35:18.292Z"
+        }
+      ],
+      "customer": {
+        "id": "1241144201199226965",
+        "name": "! ᴍᴀᴊᴇᴅ",
+        "avatar": "fad602cd2d2c39bac7d6ccba96064c03"
+      },
+      "notify": {
+        "channelId": "1519380932346380309",
+        "messageId": "1558459434504814763"
+      },
+      "lastDm": {
+        "status": "delivered",
+        "ok": true,
+        "at": "2026-10-10T16:35:20.447Z"
+      }
+    },
+    {
+      "id": "TOP-C68UTREDB",
+      "createdAt": "2026-10-10T11:54:01.685Z",
+      "status": "rejected",
+      "transferor": "Majed",
+      "serverLink": "",
+      "nitroUser": "@.v.d",
+      "items": [
+        {
+          "id": "nitro",
+          "name": "نيترو دسكورد",
+          "price": 22,
+          "quantity": 1
+        }
+      ],
+      "total": 22,
+      "history": [
+        {
+          "status": "new",
+          "by": "customer",
+          "at": "2026-10-10T11:54:01.685Z"
+        },
+        {
+          "status": "accepted",
+          "by": ".v.d (Discord)",
+          "at": "2026-10-10T11:54:16.466Z"
+        },
+        {
+          "status": "rejected",
+          "by": ".v.d (Discord)",
+          "at": "2026-10-10T12:37:23.118Z"
+        }
+      ],
+      "notify": {
+        "channelId": "1519380932346380309",
+        "messageId": "1558447516746252349"
+      }
+    }
+  ],
+  "products": [
+    {
+      "id": "nitro",
+      "group": "main",
+      "name": "نيترو دسكورد",
+      "category": "الأكثر طلباً",
+      "description": "اشتراك نيترو يرفع تجربتك داخل ديسكورد بمزايا قوية وفورية.",
+      "price": 29,
+      "image": "assets/nitro.png",
+      "active": true
+    },
+    {
+      "id": "boosts",
+      "group": "main",
+      "name": "14 بوست شهر",
+      "category": "للسيرفرات",
+      "description": "حزمة 14 بوست لتطوير السيرفر وفتح مزايا إضافية بشكل أنيق.",
+      "price": 15,
+      "image": "assets/boosts.png",
+      "active": true
+    },
+    {
+      "id": "sources",
+      "group": "main",
+      "name": "سورسات",
+      "category": "للمطورين - للسيرفرات العامة",
+      "description": "سورسات ديسكورد جاهزة للتشغيل والتخصيص.",
+      "price": 99,
+      "image": "assets/sources.png",
+      "active": true
+    },
+    {
+      "id": "account-2015",
+      "group": "accounts",
+      "name": "حساب 2015",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2015.",
+      "price": 250,
+      "image": "assets/ad_2015.png",
+      "active": true
+    },
+    {
+      "id": "account-2016",
+      "group": "accounts",
+      "name": "حساب 2016",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2016.",
+      "price": 65,
+      "image": "assets/ad_2016.png",
+      "active": true
+    },
+    {
+      "id": "account-2017",
+      "group": "accounts",
+      "name": "حساب 2017",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2017.",
+      "price": 47,
+      "image": "assets/ad_2017.png",
+      "active": true
+    },
+    {
+      "id": "account-2018",
+      "group": "accounts",
+      "name": "حساب 2018",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2018.",
+      "price": 35,
+      "image": "assets/ad_2018.png",
+      "active": true
+    },
+    {
+      "id": "account-2019",
+      "group": "accounts",
+      "name": "حساب 2019",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2019.",
+      "price": 30,
+      "image": "assets/ad_2019.png",
+      "active": true
+    },
+    {
+      "id": "account-2020",
+      "group": "accounts",
+      "name": "حساب 2020",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2020.",
+      "price": 27,
+      "image": "assets/ad_2020.png",
+      "active": true
+    },
+    {
+      "id": "account-2021",
+      "group": "accounts",
+      "name": "حساب 2021",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2021.",
+      "price": 18,
+      "image": "assets/ad_2021.png",
+      "active": true
+    },
+    {
+      "id": "account-2022",
+      "group": "accounts",
+      "name": "حساب 2022",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2022.",
+      "price": 15,
+      "image": "assets/ad_2022.png",
+      "active": true
+    },
+    {
+      "id": "account-2023",
+      "group": "accounts",
+      "name": "حساب 2023",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2023.",
+      "price": 12,
+      "image": "assets/ad_2023.png",
+      "active": true
+    },
+    {
+      "id": "account-2024",
+      "group": "accounts",
+      "name": "حساب 2024",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2024.",
+      "price": 10,
+      "image": "assets/ad_2024.png",
+      "active": true
+    },
+    {
+      "id": "account-2025",
+      "group": "accounts",
+      "name": "حساب 2025",
+      "category": "حسابات دسكورد",
+      "description": "حساب دسكورد مميز من سنة 2025.",
+      "price": 5,
+      "image": "assets/ad_2025.png",
+      "active": true
+    }
+  ]
+}

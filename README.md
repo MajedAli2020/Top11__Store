@@ -1,1 +1,48 @@
-# Top__Store
+# توب ستور — المتجر + بوت ديسكورد + لوحة الإدارة
+
+## 1) التثبيت (مرة وحدة)
+1. ثبّت Node.js (نسخة 18 أو أعلى) من nodejs.org
+2. افتح CMD داخل هذا المجلد واكتب:
+   ```
+   npm install
+   ```
+3. انسخ `.env.example` باسم `.env` واملأ القيم (الخطوة 2).
+4. حط صور المنتجات (`nitro.png`, `boosts.png`, `sources.png`, `ad_2015.png` ... `ad_2025.png`, `diamond.png`) داخل `public/assets/` (اللوقو موجود).
+
+## 2) إعداد البوت في Discord
+1. ادخل https://discord.com/developers/applications ← **New Application**.
+2. **Bot** ← **Reset Token** وانسخه في `DISCORD_TOKEN`.
+3. **OAuth2** ← انسخ **Client ID** في `CLIENT_ID` و**Client Secret** في `CLIENT_SECRET`.
+4. في **OAuth2 → Redirects** أضف: `http://localhost:3000/auth/callback`
+5. **OAuth2 → URL Generator**: اختر `bot`، وصلاحيات: View Channels, Send Messages, Embed Links, Read Message History ← افتح الرابط وأضف البوت لسيرفرك.
+6. فعّل وضع المطور في ديسكورد (Settings → Advanced → Developer Mode) ثم كليك يمين وانسخ الـ ID لكل من:
+   - السيرفر → `GUILD_ID`
+   - الرتبة (اللي تجيها الإشعارات وتدخل اللوحة) → `STAFF_ROLE_ID`
+   - الروم اللي تبي فيه الإشعارات → `NOTIFY_CHANNEL_ID`
+   - حسابك (اختياري) → `OWNER_ID`
+7. `SESSION_SECRET`: أي نص عشوائي طويل.
+8. تأكد إن رتبة البوت تقدر تشوف الروم وتمنشن الرتبة (أو فعّل "Mention everyone/all roles" للبوت، أو خلّ الرتبة قابلة للمنشن).
+
+## 3) التشغيل
+```
+npm start
+```
+- المتجر: http://localhost:3000
+- لوحة الإدارة: http://localhost:3000/admin
+
+## كيف يشتغل
+- الزبون يأكد الطلب ← ينحفظ في `data/db.json` ← البوت يرسل إشعار يمنشن الرتبة مع أزرار (قبول / رفض / تم التسليم).
+- الدخول للوحة بحساب Discord، ويدخل فقط اللي عنده الرتبة (أو `OWNER_ID`). لو سحبت الرتبة من أحد يطلع من اللوحة خلال نصف دقيقة.
+- تغيير الحالة من الأزرار أو من اللوحة يتزامن في الاثنين، والزبون يشوف الحالة في صفحة «طلبي».
+- الأسعار تُحسب في السيرفر دائماً، ومن اللوحة (تبويب المنتجات) تقدر تعدل الأسعار وتخفي منتجات.
+
+## عند الاستضافة لاحقاً
+غيّر `BASE_URL` في `.env` لدومينك (مثلاً `https://mystore.com`) وأضف `https://mystore.com/auth/callback` في Redirects، وشغّله خلف HTTPS.
+
+## نشر مجاني على Render (بدون بطاقة غالباً)
+1. **قاعدة بيانات مجانية (عشان الطلبات ما تنمسح):** سجّل في https://upstash.com ← Create Database (Redis) ← من تبويب REST انسخ `UPSTASH_REDIS_REST_URL` و`UPSTASH_REDIS_REST_TOKEN`.
+2. ارفع المشروع على GitHub (بدون `.env` و`node_modules`، الـ `.gitignore` يمنعهم).
+3. في https://render.com: New ← Web Service ← اختر المشروع. Build: `npm install` ، Start: `npm start`.
+4. في Environment أضف كل قيم `.env` + قيمتي Upstash، وغيّر `BASE_URL` لرابط Render (مثل `https://xxx.onrender.com`).
+5. في Discord Developer Portal ← OAuth2 ← Redirects أضف `https://xxx.onrender.com/auth/callback`.
+6. عشان ما ينام: سجّل في https://uptimerobot.com وسوّ Monitor يزور رابط موقعك كل 5 دقايق.
