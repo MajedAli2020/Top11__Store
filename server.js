@@ -106,6 +106,10 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
     return { id, name: p.name, price: p.price, quantity };
   });
 
+  // نيترو / بوستات: لازم إقرار العميل على التنبيه (تأكد من البيانات والإدارة غير مسؤولة عن الخطأ)
+  const needsAck = merged.has("nitro") || merged.has("boosts");
+  if (needsAck && b.agreed !== true) return res.status(400).json({ error: "لازم تقرأ التنبيه وتوافق عليه قبل تأكيد الطلب" });
+
   let serverLink = "", nitroUser = "";
   if (merged.has("boosts")) {
     serverLink = String(b.serverLink || "").trim();
@@ -134,6 +138,7 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
     id: newOrderId(), createdAt: now, status: "new", transferor, serverLink, nitroUser, nitroId, items,
     total: items.reduce((s, i) => s + i.price * i.quantity, 0),
     history: [{ status: "new", by: "customer", at: now }],
+    agreedAt: needsAck ? now : null,
     customer: { id: cust.uid, name: cust.name, avatar: cust.avatar || null },
     notify: null,
   });
