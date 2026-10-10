@@ -15,6 +15,7 @@ const SESSION_MS = 12 * 60 * 60 * 1000;
 
 const app = express();
 app.disable("x-powered-by");
+app.use("/api/admin/products", express.json({ limit: "400kb" })); // صور المنتجات تنرسل مضغوطة داخل الطلب
 app.use(express.json({ limit: "20kb" }));
 app.use((req, res, next) => {
   res.set({ "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "same-origin" });
@@ -145,7 +146,7 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
 app.get("/api/me", async (req, res) => {
   const c = readCustomer(req);
   if (!c) return res.status(401).json({ error: "غير مسجّل" });
-  res.json({ id: c.uid, name: c.name, avatar: c.avatar, inGuild: await bot.isMember(c.uid) });
+  res.json({ id: c.uid, name: c.name, avatar: c.avatar, inGuild: await bot.isMember(c.uid), isStaff: await bot.isStaff(c.uid) });
 });
 
 app.get("/api/my/orders", (req, res) => {
@@ -169,7 +170,7 @@ function startAuth(purpose) {
     setCookie(res, "oauth_purpose", purpose, 10 * 60 * 1000);
     const q = new URLSearchParams({
       client_id: CLIENT_ID, redirect_uri: BASE_URL + "/auth/callback",
-      response_type: "code", scope: "identify", state, prompt: "none",
+      response_type: "code", scope: "identify", state,
     });
     res.redirect("https://discord.com/oauth2/authorize?" + q);
   };
@@ -251,8 +252,36 @@ app.patch("/api/admin/orders/:id", requireStaff, async (req, res) => {
 
 app.get("/api/admin/products", requireStaff, (req, res) => res.json(db.getProducts()));
 
+const IMG_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+const cleanImage = (v) => (typeof v === "string" && v.length <= 250000 && IMG_RE.test(v) ? v : "");
+
+app.post("/api/admin/products", requireStaff, (req, res) => {
+  const b = req.body || {};
+  const name = String(b.name || "").trim().slice(0, 80);
+  const price = Number(b.price);
+  if (name.length < 2) return res.status(400).json({ error: "اكتب اسم المنتج" });
+  if (!Number.isFinite(price) || price < 0 || price > 100000) return res.status(400).json({ error: "السعر غير صحيح" });
+  const image = cleanImage(b.image);
+  if (!image) return res.status(400).json({ error: "الصورة غير صالحة أو كبيرة (جرّب صورة أصغر)" });
+  const p = db.addProduct({
+    id: "p-" + crypto.randomBytes(5).toString("hex"), group: "main", name,
+    category: String(b.category || "").trim().slice(0, 40) || "منتج جديد",
+    description: String(b.description || "").trim().slice(0, 300), price, image, active: true,
+  });
+  res.status(201).json(p);
+});
+
+app.delete("/api/admin/products/:id", requireStaff, (req, res) => {
+  const id = String(req.params.id);
+  if (!id.startsWith("p-")) return res.status(400).json({ error: "المنتجات الأساسية ما تنحذف، تقدر توقفها فقط" });
+  if (!db.deleteProduct(id)) return res.status(404).json({ error: "المنتج غير موجود" });
+  res.json({ ok: true });
+});
+
 app.patch("/api/admin/products/:id", requireStaff, (req, res) => {
-  const p = db.updateProduct(String(req.params.id), req.body || {});
+  const body = { ...(req.body || {}) };
+  if (body.image !== undefined) body.image = cleanImage(body.image);
+  const p = db.updateProduct(String(req.params.id), body);
   if (!p) return res.status(404).json({ error: "المنتج غير موجود" });
   res.json(p);
 });

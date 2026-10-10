@@ -101,8 +101,24 @@ function updateProduct(id, patch) {
   if (typeof patch.description === "string") p.description = patch.description.trim().slice(0, 300);
   if (patch.price !== undefined && Number.isFinite(+patch.price) && +patch.price >= 0 && +patch.price <= 100000) p.price = +patch.price;
   if (typeof patch.active === "boolean") p.active = patch.active;
+  if (typeof patch.image === "string" && patch.image) p.image = patch.image;
+  if (typeof patch.category === "string" && patch.category.trim()) p.category = patch.category.trim().slice(0, 40);
   save();
   return p;
+}
+
+function addProduct(p) {
+  state.products.push(p);
+  save();
+  return p;
+}
+
+function deleteProduct(id) {
+  const i = state.products.findIndex((p) => p.id === id);
+  if (i < 0) return false;
+  state.products.splice(i, 1);
+  save();
+  return true;
 }
 
 function createOrder(order) {
@@ -137,4 +153,4 @@ function setNotifyRef(id, ref) {
   save();
 }
 
-module.exports = { ready, setLastDm, STATUSES, getProducts, getActiveProducts, getProduct, updateProduct, createOrder, getOrder, listOrders, setStatus, setNotifyRef };
+module.exports = { ready, setLastDm, STATUSES, getProducts, getActiveProducts, getProduct, updateProduct, addProduct, deleteProduct, createOrder, getOrder, listOrders, setStatus, setNotifyRef };
