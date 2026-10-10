@@ -226,6 +226,11 @@
         color: white; border-radius: 12px; padding: 0 14px; outline: 0;
       }
       .field input:focus { border-color: var(--blue2); box-shadow: 0 0 0 3px #b8947522; }
+      .field input[type="file"] { height: auto; padding: 11px 14px; cursor: pointer; }
+      .receipt-preview { display: none; margin-top: 10px; align-items: center; gap: 12px; }
+      .receipt-preview img { width: 84px; height: 84px; object-fit: cover; border-radius: 12px; border: 1px solid #ffffff1c; }
+      .receipt-preview button { border: 1px solid #ffffff1c; background: transparent; color: #ffffffaa; border-radius: 10px; padding: 8px 12px; font: inherit; cursor: pointer; }
+      .field .hint { display: block; margin-top: 7px; color: #ffffff88; line-height: 1.8; font-size: 13px; }
       .seg { display: flex; gap: 6px; padding: 5px; border: 1px solid #ffffff1c; background: #ffffff08; border-radius: 14px; }
       .seg button {
         flex: 1; height: 40px; border: 0; border-radius: 10px; background: transparent;
@@ -473,12 +478,12 @@
             <article class="step reveal delay1">
               <div class="step-icon">▣</div>
               <h3>أكمل طلبك</h3>
-              <p>احصل على رقم طلب خاص فيك، ثم افتح تكت في Discord.</p>
+              <p>أرفق إيصال التحويل واحصل على رقم طلب خاص فيك.</p>
             </article>
             <article class="step reveal delay2">
               <div class="step-icon">✓</div>
               <h3>استلم في Discord</h3>
-              <p>بعد مراجعة الإيصال في التكت، يصلك طلبك.</p>
+              <p>بعد مراجعة الإدارة للإيصال، يصلك طلبك.</p>
             </article>
           </div>
         </div>
@@ -531,8 +536,8 @@
             </article>
             <article class="step reveal delay2">
               <div class="step-icon">03</div>
-              <h3>افتح تكت وأرفق الإيصال</h3>
-              <p>صوّر صفحة الطلب، افتح تكت في Discord، وأرفق الإيصال مع الصورة.</p>
+              <h3>أرفق الإيصال وأكّد</h3>
+              <p>حوّل المبلغ، أرفق إيصال التحويل، وأكّد الطلب. الإيصال يوصل للإدارة مباشرة.</p>
             </article>
           </div>
         </div>
@@ -589,6 +594,15 @@
                 </small>
               </div>
             </div>
+            <div class="field" id="receiptField">
+              <label>إيصال التحويل <span style="color: var(--ice)">(إجباري)</span></label>
+              <input type="file" id="receiptFile" accept="image/png,image/jpeg,image/webp,image/*" onchange="onReceiptPick(this)" />
+              <small class="hint">حوّل المبلغ أولاً، ثم أرفق لقطة واضحة للإيصال. يوصل للإدارة مباشرة عشان تتأكد من التحويل.</small>
+              <div class="receipt-preview" id="receiptPreview">
+                <img id="receiptImg" alt="معاينة الإيصال" />
+                <button type="button" onclick="clearReceipt()">إزالة</button>
+              </div>
+            </div>
             <div class="notice" id="noticeBox" style="display: none" role="alert">
               <h4>⚠️ تنبيه مهم قبل تأكيد الطلب</h4>
               <ul>
@@ -628,8 +642,8 @@
             </article>
             <article class="step">
               <div class="step-icon">03</div>
-              <h3>أرفق الإيصال</h3>
-              <p>أرسل إيصال التحويل مع صورة الطلب داخل التكت.</p>
+              <h3>إيصالك وصل الإدارة</h3>
+              <p>راح تتأكد الإدارة من التحويل وتقبل طلبك، وتوصلك رسالة خاصة بكل تحديث.</p>
             </article>
           </div>
           <div class="form-actions" style="max-width: 760px; margin-top: 24px">
@@ -1005,11 +1019,43 @@
         }
       }
 
+      let receiptData = null; // data URL بعد الضغط
+      function clearReceipt() {
+        receiptData = null;
+        const f = document.getElementById("receiptFile");
+        if (f) f.value = "";
+        const p = document.getElementById("receiptPreview");
+        if (p) p.style.display = "none";
+      }
+      function onReceiptPick(input) {
+        const file = input.files && input.files[0];
+        if (!file) return clearReceipt();
+        if (!/^image\//.test(file.type)) { clearReceipt(); return toast("لازم الإيصال يكون صورة"); }
+        if (file.size > 20 * 1024 * 1024) { clearReceipt(); return toast("الصورة كبيرة، اختر صورة أصغر"); }
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1600, k = Math.min(1, MAX / Math.max(img.width, img.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          const ctx = c.getContext("2d");
+          ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          receiptData = c.toDataURL("image/jpeg", 0.85);
+          document.getElementById("receiptImg").src = receiptData;
+          document.getElementById("receiptPreview").style.display = "flex";
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); clearReceipt(); toast("تعذر قراءة الصورة، جرّب صورة ثانية"); };
+        img.src = url;
+      }
+
       async function submitOrder() {
         if (!me) { go("checkout"); return toast("سجّل الدخول بحساب Discord أولاً"); }
         const n = document.getElementById("transferor").value.trim();
         if (!items().length) return toast("السلة فارغة");
         if (n.length < 2) return toast("اكتب اسم المحوّل");
+        if (!receiptData) return toast("أرفق إيصال التحويل أولاً");
         if (needsAck() && !document.getElementById("ackCheck").checked) return toast("اقرأ التنبيه ووافق عليه أولاً");
         const sl = document.getElementById("serverLink").value.trim();
         if (cart["boosts"] && !/^(https?:\/\/)?(www\.)?(discord\.gg|discord(app)?\.com\/invite)\/[\w-]+\/?$/i.test(sl))
@@ -1030,6 +1076,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               transferor: n,
+              receipt: receiptData,
               agreed: needsAck() ? document.getElementById("ackCheck").checked : false,
               serverLink: cart["boosts"] ? sl : "",
               nitroFor: cart["nitro"] ? nFor : "",
@@ -1048,6 +1095,7 @@
           document.getElementById("serverLink").value = "";
           document.getElementById("nitroUser").value = "";
           document.getElementById("ackCheck").checked = false;
+          clearReceipt();
           renderConfirmation(data);
           go("confirmation");
         } catch (e) {

@@ -1,6 +1,6 @@
 // بوت ديسكورد: يرسل إشعار الطلب الجديد ويدير أزرار القبول/التسليم/الرفض
 const {
-  Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
+  Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder,
 } = require("discord.js");
 const db = require("./db");
 
@@ -56,7 +56,7 @@ async function isMember(userId) {
 const money = (n) => `${n} ر.س`;
 
 const DM_TEXT = {
-  new: ["📥 استلمنا طلبك", "طلبك الآن **قيد المعالجة**. افتح تكت في السيرفر وأرفق إيصال التحويل عشان نراجعه."],
+  new: ["📥 استلمنا طلبك", "طلبك الآن **قيد المراجعة**. وصل إيصال التحويل للإدارة وراح نتأكد من التحويل ونكلمك."],
   accepted: ["✅ تم قبول طلبك", "راجعنا طلبك وتم **قبوله**، وجاري تجهيزه لك."],
   delivered: ["🎉 تم تسليم المنتج بنجاح", "تم **تسليم** طلبك. شكراً لثقتك بتوب ستور!"],
   rejected: ["❌ تم رفض طلبك", "تعذّر قبول طلبك. افتح تكت في السيرفر وتواصل مع الإدارة لمعرفة السبب."],
@@ -104,6 +104,7 @@ function buildEmbed(o) {
     )
     .setTimestamp(new Date(o.createdAt));
   if (o.customer) e.addFields({ name: "العميل", value: `<@${o.customer.id}> (${o.customer.name})`.slice(0, 200) });
+  if (o.receipt) e.addFields({ name: "الإيصال", value: "📎 مرفق أسفل الرسالة — تأكد من التحويل قبل القبول" }).setImage(`attachment://${o.receipt.name}`);
   if (o.serverLink) e.addFields({ name: "رابط السيرفر", value: o.serverLink.slice(0, 200) });
   if (o.nitroUser) e.addFields({ name: "مستلم النيترو", value: (o.nitroId ? `<@${o.nitroId}>\n` : "") + o.nitroUser.slice(0, 100) });
   const last = o.history[o.history.length - 1];
@@ -121,19 +122,22 @@ function buildButtons(o) {
   return [row];
 }
 
-async function notifyNewOrder(order) {
-  if (!ready) return;
+// يرسل إشعار الطلب مع صورة الإيصال لروم الإدارة. يرجع { channelId, messageId } أو null لو فشل
+async function notifyNewOrder(order, receipt) {
+  if (!ready) return null;
   try {
     const channel = await client.channels.fetch(NOTIFY_CHANNEL_ID);
     const msg = await channel.send({
       content: `<@&${STAFF_ROLE_ID}> 🔔 وصل طلب جديد`,
       embeds: [buildEmbed(order)],
       components: buildButtons(order),
+      files: receipt ? [new AttachmentBuilder(receipt.buf, { name: receipt.name })] : [],
       allowedMentions: { roles: [STAFF_ROLE_ID] },
     });
-    db.setNotifyRef(order.id, { channelId: channel.id, messageId: msg.id });
+    return { channelId: channel.id, messageId: msg.id };
   } catch (e) {
     console.error("[bot] فشل إرسال إشعار الطلب:", e.message);
+    return null;
   }
 }
 

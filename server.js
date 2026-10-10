@@ -16,6 +16,7 @@ const SESSION_MS = 12 * 60 * 60 * 1000;
 const app = express();
 app.disable("x-powered-by");
 app.use("/api/admin/products", express.json({ limit: "600kb" })); // صور المنتجات (تنضغط في المتصفح قبل الرفع)
+app.use("/api/orders", express.json({ limit: "3mb" })); // الطلب + صورة الإيصال (تنضغط في المتصفح قبل الرفع)
 app.use(express.json({ limit: "20kb" }));
 app.use((req, res, next) => {
   res.set({ "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "same-origin" });
@@ -73,6 +74,19 @@ const publicOrder = (o) => ({
   customerName: o.customer ? o.customer.name : "",
 });
 const adminOrder = (o) => ({ ...publicOrder(o), history: o.history, customer: o.customer || null, lastDm: o.lastDm || null });
+// الإيصال: صورة (png/jpeg/webp) كـ data URL، نتحقق من النوع الحقيقي من أول بايتات الملف
+const RECEIPT_MAX = 2.5 * 1024 * 1024;
+function parseReceipt(v) {
+  const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(v || ""));
+  if (!m) return null;
+  const buf = Buffer.from(m[2], "base64");
+  if (buf.length < 1000 || buf.length > RECEIPT_MAX) return null;
+  const isPng = buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  const isJpg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  const isWebp = buf.slice(0, 4).toString() === "RIFF" && buf.slice(8, 12).toString() === "WEBP";
+  const ext = isPng ? "png" : isJpg ? "jpg" : isWebp ? "webp" : null;
+  return ext ? { buf, ext } : null;
+}
 const CUSTOMER_MS = 7 * 24 * 60 * 60 * 1000;
 const readCustomer = (req) => readToken(cookies(req).customer);
 
@@ -93,6 +107,10 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
   const transferor = String(b.transferor || "").trim();
   if (transferor.length < 2 || transferor.length > 60) return res.status(400).json({ error: "اكتب اسم المحوّل" });
   if (!Array.isArray(b.items) || !b.items.length || b.items.length > 20) return res.status(400).json({ error: "السلة فارغة" });
+
+  const receipt = parseReceipt(b.receipt);
+  if (!receipt) return res.status(400).json({ error: "لازم ترفق صورة إيصال التحويل (صورة واضحة، أقل من 2.5 ميجا)" });
+  if (!bot.botEnabled()) return res.status(503).json({ error: "الإرسال للإدارة غير متاح حالياً، حاول بعد شوي" });
 
   const merged = new Map();
   for (const it of b.items) {
@@ -134,16 +152,22 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
   }
 
   const now = new Date().toISOString();
-  const order = db.createOrder({
-    id: newOrderId(), createdAt: now, status: "new", transferor, serverLink, nitroUser, nitroId, items,
+  const id = newOrderId();
+  const order = {
+    id, createdAt: now, status: "new", transferor, serverLink, nitroUser, nitroId, items,
     total: items.reduce((s, i) => s + i.price * i.quantity, 0),
     history: [{ status: "new", by: "customer", at: now }],
     agreedAt: needsAck ? now : null,
     customer: { id: cust.uid, name: cust.name, avatar: cust.avatar || null },
+    receipt: { name: `receipt-${id}.${receipt.ext}` },
     notify: null,
-  });
-  bot.notifyNewOrder(order); // ما ننتظره: لو فشل البوت الطلب يبقى محفوظ
-  bot.notifyCustomer(order); // رسالة «قيد المعالجة» في الخاص
+  };
+  // نرسل للإدارة أولاً: لو فشل الإرسال ما نسجّل الطلب، والعميل يعيد المحاولة
+  const ref = await bot.notifyNewOrder(order, { buf: receipt.buf, name: order.receipt.name });
+  if (!ref) return res.status(502).json({ error: "تعذر إرسال الإيصال للإدارة، حاول مرة ثانية" });
+  order.notify = ref;
+  db.createOrder(order);
+  bot.notifyCustomer(order); // رسالة «قيد المراجعة» في الخاص
   console.log("[server] طلب جديد:", order.id, "| الإشعار مفعّل:", bot.botEnabled());
   res.status(201).json(publicOrder(order));
 });
