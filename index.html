@@ -226,6 +226,11 @@
         color: white; border-radius: 12px; padding: 0 14px; outline: 0;
       }
       .field input:focus { border-color: var(--blue2); box-shadow: 0 0 0 3px #b8947522; }
+      .field input[type="file"] { height: auto; padding: 11px 14px; cursor: pointer; }
+      .receipt-preview { display: none; margin-top: 10px; align-items: center; gap: 12px; }
+      .receipt-preview img { width: 84px; height: 84px; object-fit: cover; border-radius: 12px; border: 1px solid #ffffff1c; }
+      .receipt-preview button { border: 1px solid #ffffff1c; background: transparent; color: #ffffffaa; border-radius: 10px; padding: 8px 12px; font: inherit; cursor: pointer; }
+      .field .hint { display: block; margin-top: 7px; color: #ffffff88; line-height: 1.8; font-size: 13px; }
       .seg { display: flex; gap: 6px; padding: 5px; border: 1px solid #ffffff1c; background: #ffffff08; border-radius: 14px; }
       .seg button {
         flex: 1; height: 40px; border: 0; border-radius: 10px; background: transparent;
@@ -367,6 +372,28 @@
       .p-step.now i { border-color: var(--blue2); box-shadow: 0 0 0 4px #c9a07a22; color: var(--ice); }
       .p-bad { color: var(--red); border: 1px solid #d0645f66; border-radius: 14px; padding: 12px 14px; margin: 6px 0 22px; background: #d0645f12; font-weight: 800; }
       .toast.big { max-width: min(430px, calc(100% - 44px)); font-weight: 700; line-height: 1.7; border-color: var(--green); }
+      /* Account menu */
+      #navUser { display: flex; align-items: center; gap: 8px; }
+      .acct-menu { position: relative; }
+      .avatar-btn { width: 42px; height: 42px; padding: 0; border-radius: 50%; border: 2px solid #ddc4ae66; background: #ffffff0d; overflow: hidden; display: grid; place-items: center; cursor: pointer; color: var(--text); font-weight: 900; }
+      .avatar-btn:hover { border-color: #ddc4aeaa; }
+      .avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .acct-panel { position: absolute; top: calc(100% + 10px); left: 0; width: 320px; max-width: calc(100vw - 32px); z-index: 60; background: #15110d; border: 1px solid #ffffff22; border-radius: 18px; padding: 16px; box-shadow: 0 20px 50px #000a; text-align: right; display: none; }
+      .acct-panel.open { display: block; }
+      .ap-head { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #ffffff18; }
+      .ap-head img, .ap-head .ph { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #ffffff10; display: grid; place-items: center; }
+      .ap-head b { display: block; font-size: 16px; }
+      .ap-head small { color: #ffffff80; direction: ltr; display: block; text-align: right; }
+      .ap-rows { margin: 12px 0; display: grid; gap: 8px; font-size: 13px; }
+      .ap-rows div { display: flex; justify-content: space-between; gap: 10px; }
+      .ap-rows span:first-child { color: #ffffff70; }
+      .ap-rows span:last-child { direction: ltr; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .ap-orders { border-top: 1px solid #ffffff18; padding-top: 10px; }
+      .ap-orders h4 { margin: 0 0 8px; font-size: 13px; color: #ffffffb0; }
+      .ap-orders .my-order { padding: 8px 10px; margin-bottom: 6px; font-size: 12px; }
+      .ap-actions { display: grid; gap: 8px; margin-top: 12px; }
+      .nav-actions .acct-panel .btn, .ap-actions .btn { display: block; text-align: center; }
+      @media (max-width: 470px) { .acct-panel { position: fixed; top: 70px; left: 16px; right: 16px; width: auto; max-width: none; } }
       /* Customer account */
       .acct { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
       .acct img { width: 44px; height: 44px; border-radius: 50%; }
@@ -421,7 +448,7 @@
           <button data-nav="home" class="active" onclick="go('home')">الرئيسية</button>
           <button data-nav="products" onclick="go('products')">المنتجات</button>
           <button data-nav="how" onclick="go('how')">كيف تطلب؟</button>
-          <button data-nav="tracking" onclick="go('tracking')">طلبي</button>
+          <button data-nav="tracking" onclick="go('tracking')">تتبع طلبي</button>
         </nav>
         <div class="nav-actions">
           <span id="navUser"></span>
@@ -473,12 +500,12 @@
             <article class="step reveal delay1">
               <div class="step-icon">▣</div>
               <h3>أكمل طلبك</h3>
-              <p>احصل على رقم طلب خاص فيك، ثم افتح تكت في Discord.</p>
+              <p>أرفق إيصال التحويل واحصل على رقم طلب خاص فيك.</p>
             </article>
             <article class="step reveal delay2">
               <div class="step-icon">✓</div>
               <h3>استلم في Discord</h3>
-              <p>بعد مراجعة الإيصال في التكت، يصلك طلبك.</p>
+              <p>بعد مراجعة الإدارة للإيصال، يصلك طلبك.</p>
             </article>
           </div>
         </div>
@@ -531,8 +558,8 @@
             </article>
             <article class="step reveal delay2">
               <div class="step-icon">03</div>
-              <h3>افتح تكت وأرفق الإيصال</h3>
-              <p>صوّر صفحة الطلب، افتح تكت في Discord، وأرفق الإيصال مع الصورة.</p>
+              <h3>أرفق الإيصال وأكّد</h3>
+              <p>حوّل المبلغ، أرفق إيصال التحويل، وأكّد الطلب. الإيصال يوصل للإدارة مباشرة.</p>
             </article>
           </div>
         </div>
@@ -589,6 +616,15 @@
                 </small>
               </div>
             </div>
+            <div class="field" id="receiptField">
+              <label>إيصال التحويل <span style="color: var(--ice)">(إجباري)</span></label>
+              <input type="file" id="receiptFile" accept="image/png,image/jpeg,image/webp,image/*" onchange="onReceiptPick(this)" />
+              <small class="hint">حوّل المبلغ أولاً، ثم أرفق لقطة واضحة للإيصال. يوصل للإدارة مباشرة عشان تتأكد من التحويل.</small>
+              <div class="receipt-preview" id="receiptPreview">
+                <img id="receiptImg" alt="معاينة الإيصال" />
+                <button type="button" onclick="clearReceipt()">إزالة</button>
+              </div>
+            </div>
             <div class="notice" id="noticeBox" style="display: none" role="alert">
               <h4>⚠️ تنبيه مهم قبل تأكيد الطلب</h4>
               <ul>
@@ -628,8 +664,8 @@
             </article>
             <article class="step">
               <div class="step-icon">03</div>
-              <h3>أرفق الإيصال</h3>
-              <p>أرسل إيصال التحويل مع صورة الطلب داخل التكت.</p>
+              <h3>إيصالك وصل الإدارة</h3>
+              <p>راح تتأكد الإدارة من التحويل وتقبل طلبك، وتوصلك رسالة خاصة بكل تحديث.</p>
             </article>
           </div>
           <div class="form-actions" style="max-width: 760px; margin-top: 24px">
@@ -641,7 +677,7 @@
       <section id="tracking" class="page">
         <div class="inner-page">
           <small class="mono" style="color: var(--blue2)">06 / TRACKING</small>
-          <h1 class="page-title" style="margin-top: 10px">طلبي</h1>
+          <h1 class="page-title" style="margin-top: 10px">تتبع طلبي</h1>
           <p class="page-subtitle">أدخل رقم طلبك لعرض تفاصيله وحالته الحالية.</p>
           <div class="surface track-box">
             <div class="field" style="margin-top: 0">
@@ -701,24 +737,82 @@
         }
         renderNavUser();
       }
+      const snowflakeDate = (id) => {
+        try { return new Date(Number((BigInt(id) >> 22n) + 1420070400000n)).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" }); } catch (e) { return ""; }
+      };
+      function closeAcctMenu() { const p = document.getElementById("acctPanel"); if (p) p.classList.remove("open"); }
+      document.addEventListener("click", (e) => { if (!e.target.closest(".acct-menu")) closeAcctMenu(); });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAcctMenu(); });
       function renderNavUser() {
         const n = document.getElementById("navUser");
         n.textContent = "";
-        if (me) {
-          const b = el("button", "btn", "👤 " + me.name);
-          b.onclick = () => go("tracking");
-          if (me.staff) {
-            // يظهر فقط لأصحاب رتبة الإدارة (أو المالك)، وغيرهم ما يشوفونه إطلاقاً
-            const adm = el("a", "btn", "لوحة الإدارة");
-            adm.href = "/admin";
-            n.append(adm);
-          }
-          n.append(b);
-        } else {
+        if (!me) {
           const a = el("a", "btn", "دخول");
           a.href = "/auth/customer";
           n.append(a);
+          return;
         }
+        if (me.staff) {
+          // يظهر فقط لأصحاب رتبة الإدارة (أو المالك)، وغيرهم ما يشوفونه إطلاقاً
+          const adm = el("a", "btn", "لوحة الإدارة");
+          adm.href = "/admin";
+          n.append(adm);
+        }
+        const wrap = el("div", "acct-menu");
+        const btn = el("button", "avatar-btn");
+        btn.type = "button";
+        btn.title = "حسابي";
+        const av = avatarUrl(me);
+        if (av) { const i = el("img"); i.src = av; i.alt = me.name; btn.append(i); } else btn.textContent = (me.name || "?").charAt(0).toUpperCase();
+        const panel = el("div", "acct-panel");
+        panel.id = "acctPanel";
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          panel.classList.toggle("open");
+          if (panel.classList.contains("open")) fillAcctPanel(panel);
+        };
+        wrap.append(btn, panel);
+        n.append(wrap);
+      }
+      async function fillAcctPanel(panel) {
+        panel.textContent = "";
+        const head = el("div", "ap-head");
+        const av = avatarUrl(me);
+        if (av) { const i = el("img"); i.src = av; i.alt = ""; head.append(i); } else head.append(el("div", "ph", (me.name || "?").charAt(0)));
+        const hi = el("div");
+        hi.append(el("b", "", me.name));
+        if (me.username) hi.append(el("small", "", "@" + me.username));
+        head.append(hi);
+        const rows = el("div", "ap-rows");
+        const row = (k, v) => { const d = el("div"); d.append(el("span", "", k), el("span", "", v)); rows.append(d); };
+        row("الإيميل", me.email || "غير متوفر (سجّل خروج ثم ادخل من جديد)");
+        row("الآيدي", me.id);
+        const created = snowflakeDate(me.id);
+        if (created) row("تاريخ إنشاء الحساب", created);
+        row("سيرفر المتجر", me.inGuild === false ? "غير منضم" : "منضم");
+        const ord = el("div", "ap-orders");
+        panel.append(head, rows, ord);
+        const actions = el("div", "ap-actions");
+        const t = el("button", "btn primary", "تتبع طلبي");
+        t.onclick = () => { closeAcctMenu(); go("tracking"); };
+        const out = el("a", "btn", "تسجيل الخروج");
+        out.href = "/auth/customer/logout";
+        actions.append(t, out);
+        panel.append(actions);
+        try {
+          const r = await fetch("/api/my/orders");
+          if (!r.ok) return;
+          const list = await r.json();
+          row("عدد الطلبات", String(list.length));
+          if (!list.length) return;
+          ord.append(el("h4", "", "آخر طلباتي"));
+          list.slice(-3).reverse().forEach((o) => {
+            const b = el("button", "my-order");
+            b.append(el("span", "mo-id", o.id), el("span", "mo-items", o.items.map((i) => i.name + " × " + i.quantity).join("، ")), el("span", "mo-st st-" + o.status, STATUS_LABEL[o.status] || o.status));
+            b.onclick = () => { closeAcctMenu(); renderConfirmation(o); go("confirmation"); };
+            ord.append(b);
+          });
+        } catch (e) {}
       }
       function renderCheckout() {
         const a = document.getElementById("checkoutAuth"),
@@ -730,7 +824,7 @@
           login.href = "/auth/customer";
           box.append(
             el("h3", "", "سجّل الدخول لإكمال الطلب"),
-            el("p", "", "نربط طلبك بحسابك في Discord عشان نرسل لك تحديثات الطلب (القبول والتسليم) في الرسائل الخاصة، وتتابع طلباتك من صفحة «طلبي»."),
+            el("p", "", "نربط طلبك بحسابك في Discord عشان نرسل لك تحديثات الطلب (القبول والتسليم) في الرسائل الخاصة، وتتابع طلباتك من صفحة «تتبع طلبي»."),
             login,
           );
           a.append(box);
@@ -875,7 +969,7 @@
           .map((p, i) => renderProductCard(p, i, true))
           .join("");
         document.getElementById("accountsGrid").innerHTML = accountProducts
-          .map((p, i) => renderProductCard(p, i, false))
+          .map((p, i) => renderProductCard(p, i, true))
           .join("");
         const dots = document.getElementById("productDots");
         if (dots) {
@@ -1005,11 +1099,43 @@
         }
       }
 
+      let receiptData = null; // data URL بعد الضغط
+      function clearReceipt() {
+        receiptData = null;
+        const f = document.getElementById("receiptFile");
+        if (f) f.value = "";
+        const p = document.getElementById("receiptPreview");
+        if (p) p.style.display = "none";
+      }
+      function onReceiptPick(input) {
+        const file = input.files && input.files[0];
+        if (!file) return clearReceipt();
+        if (!/^image\//.test(file.type)) { clearReceipt(); return toast("لازم الإيصال يكون صورة"); }
+        if (file.size > 20 * 1024 * 1024) { clearReceipt(); return toast("الصورة كبيرة، اختر صورة أصغر"); }
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1600, k = Math.min(1, MAX / Math.max(img.width, img.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          const ctx = c.getContext("2d");
+          ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          receiptData = c.toDataURL("image/jpeg", 0.85);
+          document.getElementById("receiptImg").src = receiptData;
+          document.getElementById("receiptPreview").style.display = "flex";
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); clearReceipt(); toast("تعذر قراءة الصورة، جرّب صورة ثانية"); };
+        img.src = url;
+      }
+
       async function submitOrder() {
         if (!me) { go("checkout"); return toast("سجّل الدخول بحساب Discord أولاً"); }
         const n = document.getElementById("transferor").value.trim();
         if (!items().length) return toast("السلة فارغة");
         if (n.length < 2) return toast("اكتب اسم المحوّل");
+        if (!receiptData) return toast("أرفق إيصال التحويل أولاً");
         if (needsAck() && !document.getElementById("ackCheck").checked) return toast("اقرأ التنبيه ووافق عليه أولاً");
         const sl = document.getElementById("serverLink").value.trim();
         if (cart["boosts"] && !/^(https?:\/\/)?(www\.)?(discord\.gg|discord(app)?\.com\/invite)\/[\w-]+\/?$/i.test(sl))
@@ -1030,6 +1156,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               transferor: n,
+              receipt: receiptData,
               agreed: needsAck() ? document.getElementById("ackCheck").checked : false,
               serverLink: cart["boosts"] ? sl : "",
               nitroFor: cart["nitro"] ? nFor : "",
@@ -1048,6 +1175,7 @@
           document.getElementById("serverLink").value = "";
           document.getElementById("nitroUser").value = "";
           document.getElementById("ackCheck").checked = false;
+          clearReceipt();
           renderConfirmation(data);
           go("confirmation");
         } catch (e) {
