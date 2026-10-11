@@ -63,6 +63,15 @@ const DM_TEXT = {
   rejected: ["❌ تم رفض طلبك", "تعذّر قبول طلبك. افتح تكت في السيرفر وتواصل مع الإدارة لمعرفة السبب."],
 };
 
+// تنبيه يلحق رسالة تسليم النيترو تلقائياً
+const NITRO_NOTICE = [
+  "**تنبيه قبل أخذ النيترو لحفظ حقوقك:**",
+  "",
+  "**1- يجب تشغيل تصويرك أثناء أخذك للنيترو.**",
+  "**2- بعد ما تدخل النيترو توجه للإعدادات ثم (Reveal) لإظهار إيميلك.**",
+  "**3- احفظ التصوير، وفي حال انسحب منك النيترو توجه للمتجر وافتح تكت استفسار وأرفق تصويرك وانتظر التعويض ❤️**",
+].join("\n");
+
 const GIFT_DEFAULT = "🎁 لقد وصلت لك هدية من توب ستور!\nاستلمها من الرابط:\n";
 
 // نجيب آيدي مستلم النيترو: من الآيدي المحفوظ، أو نبحث باليوزر داخل السيرفر
@@ -109,7 +118,7 @@ async function notifyCustomer(order, adminMessage) {
       try {
         const u = await client.users.fetch(rid);
         // النص عريض، الرابط واضح، وآخر شي منشن للمستلم
-        await u.send({ content: `${boldExceptLinks(extra)}\n<@${rid}>`.slice(0, 2000), allowedMentions: { users: [String(rid)] } });
+        await u.send({ content: `${boldExceptLinks(extra)}\n\n${NITRO_NOTICE}\n<@${rid}>`.slice(0, 2000), allowedMentions: { users: [String(rid)] } });
       } catch (e) {
         giftOk = false; // الخاص مغلق عند المستلم
         console.warn(`[bot] تعذر إرسال الهدية للمستلم (${rid}):`, e.message);
@@ -252,7 +261,7 @@ function startBot() {
             .setStyle(TextInputStyle.Paragraph)
             .setValue(GIFT_DEFAULT)
             .setRequired(false)
-            .setMaxLength(1500),
+            .setMaxLength(1200),
         ),
       );
       return i.showModal(modal);
