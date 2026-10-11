@@ -268,9 +268,17 @@ async function loadOrders() {
   try { orders = await api("/api/admin/orders"); renderStats(); renderOrders(); } catch (e) { fail(e); }
 }
 async function setStatus(id, status, btn) {
+  const cur = orders.find((o) => o.id === id);
+  let message = "";
+  if (status === "delivered" && cur && cur.items.some((i) => i.id === "nitro")) {
+    // تسليم نيترو: رسالة (رابط النيترو) ترسل للعميل في الخاص. Cancel = إلغاء التسليم
+    const m = prompt("اكتب رسالة للعميل (مثلاً رابط النيترو) وتوصله في الخاص.\nاتركها فاضية لو ما تبي ترسل شي:", "");
+    if (m === null) return;
+    message = m.trim();
+  }
   btn.disabled = true;
   try {
-    const u = await api("/api/admin/orders/" + encodeURIComponent(id), { method:"PATCH", body:{ status } });
+    const u = await api("/api/admin/orders/" + encodeURIComponent(id), { method:"PATCH", body:{ status, message } });
     orders = orders.map((o) => (o.id === id ? u : o));
     renderStats(); renderOrders(); toast("تم تحديث الحالة: " + LABEL[status]);
   } catch (e) { fail(e); btn.disabled = false; }

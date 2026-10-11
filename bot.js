@@ -1,6 +1,7 @@
 // بوت ديسكورد: يرسل إشعار الطلب الجديد ويدير أزرار القبول/التسليم/الرفض
 const {
   Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder,
+  ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require("discord.js");
 const db = require("./db");
 
@@ -63,9 +64,11 @@ const DM_TEXT = {
 };
 
 // رسالة خاصة للعميل عند كل تغيير حالة. ترجع true/false، أو null لو ما في عميل/البوت متوقف
-async function notifyCustomer(order) {
+async function notifyCustomer(order, adminMessage) {
   if (!ready || !order.customer || !DM_TEXT[order.status]) return null;
-  const [title, desc] = DM_TEXT[order.status];
+  const [title, baseDesc] = DM_TEXT[order.status];
+  const extra = adminMessage ? String(adminMessage).trim().slice(0, 1500) : "";
+  const desc = extra ? `${baseDesc}\n\n📩 **رسالة من الإدارة:**\n${extra}` : baseDesc;
   let ok = false;
   try {
     const user = await client.users.fetch(order.customer.id);
@@ -160,15 +163,52 @@ function startBot() {
   }
   client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+  const hasNitro = (o) => o.items.some((x) => x.id === "nitro");
+
   client.on("interactionCreate", async (i) => {
+    // نافذة رسالة التسليم (للنيترو): نكتب رابط النيترو وترسل للعميل في الخاص
+    if (i.isModalSubmit() && i.customId.startsWith("deliver:")) {
+      const id = i.customId.split(":")[1];
+      if (!(await isStaff(i.user.id))) return i.reply({ content: "ما عندك صلاحية لهذا الإجراء.", ephemeral: true });
+      const msg = i.fields.getTextInputValue("msg");
+      const prev = (db.getOrder(id) || {}).status;
+      const order = db.setStatus(id, "delivered", `${i.user.username} (Discord)`);
+      if (!order) return i.reply({ content: "الطلب غير موجود.", ephemeral: true });
+      if (i.isFromMessage()) await i.update({ embeds: [buildEmbed(order)], components: buildButtons(order) });
+      else await i.reply({ content: "تم التسليم.", ephemeral: true });
+      if (prev !== order.status) {
+        const sent = await notifyCustomer(order, msg);
+        if (sent === false) {
+          i.followUp({ content: "⚠️ تم تحديث الحالة، لكن ما قدرت أرسل رسالة خاصة للعميل (الخاص مغلق أو ما هو داخل السيرفر). أرسل له الرسالة في التكت.", ephemeral: true }).catch(() => {});
+        }
+      }
+      return;
+    }
     if (!i.isButton() || !i.customId.startsWith("order:")) return;
     const [, id, action] = i.customId.split(":");
     if (!(await isStaff(i.user.id))) {
       return i.reply({ content: "ما عندك صلاحية لهذا الزر.", ephemeral: true });
     }
-    const prev = (db.getOrder(id) || {}).status;
+    const cur = db.getOrder(id);
+    if (!cur) return i.reply({ content: "الطلب غير موجود.", ephemeral: true });
+    // تسليم طلب فيه نيترو: نفتح نافذة تكتب فيها رسالة/رابط النيترو قبل ما تتأكد الحالة
+    if (action === "delivered" && cur.status !== "delivered" && hasNitro(cur)) {
+      const modal = new ModalBuilder().setCustomId(`deliver:${id}`).setTitle("تسليم النيترو");
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId("msg")
+            .setLabel("رسالة للعميل (رابط النيترو)")
+            .setStyle(TextInputStyle.Paragraph)
+            .setPlaceholder("الصق رابط النيترو أو أي ملاحظة، وتوصله في الخاص")
+            .setRequired(false)
+            .setMaxLength(1500),
+        ),
+      );
+      return i.showModal(modal);
+    }
+    const prev = cur.status;
     const order = db.setStatus(id, action, `${i.user.username} (Discord)`);
-    if (!order) return i.reply({ content: "الطلب غير موجود.", ephemeral: true });
     await i.update({ embeds: [buildEmbed(order)], components: buildButtons(order) });
     if (prev !== order.status) {
       const sent = await notifyCustomer(order);

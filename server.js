@@ -277,7 +277,8 @@ app.patch("/api/admin/orders/:id", requireStaff, async (req, res) => {
   const o = db.setStatus(String(req.params.id), status, `${req.staff.name} (الموقع)`);
   if (!o) return res.status(404).json({ error: "الطلب غير موجود" });
   await bot.syncOrderMessage(o);
-  if (prev !== o.status) await bot.notifyCustomer(o); // رسالة خاصة للعميل
+  const note = typeof req.body.message === "string" ? req.body.message.slice(0, 1500) : "";
+  if (prev !== o.status) await bot.notifyCustomer(o, status === "delivered" ? note : ""); // رسالة خاصة للعميل
   res.json(adminOrder(o));
 });
 
