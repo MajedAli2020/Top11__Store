@@ -63,12 +63,48 @@ const DM_TEXT = {
   rejected: ["❌ تم رفض طلبك", "تعذّر قبول طلبك. افتح تكت في السيرفر وتواصل مع الإدارة لمعرفة السبب."],
 };
 
+const GIFT_DEFAULT = "🎁 لقد وصلت لك هدية من توب ستور!\nاستلمها من الرابط:\n";
+
+// نجيب آيدي مستلم النيترو: من الآيدي المحفوظ، أو نبحث باليوزر داخل السيرفر
+async function resolveRecipientId(order) {
+  if (order.nitroId) return order.nitroId;
+  const m = /^@(.+)$/.exec(order.nitroUser || "");
+  if (!m || !ready) return null;
+  try {
+    const guild = await client.guilds.fetch(GUILD_ID);
+    const found = await guild.members.search({ query: m[1].toLowerCase().slice(0, 32), limit: 10 });
+    const hit = found.find((x) => x.user.username.toLowerCase() === m[1].toLowerCase());
+    return hit ? hit.user.id : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // رسالة خاصة للعميل عند كل تغيير حالة. ترجع true/false، أو null لو ما في عميل/البوت متوقف
+// adminMessage (عند تسليم النيترو): نرسلها كما هي (نص عادي، الرابط واضح بدون أي تنسيق) لمستلم النيترو.
+// لو المستلم شخص ثاني غير العميل، العميل يوصله إشعار التسليم العادي بدون الرابط.
 async function notifyCustomer(order, adminMessage) {
   if (!ready || !order.customer || !DM_TEXT[order.status]) return null;
+  const extra = adminMessage ? String(adminMessage).trim().slice(0, 1900) : "";
+  let giftOk = true;
+  let customerMsg = extra;
+  if (extra && order.status === "delivered") {
+    const rid = await resolveRecipientId(order);
+    if (rid && String(rid) !== String(order.customer.id)) {
+      try {
+        const u = await client.users.fetch(rid);
+        await u.send({ content: extra, allowedMentions: { parse: [] } });
+        customerMsg = ""; // وصلت للمستلم، ما نرسل الرابط للعميل
+      } catch (e) {
+        giftOk = false; // الخاص مغلق عند المستلم: نرسلها للعميل عشان توصله
+        console.warn(`[bot] تعذر إرسال الهدية للمستلم (${rid}):`, e.message);
+      }
+    } else if (!rid && String(order.nitroUser || "").startsWith("@")) {
+      giftOk = false; // ما لقينا اليوزر في السيرفر
+    }
+  }
   const [title, baseDesc] = DM_TEXT[order.status];
-  const extra = adminMessage ? String(adminMessage).trim().slice(0, 1500) : "";
-  const desc = extra ? `${baseDesc}\n\n📩 **رسالة من الإدارة:**\n${extra}` : baseDesc;
+  const desc = customerMsg ? `${baseDesc}\n\n📩 **رسالة من الإدارة:**\n${customerMsg}` : baseDesc;
   let ok = false;
   try {
     const user = await client.users.fetch(order.customer.id);
@@ -91,6 +127,7 @@ async function notifyCustomer(order, adminMessage) {
   } catch (e) {
     console.warn(`[bot] تعذر إرسال رسالة خاصة للعميل (${order.customer.name}):`, e.message);
   }
+  ok = ok && giftOk;
   db.setLastDm(order.id, { status: order.status, ok, at: new Date().toISOString() });
   return ok;
 }
@@ -179,7 +216,7 @@ function startBot() {
       if (prev !== order.status) {
         const sent = await notifyCustomer(order, msg);
         if (sent === false) {
-          i.followUp({ content: "⚠️ تم تحديث الحالة، لكن ما قدرت أرسل رسالة خاصة للعميل (الخاص مغلق أو ما هو داخل السيرفر). أرسل له الرسالة في التكت.", ephemeral: true }).catch(() => {});
+          i.followUp({ content: "⚠️ تم تحديث الحالة، لكن ما قدرت أرسل رسالة خاصة للعميل (الخاص مغلق أو ما هو داخل السيرفر). تأكد من الخاص عند مستلم النيترو (أو اليوزر داخل السيرفر) وأرسل له الرابط في التكت.", ephemeral: true }).catch(() => {});
         }
       }
       return;
@@ -198,9 +235,9 @@ function startBot() {
         new ActionRowBuilder().addComponents(
           new TextInputBuilder()
             .setCustomId("msg")
-            .setLabel("رسالة للعميل (رابط النيترو)")
+            .setLabel("رسالة لمستلم النيترو (الرابط في آخرها)")
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("الصق رابط النيترو أو أي ملاحظة، وتوصله في الخاص")
+            .setValue(GIFT_DEFAULT)
             .setRequired(false)
             .setMaxLength(1500),
         ),
@@ -233,4 +270,4 @@ function startBot() {
   });
 }
 
-module.exports = { notifyCustomer, isMember, startBot, notifyNewOrder, syncOrderMessage, isStaff, isOwner, botEnabled };
+module.exports = { GIFT_DEFAULT, notifyCustomer, isMember, startBot, notifyNewOrder, syncOrderMessage, isStaff, isOwner, botEnabled };
