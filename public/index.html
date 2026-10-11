@@ -373,6 +373,23 @@
       .p-step.now i { border-color: var(--blue2); box-shadow: 0 0 0 4px #c9a07a22; color: var(--ice); }
       .p-bad { color: var(--red); border: 1px solid #d0645f66; border-radius: 14px; padding: 12px 14px; margin: 6px 0 22px; background: #d0645f12; font-weight: 800; }
       .toast.big { max-width: min(430px, calc(100% - 44px)); font-weight: 700; line-height: 1.7; border-color: var(--green); }
+      /* Products dropdown + category tabs */
+      .nav-dd { position: relative; display: flex; }
+      .nav-dd > button { flex: 1; }
+      .dd-menu { position: absolute; top: calc(100% + 12px); right: 0; min-width: 230px; z-index: 70; display: none; background: #15110d; border: 1px solid #ffffff22; border-radius: 16px; padding: 8px; box-shadow: 0 20px 50px #000a; }
+      .nav-dd.open .dd-menu { display: block; }
+      .navlinks .dd-menu button { display: block; width: 100%; text-align: right; padding: 11px 14px; border-radius: 10px; color: #ffffffcc; font-size: 14px; background: none; }
+      .navlinks .dd-menu button:hover { background: #ffffff10; color: white; }
+      .navlinks .dd-menu button small { display: block; color: #ffffff66; font-weight: 500; font-size: 11px; margin-top: 2px; }
+      @media (max-width: 850px) { .nav-dd { flex: 1; } .dd-menu { top: auto; bottom: calc(100% + 14px); right: 0; left: 0; } }
+      .cat-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 6px 0 26px; }
+      .cat-tab { text-align: right; color: var(--text); border: 1px solid #ffffff18; background: #ffffff06; border-radius: 16px; padding: 14px 16px; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+      .cat-tab:hover { background: #ffffff0d; border-color: #ddc4ae66; transform: translateY(-2px); }
+      .cat-tab b { display: block; font-size: 15px; }
+      .cat-tab small { display: block; color: #ffffff70; font-size: 12px; margin-top: 4px; }
+      .cat-tab.on { border-color: #ddc4aeaa; background: linear-gradient(135deg, #9d775530, #c7a98e18); box-shadow: 0 8px 24px #9d775533; }
+      .cat-empty { text-align: center; color: #ffffff80; border: 1px dashed #ffffff22; border-radius: 16px; padding: 46px 16px; }
+      @media (max-width: 850px) { .cat-tabs { grid-template-columns: repeat(2, 1fr); } }
       /* Account menu */
       #navUser { display: flex !important; align-items: center; gap: 8px; }
       #navUser > a.btn { display: inline-flex; align-items: center; height: 42px; padding-top: 0; padding-bottom: 0; line-height: 1; }
@@ -448,7 +465,10 @@
         </a>
         <nav class="navlinks">
           <button data-nav="home" class="active" onclick="go('home')">الرئيسية</button>
-          <button data-nav="products" onclick="go('products')">المنتجات</button>
+          <div class="nav-dd" id="navDd">
+            <button data-nav="products" onclick="toggleDd(event)">المنتجات ▾</button>
+            <div class="dd-menu" id="ddMenu"></div>
+          </div>
           <button data-nav="how" onclick="go('how')">كيف تطلب؟</button>
           <button data-nav="tracking" onclick="go('tracking')">تتبع طلبي</button>
         </nav>
@@ -517,29 +537,13 @@
           <div class="heading">
             <div>
               <small class="mono">02 / CATALOG</small>
-              <h1 class="page-title">اختياراتنا لك</h1>
-              <p class="page-subtitle">منتجات رقمية مختارة لتجربة Discord أفضل.</p>
+              <h1 class="page-title">المنتجات</h1>
+              <p class="page-subtitle">اختر القسم اللي يناسبك.</p>
             </div>
-            <span class="muted" id="productsCount">3 منتجات متاحة</span>
+            <span class="muted" id="productsCount"></span>
           </div>
-          <div class="products-intro">
-            <p><strong>منتجات مختارة بعناية</strong> — أضف منتجاتك للسلة وراجع طلبك قبل الإتمام.</p>
-            <span class="muted mono">SECURE CART / 2026</span>
-          </div>
+          <div id="catTabs" class="cat-tabs"></div>
           <div id="productsGrid" class="grid"></div>
-          <div class="product-dots" id="productDots" aria-label="مؤشر قائمة المنتجات"></div>
-
-          <div class="section-divider"></div>
-
-          <div class="heading">
-            <div>
-              <small class="mono">01 / DISCORD ACCOUNTS</small>
-              <h1 class="page-title">حسابات دسكورد:</h1>
-              <p class="page-subtitle">حسابات دسكورد قديمة ومميزة.</p>
-            </div>
-            <span class="muted" id="accountsCount">11 حساباً متاحاً</span>
-          </div>
-          <div id="accountsGrid" class="grid"></div>
         </div>
       </section>
       <section id="how" class="page">
@@ -707,7 +711,13 @@
     <script>
       // المنتجات تجي من السيرفر (/api/products) والأسعار تُحسب هناك
       let products = [];
-      let accountProducts = [];
+      const CATS = [
+        { id: "main", label: "نيترو وبوست", sub: "نيترو وبوستات السيرفرات" },
+        { id: "subs", label: "اشتراكات", sub: "اشتراكات رقمية" },
+        { id: "accounts", label: "حسابات دسكورد", sub: "حسابات قديمة ومميزة" },
+        { id: "bots", label: "سورسات (بوتات الديسكورد)", sub: "سورسات وبوتات جاهزة" },
+      ];
+      let curCat = "main";
       let allProducts = [];
       let cart = {};
       try { cart = JSON.parse(localStorage.getItem("rouh-cart") || "{}"); } catch (e) { cart = {}; }
@@ -966,41 +976,47 @@
               </article>
             `;
       }
-      function renderProducts() {
-        document.getElementById("productsGrid").innerHTML = products
-          .map((p, i) => renderProductCard(p, i, true))
-          .join("");
-        document.getElementById("accountsGrid").innerHTML = accountProducts
-          .map((p, i) => renderProductCard(p, i, true))
-          .join("");
-        const dots = document.getElementById("productDots");
-        if (dots) {
-          dots.textContent = "";
-          dots.style.display = products.length > 1 ? "" : "none";
-          products.forEach((p, i) => {
-            const d = el("button", "product-dot" + (i === 0 ? " active" : ""));
-            d.type = "button";
-            d.setAttribute("aria-label", "المنتج " + (i + 1));
-            d.onclick = () => {
-              const card = document.getElementById("productsGrid").children[i];
-              if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
-              dots.querySelectorAll(".product-dot").forEach((x, j) => x.classList.toggle("active", j === i));
-            };
-            dots.append(d);
+      function renderCatMenus() {
+        const t = document.getElementById("catTabs");
+        if (t) {
+          t.textContent = "";
+          CATS.forEach((c) => {
+            const b = el("button", "cat-tab" + (c.id === curCat ? " on" : ""));
+            b.type = "button";
+            b.append(el("b", "", c.label), el("small", "", allProducts.filter((p) => p.group === c.id).length + " منتج"));
+            b.onclick = () => { curCat = c.id; renderProducts(); };
+            t.append(b);
           });
         }
+        const m = document.getElementById("ddMenu");
+        if (m && !m.children.length) {
+          CATS.forEach((c) => {
+            const b = el("button");
+            b.type = "button";
+            b.append(el("span", "", c.label), el("small", "", c.sub));
+            b.onclick = () => { curCat = c.id; closeDd(); go("products"); };
+            m.append(b);
+          });
+        }
+      }
+      function toggleDd(e) { e.stopPropagation(); document.getElementById("navDd").classList.toggle("open"); }
+      function closeDd() { const d = document.getElementById("navDd"); if (d) d.classList.remove("open"); }
+      document.addEventListener("click", (e) => { if (!e.target.closest(".nav-dd")) closeDd(); });
+      function renderProducts() {
+        renderCatMenus();
+        const list = allProducts.filter((p) => p.group === curCat);
+        const grid = document.getElementById("productsGrid");
+        grid.innerHTML = list.length
+          ? list.map((p, i) => renderProductCard(p, i, true)).join("")
+          : '<div class="cat-empty" style="grid-column: 1 / -1">لا توجد منتجات في هذا القسم حالياً، قريباً بإذن الله.</div>';
         const pc = document.getElementById("productsCount");
-        if (pc) pc.textContent = products.length + " منتجات متاحة";
-        const ac = document.getElementById("accountsCount");
-        if (ac) ac.textContent = accountProducts.length + " حساباً متاحاً";
+        if (pc) pc.textContent = list.length + " منتج متاح";
       }
       async function loadProducts() {
         try {
           const r = await fetch("/api/products");
           if (!r.ok) throw new Error();
           allProducts = await r.json();
-          products = allProducts.filter((p) => p.group === "main");
-          accountProducts = allProducts.filter((p) => p.group === "accounts");
           // نشيل من السلة أي منتج ما عاد موجود
           Object.keys(cart).forEach((id) => { if (!allProducts.some((p) => p.id === id)) delete cart[id]; });
           renderProducts();
@@ -1060,6 +1076,7 @@
         document
           .querySelectorAll("[data-nav]")
           .forEach((b) => b.classList.toggle("active", b.dataset.nav === id));
+        closeDd();
         if (id === "products") renderProducts();
         if (id === "cart") renderCart();
         if (id === "checkout") renderCheckout();

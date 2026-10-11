@@ -11,15 +11,15 @@ const NOTE_DEFAULT = "ملاحظة: السعر غير ثابت";
 const SEED_PRODUCTS = [
   { id: "nitro", group: "main", name: "نيترو دسكورد", category: "الأكثر طلباً", description: "اشتراك نيترو يرفع تجربتك داخل ديسكورد بمزايا قوية وفورية.", price: 22, image: "assets/nitro.png", note: NOTE_DEFAULT, active: true },
   { id: "boosts", group: "main", name: "14 بوست شهر", category: "للسيرفرات", description: "حزمة 14 بوست لتطوير السيرفر وفتح مزايا إضافية بشكل أنيق.", price: 15, image: "assets/boosts.png", note: NOTE_DEFAULT, active: true },
-  { id: "sources", group: "main", name: "سورسات", category: "للمطورين - للسيرفرات العامة", description: "سورسات ديسكورد جاهزة للتشغيل والتخصيص.", price: 99, image: "assets/sources.png", note: "", active: true },
+  { id: "sources", group: "bots", name: "سورسات", category: "للمطورين - للسيرفرات العامة", description: "سورسات ديسكورد جاهزة للتشغيل والتخصيص.", price: 99, image: "assets/sources.png", note: "", active: true },
   ...[[2015, 250], [2016, 65], [2017, 47], [2018, 35], [2019, 30], [2020, 27], [2021, 18], [2022, 15], [2023, 12], [2024, 10], [2025, 5]].map(([y, price]) => ({
     id: "account-" + y, group: "accounts", name: "حساب " + y, category: "حسابات دسكورد",
     description: "حساب دسكورد مميز من سنة " + y + ".", price, image: "assets/ad_" + y + ".png", note: "", active: true,
   })),
 ];
 
-const GROUPS = ["main", "accounts"];
-const DEFAULT_CAT = { main: "منتجات", accounts: "حسابات دسكورد" };
+const GROUPS = ["main", "subs", "accounts", "bots"];
+const DEFAULT_CAT = { main: "نيترو وبوست", subs: "اشتراكات", accounts: "حسابات دسكورد", bots: "سورسات (بوتات ديسكورد)" };
 // منتجات أساسية: السيرفر يعتمد عليها في الطلبات (رابط السيرفر / مستلم النيترو)، فتقدر تخفيها بس ما تنحذف
 const PROTECTED = new Set(["nitro", "boosts"]);
 const STATUSES = ["new", "accepted", "delivered", "rejected"];
@@ -30,9 +30,14 @@ const normProduct = (p) => ({
   group: GROUPS.includes(p.group) ? p.group : "main",
   note: typeof p.note === "string" ? p.note : (PROTECTED.has(p.id) ? NOTE_DEFAULT : ""),
 });
-const fromRaw = (s) => ({ orders: s.orders || [], products: (s.products || SEED_PRODUCTS).map(normProduct) });
+// ترحيل (مرة وحدة): منتج «سورسات» القديم كان في قسم main، ننقله لقسم السورسات الجديد
+const fromRaw = (s) => ({
+  v: 2,
+  orders: s.orders || [],
+  products: (s.products || SEED_PRODUCTS).map((p) => normProduct(!s.v && p.id === "sources" && p.group === "main" ? { ...p, group: "bots" } : p)),
+});
 
-let state = { orders: [], products: SEED_PRODUCTS.map(normProduct) };
+let state = { v: 2, orders: [], products: SEED_PRODUCTS.map(normProduct) };
 
 // تخزين خارجي اختياري (Upstash Redis - مجاني بدون بطاقة) للاستضافات اللي تمسح الملفات مثل Render
 const REMOTE_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");

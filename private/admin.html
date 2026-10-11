@@ -168,7 +168,7 @@
     <div><label for="fPrice">السعر (ر.س)</label><input type="number" id="fPrice" min="0" max="100000" step="any" required /></div>
     <div>
       <label for="fGroup">القسم في المتجر</label>
-      <select id="fGroup"><option value="main">المنتجات</option><option value="accounts">حسابات ديسكورد</option></select>
+      <select id="fGroup"><option value="main">نيترو وبوست</option><option value="subs">اشتراكات</option><option value="accounts">حسابات ديسكورد</option><option value="bots">سورسات (بوتات ديسكورد)</option></select>
     </div>
     <div><label for="fCat">التصنيف (الشارة فوق البطاقة)</label><input type="text" id="fCat" maxlength="40" placeholder="مثال: خدمات" /></div>
     <div><label for="fNote">ملاحظة تحت السعر (اختياري)</label><input type="text" id="fNote" maxlength="60" placeholder="مثال: السعر غير ثابت" /></div>
@@ -196,7 +196,7 @@
 <script>
 const LABEL = { new:"جديد", accepted:"مقبول", delivered:"تم التسليم", rejected:"مرفوض" };
 const FILTERS = [["all","الكل"],["new","جدد"],["accepted","مقبولة"],["delivered","مسلّمة"],["rejected","مرفوضة"]];
-const GROUP_LABEL = { main:"المنتجات", accounts:"حسابات ديسكورد" };
+const GROUP_LABEL = { main:"نيترو وبوست", subs:"اشتراكات", accounts:"حسابات ديسكورد", bots:"سورسات (بوتات ديسكورد)" };
 const PROTECTED = ["nitro", "boosts"]; // منتجات أساسية: تُخفى فقط ولا تُحذف
 let orders = [], products = [], filter = "all", me = null, timer, editing = null, newImage = "";
 
@@ -309,7 +309,7 @@ function prodRow(p, i, n) {
 }
 function renderProducts() {
   const parts = [];
-  for (const g of ["main", "accounts"]) {
+  for (const g of ["main", "subs", "accounts", "bots"]) {
     const list = products.filter((p) => p.group === g);
     parts.push(h("div", { class:"grp-head" }, h("h3", {}, GROUP_LABEL[g]), h("span", { class:"count" }, list.length + " منتج")));
     if (!list.length) parts.push(h("div", { class:"empty small" }, "لا يوجد منتجات في هذا القسم."));
