@@ -10,10 +10,16 @@ const IMG_DIR = path.join(DIR, "img");
 const DELIVERY_DEFAULT = "بعد اعتماد الإيصال من الإدارة، وغالباً خلال دقائق.";
 const METHOD_DEFAULT = "يوصلك التسليم والتحديثات في رسائل Discord الخاصة من البوت، أو عبر التكت مع الإدارة.";
 const NOTE_DEFAULT = "ملاحظة: السعر غير ثابت";
+const BUNDLE = {
+  id: "package-full", group: "bots", name: "البكج الشامل", category: "البكجات",
+  description: "بكج كامل بسعر خرافي 🔥", price: 249, image: "assets/sources.png", note: "", active: true,
+  details: "البكج الشامل يوفر عليك فلوس، بكج كامل بسعر خرافي 🔥\n- سورس الدعم الفني\n- سورس الجرد للإدارة\n- موقع إلكتروني أعلى باقة\n- رتبة التوريد لمدة أسبوع",
+};
 const SEED_PRODUCTS = [
   { id: "nitro", group: "main", name: "نيترو دسكورد", category: "الأكثر طلباً", description: "اشتراك نيترو يرفع تجربتك داخل ديسكورد بمزايا قوية وفورية.", price: 22, image: "assets/nitro.png", note: NOTE_DEFAULT, active: true },
   { id: "boosts", group: "main", name: "14 بوست شهر", category: "للسيرفرات", description: "حزمة 14 بوست لتطوير السيرفر وفتح مزايا إضافية بشكل أنيق.", price: 15, image: "assets/boosts.png", note: NOTE_DEFAULT, active: true },
   { id: "sources", group: "bots", name: "سورسات", category: "للمطورين - للسيرفرات العامة", description: "سورسات ديسكورد جاهزة للتشغيل والتخصيص.", price: 99, image: "assets/sources.png", note: "", active: true },
+  BUNDLE,
   ...[[2015, 250], [2016, 65], [2017, 47], [2018, 35], [2019, 30], [2020, 27], [2021, 18], [2022, 15], [2023, 12], [2024, 10], [2025, 5]].map(([y, price]) => ({
     id: "account-" + y, group: "accounts", name: "حساب " + y, category: "حسابات دسكورد",
     description: "حساب دسكورد مميز من سنة " + y + ".", price, image: "assets/ad_" + y + ".png", note: "", active: true,
@@ -36,13 +42,14 @@ const normProduct = (p) => ({
   method: typeof p.method === "string" ? p.method : METHOD_DEFAULT,
 });
 // ترحيل (مرة وحدة): منتج «سورسات» القديم كان في قسم main، ننقله لقسم السورسات الجديد
-const fromRaw = (s) => ({
-  v: 2,
-  orders: s.orders || [],
-  products: (s.products || SEED_PRODUCTS).map((p) => normProduct(!s.v && p.id === "sources" && p.group === "main" ? { ...p, group: "bots" } : p)),
-});
+const fromRaw = (s) => {
+  const products = (s.products || SEED_PRODUCTS).map((p) => normProduct(!s.v && p.id === "sources" && p.group === "main" ? { ...p, group: "bots" } : p));
+  // ترحيل (مرة وحدة): نضيف «البكج الشامل» للمتجر القديم، ولو حذفته بعدها ما يرجع
+  if ((s.v || 0) < 3 && !products.some((p) => p.id === BUNDLE.id)) products.push(normProduct(BUNDLE));
+  return { v: 3, orders: s.orders || [], products };
+};
 
-let state = { v: 2, orders: [], products: SEED_PRODUCTS.map(normProduct) };
+let state = { v: 3, orders: [], products: SEED_PRODUCTS.map(normProduct) };
 
 // تخزين خارجي اختياري (Upstash Redis - مجاني بدون بطاقة) للاستضافات اللي تمسح الملفات مثل Render
 const REMOTE_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");

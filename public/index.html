@@ -382,14 +382,19 @@
       .navlinks .dd-menu button:hover { background: #ffffff10; color: white; }
       .navlinks .dd-menu button small { display: block; color: #ffffff66; font-weight: 500; font-size: 11px; margin-top: 2px; }
       @media (max-width: 850px) { .nav-dd { flex: 1; } .dd-menu { top: auto; bottom: calc(100% + 14px); right: 0; left: 0; } }
-      .cat-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 6px 0 26px; }
+      .sec-divider { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; margin: 14px 0 2px; color: var(--ice); font-weight: 900; font-size: 15px; }
+      .sec-divider::before, .sec-divider::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #c9a07a99, transparent); }
+      .sec-divider small { color: #ffffff66; font-weight: 600; font-size: 12px; margin-inline-start: 8px; }
+      .sec-divider:first-child { margin-top: 0; }
+      .cat-line { height: 1px; margin: 0 0 24px; background: linear-gradient(90deg, transparent, #c9a07a88, transparent); }
+      .cat-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 6px 0 18px; }
       .cat-tab { text-align: right; color: var(--text); border: 1px solid #ffffff18; background: #ffffff06; border-radius: 16px; padding: 14px 16px; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
       .cat-tab:hover { background: #ffffff0d; border-color: #ddc4ae66; transform: translateY(-2px); }
       .cat-tab b { display: block; font-size: 15px; }
       .cat-tab small { display: block; color: #ffffff70; font-size: 12px; margin-top: 4px; }
       .cat-tab.on { border-color: #ddc4aeaa; background: linear-gradient(135deg, #9d775530, #c7a98e18); box-shadow: 0 8px 24px #9d775533; }
       .cat-empty { text-align: center; color: #ffffff80; border: 1px dashed #ffffff22; border-radius: 16px; padding: 46px 16px; }
-      @media (max-width: 850px) { .cat-tabs { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 850px) { .cat-tabs { grid-template-columns: repeat(2, 1fr); } .cat-tabs .cat-tab:first-child { grid-column: 1 / -1; } }
       /* Explore modal */
       .add-row { display: flex; gap: 8px; align-items: center; }
       .explore { border: 1px solid #ffffff1c; background: #ffffff08; color: var(--text); border-radius: 10px; padding: 10px 13px; font-size: 12px; font-weight: 800; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
@@ -565,6 +570,7 @@
             <span class="muted" id="productsCount"></span>
           </div>
           <div id="catTabs" class="cat-tabs"></div>
+          <div class="cat-line"></div>
           <div id="productsGrid" class="grid"></div>
         </div>
       </section>
@@ -734,13 +740,14 @@
     <script>
       // المنتجات تجي من السيرفر (/api/products) والأسعار تُحسب هناك
       let products = [];
+      const CATS_ALL = { id: "all", label: "الكل", sub: "كل المنتجات" };
       const CATS = [
         { id: "main", label: "نيترو وبوست", sub: "نيترو وبوستات السيرفرات" },
         { id: "subs", label: "اشتراكات", sub: "اشتراكات رقمية" },
         { id: "accounts", label: "حسابات دسكورد", sub: "حسابات قديمة ومميزة" },
         { id: "bots", label: "سورسات (بوتات الديسكورد)", sub: "سورسات وبوتات جاهزة" },
       ];
-      let curCat = "main";
+      let curCat = "all";
       let allProducts = [];
       let cart = {};
       try { cart = JSON.parse(localStorage.getItem("rouh-cart") || "{}"); } catch (e) { cart = {}; }
@@ -1047,17 +1054,17 @@
         const t = document.getElementById("catTabs");
         if (t) {
           t.textContent = "";
-          CATS.forEach((c) => {
+          [CATS_ALL, ...CATS].forEach((c) => {
             const b = el("button", "cat-tab" + (c.id === curCat ? " on" : ""));
             b.type = "button";
-            b.append(el("b", "", c.label), el("small", "", allProducts.filter((p) => p.group === c.id).length + " منتج"));
+            b.append(el("b", "", c.label), el("small", "", (c.id === "all" ? allProducts.length : allProducts.filter((p) => p.group === c.id).length) + " منتج"));
             b.onclick = () => { curCat = c.id; renderProducts(); };
             t.append(b);
           });
         }
         const m = document.getElementById("ddMenu");
         if (m && !m.children.length) {
-          CATS.forEach((c) => {
+          [CATS_ALL, ...CATS].forEach((c) => {
             const b = el("button");
             b.type = "button";
             b.append(el("span", "", c.label), el("small", "", c.sub));
@@ -1071,11 +1078,20 @@
       document.addEventListener("click", (e) => { if (!e.target.closest(".nav-dd")) closeDd(); });
       function renderProducts() {
         renderCatMenus();
-        const list = allProducts.filter((p) => p.group === curCat);
+        const list = curCat === "all" ? allProducts : allProducts.filter((p) => p.group === curCat);
         const grid = document.getElementById("productsGrid");
-        grid.innerHTML = list.length
-          ? list.map((p, i) => renderProductCard(p, i, true)).join("")
-          : '<div class="cat-empty" style="grid-column: 1 / -1">لا توجد منتجات في هذا القسم حالياً، قريباً بإذن الله.</div>';
+        if (!list.length) {
+          grid.innerHTML = '<div class="cat-empty" style="grid-column: 1 / -1">لا توجد منتجات في هذا القسم حالياً، قريباً بإذن الله.</div>';
+        } else if (curCat === "all") {
+          // الكل: كل قسم بترتيبه، وبينهم خط فاصل بعنوان القسم
+          grid.innerHTML = CATS.map((c) => {
+            const items = allProducts.filter((p) => p.group === c.id);
+            if (!items.length) return "";
+            return '<div class="sec-divider">' + esc(c.label) + "<small>" + items.length + " منتج</small></div>" + items.map((p, i) => renderProductCard(p, i, true)).join("");
+          }).join("");
+        } else {
+          grid.innerHTML = list.map((p, i) => renderProductCard(p, i, true)).join("");
+        }
         const pc = document.getElementById("productsCount");
         if (pc) pc.textContent = list.length + " منتج متاح";
       }
