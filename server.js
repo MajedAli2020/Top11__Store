@@ -67,7 +67,7 @@ function limit(max, windowMs) {
 setInterval(() => hits.clear(), 60 * 60 * 1000).unref();
 
 /* ---------- API المتجر (عام) ---------- */
-const publicProduct = ({ id, group, name, category, description, price, image, note }) => ({ id, group, name, category, description, price, image, note: note || "" });
+const publicProduct = ({ id, group, name, category, description, price, image, note, details, delivery, method }) => ({ id, group, name, category, description, price, image, note: note || "", details: details || "", delivery: delivery || "", method: method || "" });
 const publicOrder = (o) => ({
   id: o.id, date: o.createdAt, status: o.status, transferor: o.transferor,
   serverLink: o.serverLink, nitroUser: o.nitroUser, nitroId: o.nitroId || "", items: o.items, total: o.total,

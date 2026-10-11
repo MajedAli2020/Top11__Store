@@ -172,7 +172,10 @@
     </div>
     <div><label for="fCat">التصنيف (الشارة فوق البطاقة)</label><input type="text" id="fCat" maxlength="40" placeholder="مثال: خدمات" /></div>
     <div><label for="fNote">ملاحظة تحت السعر (اختياري)</label><input type="text" id="fNote" maxlength="60" placeholder="مثال: السعر غير ثابت" /></div>
-    <div class="full"><label for="fDesc">الوصف</label><textarea id="fDesc" maxlength="300"></textarea></div>
+    <div class="full"><label for="fDesc">الوصف المختصر (يظهر على البطاقة)</label><textarea id="fDesc" maxlength="300"></textarea></div>
+    <div class="full"><label for="fDetails">الشرح (يظهر في نافذة «استكشاف»)</label><textarea id="fDetails" maxlength="1500" rows="5" placeholder="اكتب الشرح. أي سطر يبدأ بـ - يطلع نقطة مرقّمة مع شارة VIP. مثال: - سورس الدعم الفني   (أو - [جديد] نص لتغيير الشارة)"></textarea></div>
+    <div><label for="fDelivery">مدة التسليم</label><input type="text" id="fDelivery" maxlength="200" placeholder="مثال: خلال 10 دقائق" /></div>
+    <div><label for="fMethod">طريقة الاستلام</label><input type="text" id="fMethod" maxlength="300" placeholder="مثال: عبر التكت في Discord" /></div>
     <div class="full">
       <label for="fFile">صورة المنتج</label>
       <div class="imgpick">
@@ -352,6 +355,9 @@ function openDialog(p) {
   $("fCat").value = p ? p.category : "";
   $("fNote").value = p ? p.note || "" : "";
   $("fDesc").value = p ? p.description || "" : "";
+  $("fDetails").value = p ? p.details || "" : "";
+  $("fDelivery").value = p ? p.delivery || "" : "";
+  $("fMethod").value = p ? p.method || "" : "";
   $("fActive").checked = p ? p.active : true;
   $("fFile").value = "";
   $("fPreview").hidden = !p; if (p) $("fPreview").src = p.image;
@@ -375,7 +381,7 @@ $("dlgForm").addEventListener("submit", async (e) => {
   if ($("fPrice").value === "" || Number($("fPrice").value) < 0) return toast("اكتب سعر صحيح");
   if (!editing && !newImage) return toast("اختر صورة للمنتج");
   const body = { name:$("fName").value, price:$("fPrice").value, group:$("fGroup").value, category:$("fCat").value,
-    note:$("fNote").value, description:$("fDesc").value, active:$("fActive").checked };
+    note:$("fNote").value, description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked };
   if (newImage) body.image = newImage;
   const btn = $("dlgSubmit"); btn.disabled = true;
   try {

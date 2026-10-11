@@ -7,6 +7,8 @@ const DIR = path.join(__dirname, "data");
 const FILE = path.join(DIR, "db.json");
 const IMG_DIR = path.join(DIR, "img");
 
+const DELIVERY_DEFAULT = "بعد اعتماد الإيصال من الإدارة، وغالباً خلال دقائق.";
+const METHOD_DEFAULT = "يوصلك التسليم والتحديثات في رسائل Discord الخاصة من البوت، أو عبر التكت مع الإدارة.";
 const NOTE_DEFAULT = "ملاحظة: السعر غير ثابت";
 const SEED_PRODUCTS = [
   { id: "nitro", group: "main", name: "نيترو دسكورد", category: "الأكثر طلباً", description: "اشتراك نيترو يرفع تجربتك داخل ديسكورد بمزايا قوية وفورية.", price: 22, image: "assets/nitro.png", note: NOTE_DEFAULT, active: true },
@@ -29,6 +31,9 @@ const normProduct = (p) => ({
   ...p,
   group: GROUPS.includes(p.group) ? p.group : "main",
   note: typeof p.note === "string" ? p.note : (PROTECTED.has(p.id) ? NOTE_DEFAULT : ""),
+  details: typeof p.details === "string" ? p.details : "",
+  delivery: typeof p.delivery === "string" ? p.delivery : DELIVERY_DEFAULT,
+  method: typeof p.method === "string" ? p.method : METHOD_DEFAULT,
 });
 // ترحيل (مرة وحدة): منتج «سورسات» القديم كان في قسم main، ننقله لقسم السورسات الجديد
 const fromRaw = (s) => ({
@@ -192,6 +197,13 @@ function readFields(b, partial) {
     if (v.length > 300) fail("الوصف طويل (حد أقصى 300 حرف)");
     o.description = v;
   }
+  for (const [k, max, label] of [["details", 1500, "الشرح"], ["delivery", 200, "مدة التسليم"], ["method", 300, "طريقة الاستلام"]]) {
+    if (b[k] !== undefined) {
+      const v = String(b[k]).trim();
+      if (v.length > max) fail(label + " طويل (حد أقصى " + max + " حرف)");
+      o[k] = v;
+    }
+  }
   if (b.category !== undefined) {
     const v = String(b.category).trim();
     if (v.length > 40) fail("التصنيف طويل (حد أقصى 40 حرف)");
@@ -223,6 +235,9 @@ async function createProduct(b) {
     price: f.price,
     image: "/img/" + imgId,
     note: f.note || "",
+    details: f.details || "",
+    delivery: f.delivery !== undefined ? f.delivery : DELIVERY_DEFAULT,
+    method: f.method !== undefined ? f.method : METHOD_DEFAULT,
     active: f.active !== false,
   };
   state.products.push(p);
