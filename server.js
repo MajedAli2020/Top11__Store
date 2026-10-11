@@ -175,7 +175,7 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
 app.get("/api/me", async (req, res) => {
   const c = readCustomer(req);
   if (!c) return res.status(401).json({ error: "غير مسجّل" });
-  res.json({ id: c.uid, name: c.name, avatar: c.avatar, inGuild: await bot.isMember(c.uid), staff: await bot.isStaff(c.uid) });
+  res.json({ id: c.uid, name: c.name, username: c.username || "", email: c.email || "", avatar: c.avatar, inGuild: await bot.isMember(c.uid), staff: await bot.isStaff(c.uid) });
 });
 
 app.get("/api/my/orders", (req, res) => {
@@ -198,7 +198,7 @@ app.get("/auth/customer", (req, res) => {
   setCookie(res, "oauth_state", state, 10 * 60 * 1000);
   const q = new URLSearchParams({
     client_id: CLIENT_ID, redirect_uri: BASE_URL + "/auth/callback",
-    response_type: "code", scope: "identify", state, prompt: "none",
+    response_type: "code", scope: "identify email", state, prompt: "none",
   });
   res.redirect("https://discord.com/oauth2/authorize?" + q);
 });
@@ -224,7 +224,7 @@ app.get("/auth/callback", async (req, res) => {
     if (!u.id) return fail();
     setCookie(res, "oauth_state", "", 0);
     const name = u.global_name || u.username;
-    setCookie(res, "customer", makeToken({ uid: u.id, name, avatar: u.avatar || null, exp: Date.now() + CUSTOMER_MS }), CUSTOMER_MS);
+    setCookie(res, "customer", makeToken({ uid: u.id, name, username: u.username || "", email: u.email || "", avatar: u.avatar || null, exp: Date.now() + CUSTOMER_MS }), CUSTOMER_MS);
     res.redirect("/?auth=ok");
   } catch (e) {
     console.error("[auth]", e.message);
