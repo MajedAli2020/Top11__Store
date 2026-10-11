@@ -255,7 +255,7 @@ function orderCard(o) {
       h("div", { class:"o-items" },
         o.items.map((i) => h("div", {}, h("span", {}, i.name + " × " + i.quantity), h("span", {}, money(i.price * i.quantity)))),
         h("div", { class:"o-total" }, h("span", {}, "الإجمالي"), h("span", {}, money(o.total))))),
-    o.lastDm && o.lastDm.ok === false ? h("div", { class:"o-warn" }, "⚠️ تعذر إرسال رسالة خاصة للعميل (الخاص مغلق أو ما هو داخل السيرفر). كلّمه في التكت.") : null,
+    o.lastDm && o.lastDm.ok === false ? h("div", { class:"o-warn" }, "⚠️ تعذر إرسال الرسالة الخاصة (الخاص مغلق أو ما هو داخل السيرفر). لو كانت هدية نيترو ما انرسل الرابط لأحد.") : null,
     h("div", { class:"o-actions" }, actions),
     last && last.status !== "new" ? h("div", { class:"o-hist" }, "آخر تحديث: " + last.by + " — " + new Date(last.at).toLocaleString("ar-SA")) : null);
 }

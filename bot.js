@@ -80,6 +80,19 @@ async function resolveRecipientId(order) {
   }
 }
 
+// نخلي النص عريض (**) ونترك الروابط عادية بدون أي تنسيق عشان تبقى واضحة
+function boldExceptLinks(text) {
+  return String(text)
+    .split("\n")
+    .map((line) =>
+      line
+        .split(/(https?:\/\/\S+)/)
+        .map((seg, i) => (i % 2 === 1 || !seg.trim() ? seg : seg.replace(/^(\s*)(.*?)(\s*)$/, (m, a, c, d) => `${a}**${c.replace(/\*\*/g, "")}**${d}`)))
+        .join(""),
+    )
+    .join("\n");
+}
+
 // رسالة خاصة للعميل عند كل تغيير حالة. ترجع true/false، أو null لو ما في عميل/البوت متوقف
 // adminMessage (عند تسليم النيترو): نرسلها كما هي (نص عادي، الرابط واضح بدون أي تنسيق) لمستلم النيترو.
 // لو المستلم شخص ثاني غير العميل، العميل يوصله إشعار التسليم العادي بدون الرابط.
@@ -87,20 +100,20 @@ async function notifyCustomer(order, adminMessage) {
   if (!ready || !order.customer || !DM_TEXT[order.status]) return null;
   const extra = adminMessage ? String(adminMessage).trim().slice(0, 1900) : "";
   let giftOk = true;
-  let customerMsg = extra;
+  const customerMsg = ""; // الرابط ما يروح إلا لمستلم النيترو، ولا نحوّله لأي شخص ثاني
   if (extra && order.status === "delivered") {
     const rid = await resolveRecipientId(order);
-    if (rid && String(rid) !== String(order.customer.id)) {
+    if (!rid) {
+      giftOk = false; // ما لقينا المستلم (اليوزر مو داخل السيرفر)
+    } else {
       try {
         const u = await client.users.fetch(rid);
-        await u.send({ content: extra, allowedMentions: { parse: [] } });
-        customerMsg = ""; // وصلت للمستلم، ما نرسل الرابط للعميل
+        // النص عريض، الرابط واضح، وآخر شي منشن للمستلم
+        await u.send({ content: `${boldExceptLinks(extra)}\n<@${rid}>`.slice(0, 2000), allowedMentions: { users: [String(rid)] } });
       } catch (e) {
-        giftOk = false; // الخاص مغلق عند المستلم: نرسلها للعميل عشان توصله
+        giftOk = false; // الخاص مغلق عند المستلم
         console.warn(`[bot] تعذر إرسال الهدية للمستلم (${rid}):`, e.message);
       }
-    } else if (!rid && String(order.nitroUser || "").startsWith("@")) {
-      giftOk = false; // ما لقينا اليوزر في السيرفر
     }
   }
   const [title, baseDesc] = DM_TEXT[order.status];
@@ -216,7 +229,7 @@ function startBot() {
       if (prev !== order.status) {
         const sent = await notifyCustomer(order, msg);
         if (sent === false) {
-          i.followUp({ content: "⚠️ تم تحديث الحالة، لكن ما قدرت أرسل رسالة خاصة للعميل (الخاص مغلق أو ما هو داخل السيرفر). تأكد من الخاص عند مستلم النيترو (أو اليوزر داخل السيرفر) وأرسل له الرابط في التكت.", ephemeral: true }).catch(() => {});
+          i.followUp({ content: "⚠️ تعذر إرسال الهدية لمستلم النيترو (الخاص مغلق عنده أو اليوزر مو داخل السيرفر). ما انرسل الرابط لأي شخص ثاني.", ephemeral: true }).catch(() => {});
         }
       }
       return;
