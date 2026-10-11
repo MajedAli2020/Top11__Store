@@ -54,6 +54,7 @@
       .brand { display: flex; align-items: center; gap: 12px; }
       .brand img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 30px #9d775566; }
       .brand b { display: block; font-size: 19px; line-height: 1; }
+      @media (max-width: 470px) { #navUser > a.btn { display: none; } }
       .brand b span { color: var(--blue2); }
       .brand small { display: block; color: #ffffff55; font-size: 9px; letter-spacing: 3px; margin-top: 4px; }
       .navlinks {
@@ -373,6 +374,8 @@
       .p-bad { color: var(--red); border: 1px solid #d0645f66; border-radius: 14px; padding: 12px 14px; margin: 6px 0 22px; background: #d0645f12; font-weight: 800; }
       .toast.big { max-width: min(430px, calc(100% - 44px)); font-weight: 700; line-height: 1.7; border-color: var(--green); }
       /* Account menu */
+      #navUser { display: flex !important; align-items: center; gap: 8px; }
+      #navUser > a.btn { display: inline-flex; align-items: center; height: 42px; padding-top: 0; padding-bottom: 0; line-height: 1; }
       .acct-menu { position: relative; }
       .avatar-btn { width: 42px; height: 42px; padding: 0; border-radius: 50%; border: 2px solid #ddc4ae66; background: #ffffff0d; overflow: hidden; display: grid; place-items: center; cursor: pointer; color: var(--text); font-weight: 900; }
       .avatar-btn:hover { border-color: #ddc4aeaa; }
