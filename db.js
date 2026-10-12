@@ -26,6 +26,13 @@ const SEED_PRODUCTS = [
   })),
 ];
 
+const SEED_REVIEWS = [
+  ["فهد العتيبي", "توب الأفضل"], ["نورة القحطاني", "الثقة في محلها"], ["عبدالله الشمري", "تسليم سريع جداً"],
+  ["ريم الدوسري", "تعامل راقي وأسعار ممتازة"], ["سلطان المطيري", "مضمون ١٠٠٪"], ["منيرة الحربي", "ما قصروا، شكراً لكم"],
+  ["تركي الغامدي", "أفضل متجر تعاملت معه"], ["لمى الزهراني", "خدمة ممتازة ورد سريع"], ["بندر السبيعي", "أنصح فيه بقوة"],
+  ["هديل العنزي", "سرعة وأمانة، تسلمون"], ["ماجد البقمي", "تجربة رائعة وراح أكررها"], ["جود الشهري", "الدعم متعاون جداً"],
+].map(([name, text], i) => ({ id: "r-seed" + (i + 1), name, text, stars: 5, active: true, at: new Date(2026, 9, 1, 12, i).toISOString() }));
+
 const GROUPS = ["main", "subs", "accounts", "bots"];
 const DEFAULT_CAT = { main: "نيترو وبوست", subs: "اشتراكات", accounts: "حسابات دسكورد", bots: "سورسات (بوتات ديسكورد)" };
 // منتجات أساسية: السيرفر يعتمد عليها في الطلبات (رابط السيرفر / مستلم النيترو)، فتقدر تخفيها بس ما تنحذف
@@ -46,10 +53,12 @@ const fromRaw = (s) => {
   const products = (s.products || SEED_PRODUCTS).map((p) => normProduct(!s.v && p.id === "sources" && p.group === "main" ? { ...p, group: "bots" } : p));
   // ترحيل (مرة وحدة): نضيف «البكج الشامل» للمتجر القديم، ولو حذفته بعدها ما يرجع
   if ((s.v || 0) < 3 && !products.some((p) => p.id === BUNDLE.id)) products.push(normProduct(BUNDLE));
-  return { v: 3, orders: s.orders || [], products };
+  // ترحيل (مرة وحدة): نضيف تقييمات العملاء الافتراضية، ولو حذفتها كلها بعدها ما ترجع
+  const reviews = Array.isArray(s.reviews) ? s.reviews : (s.v || 0) < 4 ? SEED_REVIEWS.map((r) => ({ ...r })) : [];
+  return { v: 4, orders: s.orders || [], products, reviews };
 };
 
-let state = { v: 3, orders: [], products: SEED_PRODUCTS.map(normProduct) };
+let state = { v: 4, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })) };
 
 // تخزين خارجي اختياري (Upstash Redis - مجاني بدون بطاقة) للاستضافات اللي تمسح الملفات مثل Render
 const REMOTE_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");
@@ -95,7 +104,7 @@ function load() {
   try {
     state = fromRaw(JSON.parse(fs.readFileSync(FILE, "utf8")));
   } catch (e) {
-    state = { orders: [], products: SEED_PRODUCTS.map(normProduct) };
+    state = { v: 4, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })) };
   }
   save();
 }
@@ -289,6 +298,51 @@ function moveProduct(id, dir) {
   return state.products;
 }
 
+/* ---------- تقييمات العملاء ---------- */
+const getReviews = () => state.reviews;
+const getActiveReviews = () => state.reviews.filter((r) => r.active);
+function readReview(b, partial) {
+  const o = {};
+  if (!partial || b.name !== undefined) {
+    const v = String(b.name ?? "").trim();
+    if (!v || v.length > 40) fail("اسم العميل مطلوب (حد أقصى 40 حرف)");
+    o.name = v;
+  }
+  if (!partial || b.text !== undefined) {
+    const v = String(b.text ?? "").trim();
+    if (!v || v.length > 200) fail("نص التقييم مطلوب (حد أقصى 200 حرف)");
+    o.text = v;
+  }
+  if (!partial || b.stars !== undefined) {
+    const n = Number(b.stars);
+    if (!Number.isInteger(n) || n < 1 || n > 5) fail("عدد النجوم من 1 إلى 5");
+    o.stars = n;
+  }
+  if (b.active !== undefined) o.active = b.active === true || b.active === "true";
+  return o;
+}
+function createReview(b) {
+  const f = readReview(b, false);
+  const r = { id: "r-" + crypto.randomBytes(5).toString("hex"), ...f, active: f.active !== false, at: new Date().toISOString() };
+  state.reviews.push(r);
+  save();
+  return r;
+}
+function updateReview(id, b) {
+  const r = state.reviews.find((x) => x.id === id);
+  if (!r) return null;
+  Object.assign(r, readReview(b, true));
+  save();
+  return r;
+}
+function deleteReview(id) {
+  const n = state.reviews.length;
+  state.reviews = state.reviews.filter((x) => x.id !== id);
+  if (state.reviews.length === n) return false;
+  save();
+  return true;
+}
+
 /* ---------- الطلبات ---------- */
 function createOrder(order) {
   state.orders.unshift(order);
@@ -325,5 +379,6 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
+  getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };

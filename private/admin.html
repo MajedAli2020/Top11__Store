@@ -137,6 +137,7 @@
     <div class="tabs" role="tablist">
       <button class="tab on" data-tab="orders" role="tab">الطلبات</button>
       <button class="tab hidden" id="prodTab" data-tab="products" role="tab">المنتجات والأسعار</button>
+      <button class="tab hidden" id="revTab" data-tab="reviews" role="tab">تقييم العملاء</button>
     </div>
 
     <section id="ordersTab">
@@ -158,8 +159,33 @@
       </div>
       <div id="prodList"></div>
     </section>
+
+    <section id="reviewsTab" class="hidden">
+      <div class="sec-head">
+        <div>
+          <h2>تقييم العملاء</h2>
+          <p>تظهر في آخر صفحة المتجر. الإضافة والتعديل والحذف للمالك فقط.</p>
+        </div>
+        <button class="btn primary" id="addRevBtn" type="button">＋ إضافة تقييم</button>
+      </div>
+      <div id="revList"></div>
+    </section>
   </main>
 </div>
+
+<dialog id="rdlg">
+  <form id="rdlgForm" class="dlg-in" novalidate>
+    <h3 id="rdlgTitle">إضافة تقييم</h3>
+    <div class="full"><label for="rName">اسم العميل</label><input type="text" id="rName" maxlength="40" required /></div>
+    <div class="full"><label for="rText">نص التقييم</label><textarea id="rText" maxlength="200" rows="3" required></textarea></div>
+    <div class="full"><label for="rStars">عدد النجوم</label><select id="rStars"><option value="5">★★★★★ (5)</option><option value="4">★★★★☆ (4)</option><option value="3">★★★☆☆ (3)</option><option value="2">★★☆☆☆ (2)</option><option value="1">★☆☆☆☆ (1)</option></select></div>
+    <div class="dlg-foot">
+      <label class="grow" style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="rActive" checked /><span></span></span> ظاهر في المتجر</label>
+      <button type="button" class="btn" id="rdlgCancel">إلغاء</button>
+      <button type="submit" class="btn primary" id="rdlgSubmit">حفظ</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="dlg">
   <form id="dlgForm" class="dlg-in" novalidate>
@@ -392,12 +418,61 @@ $("dlgForm").addEventListener("submit", async (e) => {
   btn.disabled = false;
 });
 
+/* ---------- تقييم العملاء (للمالك فقط) ---------- */
+let reviews = [], editingRev = null;
+const stars = (n) => "★".repeat(n) + "☆".repeat(5 - n);
+function revRow(r) {
+  const vis = h("input", { type:"checkbox", checked:r.active, "aria-label":"ظاهر في المتجر", onchange: async (e) => {
+    const on = e.target.checked;
+    try { Object.assign(r, await api("/api/admin/reviews/" + encodeURIComponent(r.id), { method:"PATCH", body:{ active:on } })); renderReviews(); toast(on ? "صار ظاهر في المتجر" : "تم إخفاؤه من المتجر"); }
+    catch (err) { e.target.checked = !on; fail(err); }
+  } });
+  return h("div", { class:"prow" + (r.active ? "" : " off") },
+    h("div", { class:"thumb", style:"display:grid;place-items:center;font-weight:800" }, Array.from(r.name)[0] || "؟"),
+    h("div", {}, h("div", { class:"p-name" }, r.name), h("div", { class:"p-sub" }, r.text + (r.active ? "" : " · مخفي"))),
+    h("div", { class:"p-price", style:"color:#e0b36a;letter-spacing:2px" }, stars(r.stars)),
+    h("label", { class:"switch", title:"ظاهر في المتجر" }, vis, h("span")),
+    h("div", { class:"p-actions" },
+      h("button", { class:"btn sm", onclick:() => openRevDialog(r) }, "تعديل"),
+      h("button", { class:"btn ghost sm", onclick: async () => {
+        if (!confirm("حذف تقييم «" + r.name + "» نهائياً؟")) return;
+        try { await api("/api/admin/reviews/" + encodeURIComponent(r.id), { method:"DELETE" }); reviews = reviews.filter((x) => x.id !== r.id); renderReviews(); toast("تم الحذف"); }
+        catch (err) { fail(err); }
+      } }, "حذف")));
+}
+function renderReviews() {
+  $("revList").replaceChildren(...(reviews.length ? reviews.map(revRow) : [h("div", { class:"empty small" }, "لا يوجد تقييمات.")]));
+}
+async function loadReviews() { try { reviews = await api("/api/admin/reviews"); renderReviews(); } catch (e) { fail(e); } }
+function openRevDialog(r) {
+  editingRev = r || null;
+  $("rdlgTitle").textContent = r ? "تعديل التقييم" : "إضافة تقييم";
+  $("rName").value = r ? r.name : ""; $("rText").value = r ? r.text : "";
+  $("rStars").value = r ? r.stars : 5; $("rActive").checked = r ? r.active : true;
+  $("rdlg").showModal();
+}
+$("addRevBtn").addEventListener("click", () => openRevDialog(null));
+$("rdlgCancel").addEventListener("click", () => $("rdlg").close());
+$("rdlgForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = { name:$("rName").value, text:$("rText").value, stars:Number($("rStars").value), active:$("rActive").checked };
+  const btn = $("rdlgSubmit"); btn.disabled = true;
+  try {
+    if (editingRev) { Object.assign(editingRev, await api("/api/admin/reviews/" + encodeURIComponent(editingRev.id), { method:"PATCH", body })); toast("تم حفظ التقييم"); }
+    else { reviews.push(await api("/api/admin/reviews", { method:"POST", body })); toast("تمت إضافة التقييم"); }
+    renderReviews(); $("rdlg").close();
+  } catch (err) { fail(err); }
+  btn.disabled = false;
+});
+
 /* ---------- تشغيل ---------- */
 document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
   $("ordersTab").classList.toggle("hidden", t.dataset.tab !== "orders");
   $("productsTab").classList.toggle("hidden", t.dataset.tab !== "products");
+  $("reviewsTab").classList.toggle("hidden", t.dataset.tab !== "reviews");
   if (t.dataset.tab === "products") loadProducts();
+  if (t.dataset.tab === "reviews") loadReviews();
 }));
 $("search").addEventListener("input", renderOrders);
 
@@ -405,7 +480,7 @@ $("search").addEventListener("input", renderOrders);
   try { me = await api("/api/admin/me"); } catch (e) { return; }
   $("meName").textContent = me.name;
   if (me.avatar) $("meAvatar").src = `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=64`; else $("meAvatar").classList.add("hidden");
-  if (me.owner) $("prodTab").classList.remove("hidden");
+  if (me.owner) { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); }
   $("appView").classList.remove("hidden");
   renderChips(); loadOrders();
   timer = setInterval(loadOrders, 15000);
