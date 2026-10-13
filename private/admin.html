@@ -96,6 +96,18 @@
   .switch input:checked + span::before { background:var(--accent); transform:translateX(-18px); }
   .switch input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
 
+  .set-card { border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:16px; background:var(--panel); }
+  .set-card h3 { font-size:15px; color:var(--ice); margin-bottom:12px; }
+  .set-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px 16px; }
+  .set-grid .wide { grid-column:1/-1; }
+  .set-grid label { display:block; font-size:13px; color:var(--muted); margin-bottom:5px; }
+  .set-grid input[type=text], .set-grid textarea { width:100%; border:1px solid var(--line); background:var(--bg); border-radius:10px; padding:10px 12px; }
+  .set-grid textarea { min-height:72px; resize:vertical; }
+  .clr { display:flex; gap:8px; align-items:center; }
+  .clr input[type=color] { width:44px; height:40px; padding:2px; border:1px solid var(--line); border-radius:10px; background:var(--bg); cursor:pointer; flex:none; }
+  .clr input[type=text] { direction:ltr; text-align:left; font-family:ui-monospace,monospace; }
+  .logo-row { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .logo-row img { width:84px; height:84px; border-radius:50%; object-fit:cover; border:1px solid var(--line); background:var(--bg); }
   dialog { margin:auto; width:min(580px,94vw); max-height:92vh; overflow:auto; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:20px; padding:0; }
   dialog::backdrop { background:#000000b3; }
   .dlg-in { padding:22px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -138,6 +150,7 @@
       <button class="tab on" data-tab="orders" role="tab">الطلبات</button>
       <button class="tab hidden" id="prodTab" data-tab="products" role="tab">المنتجات والأسعار</button>
       <button class="tab hidden" id="revTab" data-tab="reviews" role="tab">تقييم العملاء</button>
+      <button class="tab hidden" id="setTab" data-tab="settings" role="tab">إعدادات السيرفر</button>
     </div>
 
     <section id="ordersTab">
@@ -158,6 +171,20 @@
         <button class="btn primary" id="addBtn" type="button">＋ إضافة منتج</button>
       </div>
       <div id="prodList"></div>
+    </section>
+
+    <section id="settingsTab" class="hidden">
+      <div class="sec-head">
+        <div>
+          <h2>إعدادات السيرفر</h2>
+          <p>اسم المتجر والشعار والألوان والنصوص. تظهر في المتجر مباشرة بعد الحفظ. المالك فقط.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="setReset" type="button">استرجاع الافتراضي</button>
+          <button class="btn primary" id="setSave" type="button">حفظ التغييرات</button>
+        </div>
+      </div>
+      <div id="setBody"></div>
     </section>
 
     <section id="reviewsTab" class="hidden">
@@ -465,12 +492,74 @@ $("rdlgForm").addEventListener("submit", async (e) => {
   btn.disabled = false;
 });
 
+/* ---------- إعدادات السيرفر (للمالك فقط) ---------- */
+const COLOR_FIELDS = [["bg","خلفية الموقع"],["panel","البطاقات والقوائم"],["text","لون النص"],["muted","النص الخافت"],["accent","اللون الأساسي"],["accent2","اللون الثانوي (الأزرار والتمييز)"],["ice","اللون الفاتح"]];
+const TEXT_GROUPS = [
+  ["الهوية", [["storeName","اسم المتجر"],["navSub","النص الصغير تحت الاسم"],["tabSuffix","عنوان التبويب (بعد اسم المتجر)"]]],
+  ["الواجهة الرئيسية", [["heroEyebrow","الشارة فوق العنوان"],["heroTitle1","العنوان - السطر 1"],["heroTitle2","العنوان - السطر 2 (ملوّن)"],["heroTitle3","العنوان - السطر 3"],["heroLead","الوصف تحت العنوان",1],["btnProducts","زر المنتجات"],["btnCart","زر السلة"]]],
+  ["بطاقة الشعار", [["showPill","الشارة العلوية"],["showSmall","النص الصغير"],["showStrong","النص الكبير"],["showSecure","شارة الأمان"]]],
+  ["أقسام الصفحة", [["homeHeading","عنوان قسم المميزات"],["ctaTitle","عنوان «جاهز تبدأ؟»"],["ctaText","نص «جاهز تبدأ؟»",1],["ctaButton","زر «جاهز تبدأ؟»"],["reviewsTitle","عنوان التقييمات"],["footerLeft","نص الفوتر (يمين)"],["footerRight","نص الفوتر (يسار)"]]],
+];
+let setData = null, setDefs = null, setLogoNew = "", setLogoReset = false;
+function colorField(k, label, val) {
+  const t = h("input", { type:"text", id:"c_" + k, value:val, maxlength:"7", "aria-label":label });
+  const c = h("input", { type:"color", value:val, "aria-label":label + " (اختيار)" });
+  c.addEventListener("input", () => { t.value = c.value; });
+  t.addEventListener("input", () => { if (/^#[0-9a-fA-F]{6}$/.test(t.value)) c.value = t.value; });
+  return h("div", {}, h("label", { for:"c_" + k }, label), h("div", { class:"clr" }, c, t));
+}
+function renderSettings() {
+  const st = setData, d = setDefs, parts = [];
+  const prev = h("img", { id:"logoPrev", alt:"", src: setLogoReset ? "assets/logo.png" : (st.logo || "assets/logo.png") });
+  const file = h("input", { type:"file", id:"logoFile", accept:"image/png,image/jpeg,image/webp" });
+  file.addEventListener("change", async (e) => {
+    const f = e.target.files[0]; setLogoNew = ""; if (!f) return;
+    try { setLogoNew = await compressImage(f); setLogoReset = false; prev.src = setLogoNew; } catch (err) { toast(err.message); e.target.value = ""; }
+  });
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "الشعار"), h("div", { class:"logo-row" }, prev,
+    h("div", {}, file, h("div", { class:"hint", style:"font-size:12px;color:var(--muted);margin-top:4px" }, "PNG أو JPG أو WEBP. يفضّل صورة مربعة. يظهر في الشريط العلوي وبطاقة الواجهة وأيقونة التبويب."),
+      h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setLogoNew = ""; setLogoReset = true; file.value = ""; prev.src = "assets/logo.png"; toast("سيرجع الشعار الافتراضي عند الحفظ"); } }, "استرجاع الشعار الافتراضي")))));
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "الألوان"), h("div", { class:"set-grid" }, COLOR_FIELDS.map(([k, l]) => colorField(k, l, st.colors[k] || d.colors[k])))));
+  for (const [title, fields] of TEXT_GROUPS) {
+    parts.push(h("div", { class:"set-card" }, h("h3", {}, title), h("div", { class:"set-grid" }, fields.map(([k, l, big]) => {
+      const val = st.texts[k] || d.texts[k];
+      const inp = big ? h("textarea", { id:"t_" + k, maxlength:"300" }) : h("input", { type:"text", id:"t_" + k, maxlength:"120" });
+      inp.value = val;
+      return h("div", { class:big ? "wide" : "" }, h("label", { for:"t_" + k }, l), inp);
+    }))));
+  }
+  $("setBody").replaceChildren(...parts);
+}
+async function loadSettings() {
+  try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; renderSettings(); } catch (e) { fail(e); }
+}
+async function saveSettings(reset) {
+  const body = { colors:{}, texts:{} };
+  if (!reset) {
+    COLOR_FIELDS.forEach(([k]) => { body.colors[k] = $("c_" + k).value; });
+    TEXT_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("t_" + k).value; }));
+    if (setLogoNew) body.logo = setLogoNew;
+    if (setLogoReset) body.resetLogo = true;
+  } else body.resetLogo = true;
+  const btns = [$("setSave"), $("setReset")]; btns.forEach((b) => (b.disabled = true));
+  try {
+    const r = await api("/api/admin/settings", { method:"PUT", body });
+    setData = r.settings; setLogoNew = ""; setLogoReset = false; renderSettings();
+    toast(reset ? "رجعت الإعدادات الافتراضية" : "تم الحفظ وظهر في المتجر");
+  } catch (e) { fail(e); }
+  btns.forEach((b) => (b.disabled = false));
+}
+$("setSave").addEventListener("click", () => saveSettings(false));
+$("setReset").addEventListener("click", () => { if (confirm("استرجاع كل الألوان والنصوص والشعار للوضع الافتراضي؟")) saveSettings(true); });
+
 /* ---------- تشغيل ---------- */
 document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
   $("ordersTab").classList.toggle("hidden", t.dataset.tab !== "orders");
   $("productsTab").classList.toggle("hidden", t.dataset.tab !== "products");
   $("reviewsTab").classList.toggle("hidden", t.dataset.tab !== "reviews");
+  $("settingsTab").classList.toggle("hidden", t.dataset.tab !== "settings");
+  if (t.dataset.tab === "settings") loadSettings();
   if (t.dataset.tab === "products") loadProducts();
   if (t.dataset.tab === "reviews") loadReviews();
 }));
@@ -480,7 +569,7 @@ $("search").addEventListener("input", renderOrders);
   try { me = await api("/api/admin/me"); } catch (e) { return; }
   $("meName").textContent = me.name;
   if (me.avatar) $("meAvatar").src = `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=64`; else $("meAvatar").classList.add("hidden");
-  if (me.owner) { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); }
+  if (me.owner) { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); }
   $("appView").classList.remove("hidden");
   renderChips(); loadOrders();
   timer = setInterval(loadOrders, 15000);

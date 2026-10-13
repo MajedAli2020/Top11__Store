@@ -17,7 +17,7 @@ const app = express();
 app.disable("x-powered-by");
 // خلف Render/Cloudflare: بدونها كل الزوار يظهرون بنفس الـ IP وحد الطلبات يشتغل على الكل مع بعض. على Render ضع TRUST_PROXY=1
 if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
-app.use("/api/admin/products", express.json({ limit: "600kb" })); // صور المنتجات (تنضغط في المتصفح قبل الرفع)
+app.use(["/api/admin/products", "/api/admin/settings"], express.json({ limit: "600kb" })); // صور المنتجات (تنضغط في المتصفح قبل الرفع)
 app.use("/api/orders", express.json({ limit: "3mb" })); // الطلب + صورة الإيصال (تنضغط في المتصفح قبل الرفع)
 app.use(express.json({ limit: "20kb" }));
 app.use((req, res, next) => {
@@ -92,6 +92,7 @@ function parseReceipt(v) {
 const CUSTOMER_MS = 7 * 24 * 60 * 60 * 1000;
 const readCustomer = (req) => readToken(cookies(req).customer);
 
+app.get("/api/settings", (req, res) => { res.set("Cache-Control", "no-cache"); res.json(db.getSettings()); });
 app.get("/api/reviews", (req, res) => res.json(db.getActiveReviews().map(({ id, name, text, stars }) => ({ id, name, text, stars }))));
 app.get("/api/products", (req, res) => res.json(db.getActiveProducts().map(publicProduct)));
 
@@ -311,6 +312,12 @@ app.post("/api/admin/products/:id/move", requireStaff, requireOwner, wrap(async 
 app.delete("/api/admin/products/:id", requireStaff, requireOwner, wrap(async (req, res) => {
   if (!db.deleteProduct(String(req.params.id))) return res.status(404).json({ error: "المنتج غير موجود" });
   res.json({ ok: true });
+}));
+
+// إعدادات المتجر: ألوان وشعار ونصوص (للمالك فقط)
+app.get("/api/admin/settings", requireStaff, requireOwner, (req, res) => res.json({ settings: db.getSettings(), defaults: db.SETTINGS_DEFAULTS }));
+app.put("/api/admin/settings", requireStaff, requireOwner, wrap(async (req, res) => {
+  res.json({ settings: await db.updateSettings(req.body || {}), defaults: db.SETTINGS_DEFAULTS });
 }));
 
 // تقييمات العملاء (للمالك فقط)

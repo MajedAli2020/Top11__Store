@@ -33,6 +33,22 @@ const SEED_REVIEWS = [
   ["هديل العنزي", "سرعة وأمانة، تسلمون"], ["ماجد البقمي", "تجربة رائعة وراح أكررها"], ["جود الشهري", "الدعم متعاون جداً"],
 ].map(([name, text], i) => ({ id: "r-seed" + (i + 1), name, text, stars: 5, active: true, at: new Date(2026, 9, 1, 12, i).toISOString() }));
 
+/* ---------- إعدادات المتجر (ألوان / شعار / نصوص) ---------- */
+// القيم الافتراضية = اللي مكتوب في صفحة المتجر. أي حقل فاضي أو مطابق للافتراضي ما ينحفظ.
+const COLOR_DEFAULTS = { bg: "#0b0907", panel: "#15110d", text: "#f7f1ea", muted: "#a8967f", accent: "#a07a58", accent2: "#c9a07a", ice: "#ecd5bb" };
+const TEXT_FIELDS = {
+  storeName: ["توب ستور", 40], tabSuffix: ["تجربة رقمية", 60], navSub: ["Discord Services", 40],
+  heroEyebrow: ["تسليم سريع • موثوق • آمن", 80], heroTitle1: ["خلّ تجربتك", 40], heroTitle2: ["أفضل مع متجر", 40], heroTitle3: ["توب.", 40],
+  heroLead: ["منتجات رقمية مختارة بعناية، طلب سهل بالتحويل البنكي، وتسليم مباشر إلى حسابك في Discord بعد اعتماد الإيصال.", 300],
+  btnProducts: ["تصفح المنتجات ←", 40], btnCart: ["افتح السلة", 40],
+  showPill: ["توب ستور / 2026", 40], showSmall: ["منتجك الرقمي", 40], showStrong: ["جاهز يوصل لك", 40], showSecure: ["تسليم آمن", 40],
+  homeHeading: ["تجربة مرتبة من البداية", 80],
+  ctaTitle: ["جاهز تبدأ؟", 60], ctaText: ["اختر منتجك، أضفه للسلة، وابدأ تجربة توب ستور.", 200], ctaButton: ["ابدأ طلبك الآن ←", 40],
+  reviewsTitle: ["تقييمات العملاء", 60], footerLeft: ["توب ستور — منتجات رقمية بتجربة مختلفة", 120], footerRight: ["Top STORE / 2026", 60],
+};
+const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])) };
+const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "" });
+
 const GROUPS = ["main", "subs", "accounts", "bots"];
 const DEFAULT_CAT = { main: "نيترو وبوست", subs: "اشتراكات", accounts: "حسابات دسكورد", bots: "سورسات (بوتات ديسكورد)" };
 // منتجات أساسية: السيرفر يعتمد عليها في الطلبات (رابط السيرفر / مستلم النيترو)، فتقدر تخفيها بس ما تنحذف
@@ -55,10 +71,10 @@ const fromRaw = (s) => {
   if ((s.v || 0) < 3 && !products.some((p) => p.id === BUNDLE.id)) products.push(normProduct(BUNDLE));
   // ترحيل (مرة وحدة): نضيف تقييمات العملاء الافتراضية، ولو حذفتها كلها بعدها ما ترجع
   const reviews = Array.isArray(s.reviews) ? s.reviews : (s.v || 0) < 4 ? SEED_REVIEWS.map((r) => ({ ...r })) : [];
-  return { v: 4, orders: s.orders || [], products, reviews };
+  return { v: 5, orders: s.orders || [], products, reviews, settings: normSettings(s.settings) };
 };
 
-let state = { v: 4, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })) };
+let state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings() };
 
 // تخزين خارجي اختياري (Upstash Redis - مجاني بدون بطاقة) للاستضافات اللي تمسح الملفات مثل Render
 const REMOTE_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");
@@ -104,7 +120,7 @@ function load() {
   try {
     state = fromRaw(JSON.parse(fs.readFileSync(FILE, "utf8")));
   } catch (e) {
-    state = { v: 4, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })) };
+    state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings() };
   }
   save();
 }
@@ -298,6 +314,32 @@ function moveProduct(id, dir) {
   return state.products;
 }
 
+/* ---------- إعدادات المتجر ---------- */
+const getSettings = () => state.settings;
+async function updateSettings(b) {
+  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo };
+  const bc = b.colors || {}, bt = b.texts || {};
+  for (const k of Object.keys(COLOR_DEFAULTS)) {
+    const v = String(bc[k] ?? "").trim().toLowerCase();
+    if (!v || v === COLOR_DEFAULTS[k]) continue;
+    if (!/^#[0-9a-f]{6}$/.test(v)) fail("اللون غير صالح، استخدم صيغة مثل #c9a07a");
+    next.colors[k] = v;
+  }
+  for (const [k, [def, max]] of Object.entries(TEXT_FIELDS)) {
+    const v = String(bt[k] ?? "").trim();
+    if (!v || v === def) continue;
+    if (v.length > max) fail("النص طويل (حد أقصى " + max + " حرف)");
+    next.texts[k] = v;
+  }
+  const oldLogo = cur.logo;
+  if (b.resetLogo === true) next.logo = "";
+  if (b.logo) next.logo = "/img/" + (await storeImage(b.logo));
+  if (oldLogo && oldLogo !== next.logo) removeImage(oldLogo);
+  state.settings = next;
+  save();
+  return next;
+}
+
 /* ---------- تقييمات العملاء ---------- */
 const getReviews = () => state.reviews;
 const getActiveReviews = () => state.reviews.filter((r) => r.active);
@@ -379,6 +421,7 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
+  getSettings, updateSettings, SETTINGS_DEFAULTS,
   getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };
