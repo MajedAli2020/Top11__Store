@@ -72,6 +72,7 @@ const STATUSES = ["new", "accepted", "delivered", "rejected"];
 const normProduct = (p) => ({
   ...p,
   group: GROUPS.includes(p.group) ? p.group : "main",
+  soldOut: p.soldOut === true,
   note: typeof p.note === "string" ? p.note : (PROTECTED.has(p.id) ? NOTE_DEFAULT : ""),
   details: typeof p.details === "string" ? p.details : "",
   delivery: typeof p.delivery === "string" ? p.delivery : DELIVERY_DEFAULT,
@@ -264,6 +265,7 @@ function readFields(b, partial) {
     o.group = b.group;
   }
   if (b.active !== undefined) o.active = b.active === true || b.active === "true";
+  if (b.soldOut !== undefined) o.soldOut = b.soldOut === true || b.soldOut === "true";
   return o;
 }
 
@@ -284,6 +286,7 @@ async function createProduct(b) {
     delivery: f.delivery !== undefined ? f.delivery : DELIVERY_DEFAULT,
     method: f.method !== undefined ? f.method : METHOD_DEFAULT,
     active: f.active !== false,
+    soldOut: f.soldOut === true,
   };
   state.products.push(p);
   save();

@@ -69,7 +69,7 @@ function limit(max, windowMs) {
 setInterval(() => hits.clear(), 60 * 60 * 1000).unref();
 
 /* ---------- API المتجر (عام) ---------- */
-const publicProduct = ({ id, group, name, category, description, price, image, note, details, delivery, method }) => ({ id, group, name, category, description, price, image, note: note || "", details: details || "", delivery: delivery || "", method: method || "" });
+const publicProduct = ({ id, group, name, category, description, price, image, note, details, delivery, method, soldOut }) => ({ soldOut: soldOut === true, id, group, name, category, description, price, image, note: note || "", details: details || "", delivery: delivery || "", method: method || "" });
 const publicOrder = (o) => ({
   id: o.id, date: o.createdAt, status: o.status, transferor: o.transferor,
   serverLink: o.serverLink, nitroUser: o.nitroUser, nitroId: o.nitroId || "", items: o.items, total: o.total,
@@ -130,6 +130,7 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
     const q = Math.floor(+it.quantity);
     const p = db.getProduct(String(it.id));
     if (!p || !p.active || !(q >= 1 && q <= 20)) return res.status(400).json({ error: "منتج غير صالح في السلة" });
+    if (p.soldOut) return res.status(400).json({ error: "المنتج «" + p.name + "» نفدت الكمية حالياً، احذفه من السلة" });
     merged.set(p.id, Math.min((merged.get(p.id) || 0) + q, 20));
   }
   const items = [...merged].map(([id, quantity]) => {
