@@ -102,7 +102,7 @@ app.post("/api/visit", limit(60, 10 * 60 * 1000), (req, res) => {
   res.json(db.getSettings().showVisitors ? { visitors: r.visitors } : {});
 });
 app.get("/api/settings", (req, res) => { res.set("Cache-Control", "no-cache"); res.json(db.getSettings()); });
-app.get("/api/reviews", (req, res) => res.json(db.getActiveReviews().map(({ id, name, text, stars }) => ({ id, name, text, stars }))));
+app.get("/api/reviews", (req, res) => res.json(db.getActiveReviews().map(({ id, name, text, stars, gender }) => ({ id, name, text, stars, gender }))));
 app.get("/api/products", (req, res) => res.json(db.getActiveProducts().map(publicProduct)));
 
 const INVITE_RE = /^(https?:\/\/)?(www\.)?(discord\.gg|discord(app)?\.com\/invite)\/[\w-]+\/?$/i;
@@ -267,11 +267,6 @@ async function requireStaff(req, res, next) {
   req.staff = s;
   next();
 }
-// المنتجات والأسعار للمالك فقط (OWNER_ID في .env)
-function requireOwner(req, res, next) {
-  if (!bot.isOwner(req.staff.uid)) return res.status(403).json({ error: "هذه الصلاحية للمالك فقط" });
-  next();
-}
 const wrap = (fn) => async (req, res) => {
   try { await fn(req, res); }
   catch (e) {
@@ -301,19 +296,19 @@ app.patch("/api/admin/orders/:id", requireStaff, async (req, res) => {
   res.json(adminOrder(o));
 });
 
-app.get("/api/admin/products", requireStaff, requireOwner, (req, res) => res.json(db.getProducts()));
+app.get("/api/admin/products", requireStaff, (req, res) => res.json(db.getProducts()));
 
-app.post("/api/admin/products", requireStaff, requireOwner, wrap(async (req, res) => {
+app.post("/api/admin/products", requireStaff, wrap(async (req, res) => {
   res.status(201).json(await db.createProduct(req.body || {}));
 }));
 
-app.patch("/api/admin/products/:id", requireStaff, requireOwner, wrap(async (req, res) => {
+app.patch("/api/admin/products/:id", requireStaff, wrap(async (req, res) => {
   const p = await db.updateProduct(String(req.params.id), req.body || {});
   if (!p) return res.status(404).json({ error: "المنتج غير موجود" });
   res.json(p);
 }));
 
-app.post("/api/admin/products/:id/move", requireStaff, requireOwner, wrap(async (req, res) => {
+app.post("/api/admin/products/:id/move", requireStaff, wrap(async (req, res) => {
   const dir = req.body && req.body.dir;
   if (dir !== "up" && dir !== "down") return res.status(400).json({ error: "اتجاه غير صالح" });
   const list = db.moveProduct(String(req.params.id), dir);
@@ -321,28 +316,28 @@ app.post("/api/admin/products/:id/move", requireStaff, requireOwner, wrap(async 
   res.json(list);
 }));
 
-app.delete("/api/admin/products/:id", requireStaff, requireOwner, wrap(async (req, res) => {
+app.delete("/api/admin/products/:id", requireStaff, wrap(async (req, res) => {
   if (!db.deleteProduct(String(req.params.id))) return res.status(404).json({ error: "المنتج غير موجود" });
   res.json({ ok: true });
 }));
 
 // إعدادات المتجر: ألوان وشعار ونصوص (للمالك فقط)
-app.get("/api/admin/settings", requireStaff, requireOwner, (req, res) => res.json({ settings: db.getSettings(), defaults: db.SETTINGS_DEFAULTS }));
-app.put("/api/admin/settings", requireStaff, requireOwner, wrap(async (req, res) => {
+app.get("/api/admin/settings", requireStaff, (req, res) => res.json({ settings: db.getSettings(), defaults: db.SETTINGS_DEFAULTS }));
+app.put("/api/admin/settings", requireStaff, wrap(async (req, res) => {
   res.json({ settings: await db.updateSettings(req.body || {}), defaults: db.SETTINGS_DEFAULTS });
 }));
 
 // تقييمات العملاء (للمالك فقط)
-app.get("/api/admin/reviews", requireStaff, requireOwner, (req, res) => res.json(db.getReviews()));
-app.post("/api/admin/reviews", requireStaff, requireOwner, wrap(async (req, res) => {
+app.get("/api/admin/reviews", requireStaff, (req, res) => res.json(db.getReviews()));
+app.post("/api/admin/reviews", requireStaff, wrap(async (req, res) => {
   res.status(201).json(db.createReview(req.body || {}));
 }));
-app.patch("/api/admin/reviews/:id", requireStaff, requireOwner, wrap(async (req, res) => {
+app.patch("/api/admin/reviews/:id", requireStaff, wrap(async (req, res) => {
   const r = db.updateReview(String(req.params.id), req.body || {});
   if (!r) return res.status(404).json({ error: "التقييم غير موجود" });
   res.json(r);
 }));
-app.delete("/api/admin/reviews/:id", requireStaff, requireOwner, wrap(async (req, res) => {
+app.delete("/api/admin/reviews/:id", requireStaff, wrap(async (req, res) => {
   if (!db.deleteReview(String(req.params.id))) return res.status(404).json({ error: "التقييم غير موجود" });
   res.json({ ok: true });
 }));

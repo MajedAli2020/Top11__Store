@@ -31,7 +31,7 @@ const SEED_REVIEWS = [
   ["ريم الدوسري", "تعامل راقي وأسعار ممتازة"], ["سلطان المطيري", "مضمون ١٠٠٪"], ["منيرة الحربي", "ما قصروا، شكراً لكم"],
   ["تركي الغامدي", "أفضل متجر تعاملت معه"], ["لمى الزهراني", "خدمة ممتازة ورد سريع"], ["بندر السبيعي", "أنصح فيه بقوة"],
   ["هديل العنزي", "سرعة وأمانة، تسلمون"], ["ماجد البقمي", "تجربة رائعة وراح أكررها"], ["جود الشهري", "الدعم متعاون جداً"],
-].map(([name, text], i) => ({ id: "r-seed" + (i + 1), name, text, stars: 5, active: true, at: new Date(2026, 9, 1, 12, i).toISOString() }));
+].map(([name, text], i) => ({ id: "r-seed" + (i + 1), name, text, stars: 5, gender: [2, 4, 6, 8, 10, 12].includes(i + 1) ? "female" : "male", active: true, at: new Date(2026, 9, 1, 12, i).toISOString() }));
 
 /* ---------- إعدادات المتجر (ألوان / شعار / نصوص) ---------- */
 // القيم الافتراضية = اللي مكتوب في صفحة المتجر. أي حقل فاضي أو مطابق للافتراضي ما ينحفظ.
@@ -84,7 +84,8 @@ const fromRaw = (s) => {
   // ترحيل (مرة وحدة): نضيف «البكج الشامل» للمتجر القديم، ولو حذفته بعدها ما يرجع
   if ((s.v || 0) < 3 && !products.some((p) => p.id === BUNDLE.id)) products.push(normProduct(BUNDLE));
   // ترحيل (مرة وحدة): نضيف تقييمات العملاء الافتراضية، ولو حذفتها كلها بعدها ما ترجع
-  const reviews = Array.isArray(s.reviews) ? s.reviews : (s.v || 0) < 4 ? SEED_REVIEWS.map((r) => ({ ...r })) : [];
+  const reviews = (Array.isArray(s.reviews) ? s.reviews : (s.v || 0) < 4 ? SEED_REVIEWS.map((r) => ({ ...r })) : [])
+    .map((r) => ({ ...r, gender: r.gender === "female" || r.gender === "male" ? r.gender : (SEED_REVIEWS.find((x) => x.id === r.id) || {}).gender || "male" }));
   return { v: 5, orders: s.orders || [], products, reviews, settings: normSettings(s.settings), stats: normStats(s.stats) };
 };
 
@@ -415,9 +416,10 @@ function readReview(b, partial) {
   }
   if (!partial || b.text !== undefined) {
     const v = String(b.text ?? "").trim();
-    if (!v || v.length > 200) fail("نص التقييم مطلوب (حد أقصى 200 حرف)");
+    if (v.length > 200) fail("نص التقييم حد أقصى 200 حرف");
     o.text = v;
   }
+  if (!partial || b.gender !== undefined) o.gender = b.gender === "female" ? "female" : "male";
   if (!partial || b.stars !== undefined) {
     const n = Number(b.stars);
     if (!Number.isInteger(n) || n < 1 || n > 5) fail("عدد النجوم من 1 إلى 5");

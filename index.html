@@ -206,14 +206,14 @@
       .reviews { padding: 70px 0 10px; text-align: center; }
       .reviews[hidden] { display: none; }
       .reviews h2 { font-size: 26px; margin-bottom: 34px; }
-      .rv-view { overflow: hidden; }
+      .rv-view { overflow: hidden; padding: 44px 2px 4px; border: 1px solid #ffffff10; border-radius: 22px; background: #ffffff05; padding-inline: 16px; }
       .rv-track { display: flex; gap: 16px; transition: transform 0.5s ease; will-change: transform; }
-      .rv-card { flex: 0 0 calc((100% - 32px) / 3); position: relative; text-align: right; border: 1px solid #ffffff16; border-radius: 22px; padding: 20px 22px; background: #ffffff06; min-height: 120px; }
-      .rv-card::before { content: "\201D"; position: absolute; left: 18px; top: 2px; font-size: 56px; line-height: 1; color: #ffffff1a; font-family: Georgia, serif; }
-      .rv-head { display: flex; align-items: center; gap: 12px; }
-      .rv-av { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: var(--bg); background: linear-gradient(135deg, var(--blue2), var(--blue)); }
-      .rv-name { font-weight: 800; font-size: 14px; }
-      .rv-stars { color: var(--amber); font-size: 14px; letter-spacing: 2px; margin-top: 2px; }
+      .rv-card { flex: 0 0 calc((100% - 32px) / 3); position: relative; text-align: center; border-radius: 14px; padding: 40px 18px 18px; background: #ffffff0d; min-height: 120px; }
+      .rv-card::before { content: "\201C"; position: absolute; left: 14px; top: 4px; font-size: 44px; line-height: 1; color: #ffe81a40; font-family: Georgia, serif; }
+      .rv-av { position: absolute; top: -34px; left: 50%; transform: translateX(-50%); width: 68px; height: 68px; border-radius: 50%; overflow: hidden; background: #fff; box-shadow: 0 0 0 3px #0b0907; }
+      .rv-av svg { width: 100%; height: 100%; display: block; }
+      .rv-name { font-weight: 800; font-size: 14px; color: #ffe81a; }
+      .rv-stars { color: #ffc531; font-size: 15px; letter-spacing: 3px; margin-top: 8px; }
       .rv-stars i { font-style: normal; color: #ffffff2a; }
       .rv-text { color: #ffffff90; margin-top: 12px; font-size: 14px; }
       .rv-dots { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
@@ -1172,6 +1172,9 @@
         if (pc) pc.textContent = list.length + " منتج متاح";
       }
       /* تقييمات العملاء */
+const rvAvatar = (g) => g === "female"
+  ? '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#fff"/><path d="M14 64c0-13 8-19 18-19s18 6 18 19z" fill="#e0679a"/><path d="M15 38c-3-22 8-27 17-27s20 5 17 27c-1 8-4 10-4 10H19s-3-2-4-10z" fill="#4a2c1d"/><path d="M27 42h10v7c0 3-10 3-10 0z" fill="#f1c7a3"/><ellipse cx="32" cy="30" rx="11" ry="13" fill="#f6d3b3"/><path d="M21 28c2-9 9-12 14-10 5 1 8 5 8 10-5-1-9-4-11-7-2 4-6 7-11 7z" fill="#4a2c1d"/><circle cx="27.5" cy="31" r="1.4" fill="#2b2b2b"/><circle cx="36.5" cy="31" r="1.4" fill="#2b2b2b"/><path d="M28.5 37c2 2 5 2 7 0" stroke="#b5655a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>'
+  : '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#fff"/><path d="M12 64c0-12 8-18 20-18s20 6 20 18z" fill="#3b6fb6"/><path d="M27 42h10v6c0 3-10 3-10 0z" fill="#e8b98f"/><ellipse cx="32" cy="30" rx="11" ry="13" fill="#f1c7a3"/><path d="M20.5 28c-1-11 6-16 12-16s13 5 11 16c-2-5-5-7-8-8-4 3-10 5-15 8z" fill="#2f2a2a"/><circle cx="27.5" cy="31" r="1.4" fill="#2b2b2b"/><circle cx="36.5" cy="31" r="1.4" fill="#2b2b2b"/><path d="M28.5 37c2 2 5 2 7 0" stroke="#b5655a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
       const Reviews = {
         list: [], idx: 0, timer: null,
         pv() { const w = innerWidth; return w <= 620 ? 1 : w <= 900 ? 2 : 3; },
@@ -1187,7 +1190,7 @@
           if (!this.list.length) return;
           document.getElementById("rvTrack").innerHTML = this.list.map((r) => {
             const n = Math.max(1, Math.min(5, Number(r.stars) || 5));
-            return `<div class="rv-card"><div class="rv-head"><div class="rv-av">${esc(Array.from(r.name)[0] || "؟")}</div><div><div class="rv-name">${esc(r.name)}</div><div class="rv-stars" aria-label="${n} من 5">${"★".repeat(n)}<i>${"★".repeat(5 - n)}</i></div></div></div><p class="rv-text">${esc(r.text)}</p></div>`;
+            return `<div class="rv-card"><div class="rv-av">${rvAvatar(r.gender)}</div><div class="rv-name">${esc(r.name)}</div><div class="rv-stars" aria-label="${n} من 5">${"★".repeat(n)}<i>${"★".repeat(5 - n)}</i></div>${r.text ? `<p class="rv-text">${esc(r.text)}</p>` : ""}</div>`;
           }).join("");
           this.idx = 0; this.go(0); this.auto();
           const v = document.getElementById("rvView");
