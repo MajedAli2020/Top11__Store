@@ -15,6 +15,8 @@ const SESSION_MS = 12 * 60 * 60 * 1000;
 
 const app = express();
 app.disable("x-powered-by");
+// خلف Render/Cloudflare: بدونها كل الزوار يظهرون بنفس الـ IP وحد الطلبات يشتغل على الكل مع بعض. على Render ضع TRUST_PROXY=1
+if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
 app.use("/api/admin/products", express.json({ limit: "600kb" })); // صور المنتجات (تنضغط في المتصفح قبل الرفع)
 app.use("/api/orders", express.json({ limit: "3mb" })); // الطلب + صورة الإيصال (تنضغط في المتصفح قبل الرفع)
 app.use(express.json({ limit: "20kb" }));
@@ -185,9 +187,12 @@ app.get("/api/my/orders", (req, res) => {
   res.json(db.listOrders().filter((o) => o.customer && o.customer.id === c.uid).map(publicOrder));
 });
 
-app.get("/api/orders/:id", limit(120, 10 * 60 * 1000), (req, res) => {
+// تفاصيل الطلب لصاحبه فقط (أو الإدارة). غير صاحب الطلب يشوف نفس رسالة «ما لقيت هذا الرقم» عشان ما يتخمّن الأرقام
+app.get("/api/orders/:id", limit(120, 10 * 60 * 1000), async (req, res) => {
+  const c = readCustomer(req);
+  if (!c) return res.status(401).json({ error: "سجّل الدخول بحساب Discord عشان تشوف طلبك" });
   const o = db.getOrder(String(req.params.id).toUpperCase());
-  if (!o) return res.status(404).json({ error: "ما لقيت هذا الرقم" });
+  if (!o || !((o.customer && o.customer.id === c.uid) || (await bot.isStaff(c.uid)))) return res.status(404).json({ error: "ما لقيت هذا الرقم" });
   res.json(publicOrder(o));
 });
 
