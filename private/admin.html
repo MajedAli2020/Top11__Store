@@ -80,8 +80,9 @@
   .grp-head { display:flex; align-items:baseline; gap:10px; margin:24px 0 10px; }
   .grp-head h3 { font-size:16px; color:var(--ice); }
   .grp-head .count { color:var(--muted); font-size:13px; }
-  .prow { display:grid; grid-template-columns:56px 1fr auto auto auto; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:8px; }
+  .prow { display:grid; grid-template-columns:56px 1fr auto auto auto auto; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:8px; }
   .prow.off { opacity:.55; }
+  .tgl { display:flex; flex-direction:column; align-items:center; gap:4px; } .tgl small { font-size:11px; color:var(--muted); }
   .prow .thumb { width:56px; height:56px; object-fit:contain; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
   .p-name { font-weight:700; }
   .p-sub { color:var(--muted); font-size:13px; margin-top:2px; }
@@ -242,6 +243,7 @@
     </div>
     <div class="dlg-foot">
       <label class="grow" style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fActive" checked /><span></span></span> ظاهر في المتجر</label>
+      <label style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fSold" /><span></span></span> نفدت الكمية</label>
       <button type="button" class="btn" id="dlgCancel">إلغاء</button>
       <button type="submit" class="btn primary" id="dlgSubmit">حفظ</button>
     </div>
@@ -358,6 +360,11 @@ function prodRow(p, i, n) {
     try { Object.assign(p, await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"PATCH", body:{ active:on } })); renderProducts(); toast(on ? "صار ظاهر في المتجر" : "تم إخفاؤه من المتجر"); }
     catch (err) { e.target.checked = !on; fail(err); }
   } });
+  const sold = h("input", { type:"checkbox", checked:p.soldOut === true, "aria-label":"نفدت الكمية", onchange: async (e) => {
+    const on = e.target.checked;
+    try { Object.assign(p, await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"PATCH", body:{ soldOut:on } })); renderProducts(); toast(on ? "تم وضعه «نفدت الكمية» ولا يمكن طلبه" : "رجع متوفر للطلب"); }
+    catch (err) { e.target.checked = !on; fail(err); }
+  } });
   const move = (dir, label) => h("button", { class:"btn ghost sm", "aria-label":label, disabled: dir === "up" ? i === 0 : i === n - 1, onclick: async () => {
     try { products = await api("/api/admin/products/" + encodeURIComponent(p.id) + "/move", { method:"POST", body:{ dir } }); renderProducts(); } catch (err) { fail(err); }
   } }, dir === "up" ? "▲" : "▼");
@@ -368,9 +375,10 @@ function prodRow(p, i, n) {
   } }, "حذف");
   return h("div", { class:"prow" + (p.active ? "" : " off") },
     h("img", { class:"thumb", src:p.image, alt:"" }),
-    h("div", {}, h("div", { class:"p-name" }, p.name), h("div", { class:"p-sub" }, p.category + (p.note ? " · " + p.note : "") + (p.active ? "" : " · مخفي"))),
+    h("div", {}, h("div", { class:"p-name" }, p.name), h("div", { class:"p-sub" }, p.category + (p.note ? " · " + p.note : "") + (p.active ? "" : " · مخفي") + (p.soldOut ? " · نفدت الكمية" : ""))),
     h("div", { class:"p-price" }, money(p.price)),
-    h("label", { class:"switch", title:"ظاهر في المتجر" }, vis, h("span")),
+    h("div", { class:"tgl" }, h("label", { class:"switch", title:"ظاهر في المتجر" }, vis, h("span")), h("small", {}, "ظاهر")),
+    h("div", { class:"tgl" }, h("label", { class:"switch", title:"نفدت الكمية (ما يقدر يطلبه أحد)" }, sold, h("span")), h("small", {}, "نفدت الكمية")),
     h("div", { class:"p-actions" }, move("up", "تحريك لفوق"), move("down", "تحريك لتحت"), h("button", { class:"btn sm", onclick:() => openDialog(p) }, "تعديل"), del));
 }
 function renderProducts() {
@@ -428,6 +436,7 @@ function openDialog(p) {
   $("fDelivery").value = p ? p.delivery || "" : "";
   $("fMethod").value = p ? p.method || "" : "";
   $("fActive").checked = p ? p.active : true;
+  $("fSold").checked = p ? p.soldOut === true : false;
   $("fFile").value = "";
   $("fPreview").hidden = !p; if (p) $("fPreview").src = p.image;
   $("fImgHint").textContent = p ? "اتركها فاضية إذا ما تبي تغيّر الصورة." : "الصورة مطلوبة — PNG أو JPG أو WEBP، وتنضغط تلقائياً قبل الرفع.";
@@ -450,7 +459,7 @@ $("dlgForm").addEventListener("submit", async (e) => {
   if ($("fPrice").value === "" || Number($("fPrice").value) < 0) return toast("اكتب سعر صحيح");
   if (!editing && !newImage) return toast("اختر صورة للمنتج");
   const body = { name:$("fName").value, price:$("fPrice").value, group:$("fGroup").value, category:$("fCat").value,
-    note:$("fNote").value, description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked };
+    note:$("fNote").value, description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked };
   if (newImage) body.image = newImage;
   const btn = $("dlgSubmit"); btn.disabled = true;
   try {

@@ -1039,6 +1039,8 @@
         renderCart();
       }
       function add(id) {
+        const sp = allProducts.find((x) => x.id === id);
+        if (sp && sp.soldOut) { toast("نفدت الكمية من هذا المنتج"); return; }
         cart[id] = Math.min((cart[id] || 0) + 1, 20);
         persist();
         toast("تمت إضافة المنتج إلى السلة");
@@ -1073,9 +1075,9 @@
                     </div>
                     <div class="add-row">
                       <button class="explore" onclick="explore('${esc(p.id)}')">استكشاف</button>
-                      <button class="add" onclick="add('${esc(p.id)}')">
-                        أضف إلى السلة
-                      </button>
+                      ${p.soldOut
+                        ? '<button class="add" disabled style="opacity:.5;cursor:not-allowed;transform:none">نفدت الكمية</button>'
+                        : `<button class="add" onclick="add('${esc(p.id)}')">أضف إلى السلة</button>`}
                     </div>
                   </div>
                 </div>
@@ -1114,8 +1116,9 @@
         const btns = el("div", "xp-btns");
         const close = el("button", "explore", "إغلاق");
         close.onclick = closeExplore;
-        const addb = el("button", "add", "أضف للسلة");
-        addb.onclick = () => { add(p.id); closeExplore(); };
+        const addb = el("button", "add", p.soldOut ? "نفدت الكمية" : "أضف للسلة");
+        if (p.soldOut) { addb.disabled = true; addb.style.opacity = ".5"; addb.style.cursor = "not-allowed"; }
+        else addb.onclick = () => { add(p.id); closeExplore(); };
         btns.append(addb, close);
         foot.append(btns, el("div", "xp-price", Number(p.price) + " ر.س"));
         box.append(foot);
@@ -1228,7 +1231,7 @@
           if (!r.ok) throw new Error();
           allProducts = await r.json();
           // نشيل من السلة أي منتج ما عاد موجود
-          Object.keys(cart).forEach((id) => { if (!allProducts.some((p) => p.id === id)) delete cart[id]; });
+          Object.keys(cart).forEach((id) => { if (!allProducts.some((p) => p.id === id && !p.soldOut)) delete cart[id]; });
           renderProducts();
           persist();
         } catch (e) {
