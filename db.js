@@ -41,7 +41,6 @@ const TEXT_FIELDS = {
   heroEyebrow: ["تسليم سريع • موثوق • آمن", 80], heroTitle1: ["خلّ تجربتك", 40], heroTitle2: ["أفضل مع متجر", 40], heroTitle3: ["توب.", 40],
   heroLead: ["منتجات رقمية مختارة بعناية، طلب سهل بالتحويل البنكي، وتسليم مباشر إلى حسابك في Discord بعد اعتماد الإيصال.", 300],
   btnProducts: ["تصفح المنتجات ←", 40], btnCart: ["افتح السلة", 40],
-  showPill: ["توب ستور / 2026", 40], showSmall: ["منتجك الرقمي", 40], showStrong: ["جاهز يوصل لك", 40], showSecure: ["تسليم آمن", 40],
   homeHeading: ["تجربة مرتبة من البداية", 80],
   ctaTitle: ["جاهز تبدأ؟", 60], ctaText: ["اختر منتجك، أضفه للسلة، وابدأ تجربة توب ستور.", 200], ctaButton: ["ابدأ طلبك الآن ←", 40],
   navHome: ["الرئيسية", 24], navProducts: ["المنتجات", 24], navHow: ["كيف تطلب؟", 24], navTrack: ["تتبع طلبي", 24], navCart: ["السلة", 24],
@@ -56,7 +55,7 @@ const SECTION_DEFAULTS = [
   { id: "bots", label: "سورسات (بوتات الديسكورد)", sub: "سورسات وبوتات جاهزة" },
 ];
 const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])), sections: SECTION_DEFAULTS };
-const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", sections: Array.isArray(x && x.sections) ? x.sections : null });
+const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", sections: Array.isArray(x && x.sections) ? x.sections : null });
 
 const GROUPS = ["main", "subs", "accounts", "bots"];
 const DEFAULT_CAT = { main: "نيترو وبوست", subs: "اشتراكات", accounts: "حسابات دسكورد", bots: "سورسات (بوتات ديسكورد)" };
@@ -326,7 +325,7 @@ function moveProduct(id, dir) {
 /* ---------- إعدادات المتجر ---------- */
 const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
-  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, sections: null };
+  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", sections: null };
   const bc = b.colors || {}, bt = b.texts || {};
   for (const k of Object.keys(COLOR_DEFAULTS)) {
     const v = String(bc[k] ?? "").trim().toLowerCase();
@@ -358,7 +357,11 @@ async function updateSettings(b) {
   const oldLogo = cur.logo;
   if (b.resetLogo === true) next.logo = "";
   if (b.logo) next.logo = "/img/" + (await storeImage(b.logo));
+  const oldHero = cur.heroImage;
+  if (b.resetHeroImage === true) next.heroImage = "";
+  if (b.heroImage) next.heroImage = "/img/" + (await storeImage(b.heroImage));
   if (oldLogo && oldLogo !== next.logo) removeImage(oldLogo);
+  if (oldHero && oldHero !== next.heroImage) removeImage(oldHero);
   state.settings = next;
   save();
   return getSettings();

@@ -385,19 +385,19 @@ async function loadProducts() { await loadSections(); try { products = await api
 /* ---------- نافذة الإضافة / التعديل ---------- */
 const WEBP = document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp");
 // نصغّر الصورة ونضغطها في المتصفح عشان تنحفظ خفيفة
-function compressImage(file) {
+function compressImage(file, maxDim = 640, maxLen = 200000) {
   return new Promise((resolve, reject) => {
     const img = new Image(), url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      let max = 640, out = "";
+      let max = maxDim, out = "";
       for (let tries = 0; tries < 6; tries++) {
         const sc = Math.min(1, max / Math.max(img.width, img.height));
         const c = document.createElement("canvas");
         c.width = Math.max(1, Math.round(img.width * sc)); c.height = Math.max(1, Math.round(img.height * sc));
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
         out = WEBP ? c.toDataURL("image/webp", 0.82) : file.type === "image/png" ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.82);
-        if (out.length <= 200000) return resolve(out);
+        if (out.length <= maxLen) return resolve(out);
         max = Math.round(max * 0.75);
       }
       reject(new Error("الصورة كبيرة، جرّب صورة أصغر"));
@@ -505,10 +505,9 @@ const TEXT_GROUPS = [
   ["الهوية", [["storeName","اسم المتجر"],["navSub","النص الصغير تحت الاسم"],["tabSuffix","عنوان التبويب (بعد اسم المتجر)"]]],
   ["الواجهة الرئيسية", [["heroEyebrow","الشارة فوق العنوان"],["heroTitle1","العنوان - السطر 1"],["heroTitle2","العنوان - السطر 2 (ملوّن)"],["heroTitle3","العنوان - السطر 3"],["heroLead","الوصف تحت العنوان",1],["btnProducts","زر المنتجات"],["btnCart","زر السلة"]]],
   ["أسماء القوائم", [["navHome","القائمة: الرئيسية"],["navProducts","القائمة: المنتجات"],["navHow","القائمة: كيف تطلب؟"],["navTrack","القائمة: تتبع طلبي"],["navCart","زر السلة"],["catAllLabel","تبويب «الكل» في المنتجات"],["catAllSub","وصف «الكل» في القائمة المنسدلة"]]],
-  ["بطاقة الشعار", [["showPill","الشارة العلوية"],["showSmall","النص الصغير"],["showStrong","النص الكبير"],["showSecure","شارة الأمان"]]],
   ["أقسام الصفحة", [["homeHeading","عنوان قسم المميزات"],["ctaTitle","عنوان «جاهز تبدأ؟»"],["ctaText","نص «جاهز تبدأ؟»",1],["ctaButton","زر «جاهز تبدأ؟»"],["reviewsTitle","عنوان التقييمات"],["footerLeft","نص الفوتر (يمين)"],["footerRight","نص الفوتر (يسار)"]]],
 ];
-let setData = null, setDefs = null, setLogoNew = "", setLogoReset = false, setSections = [];
+let setData = null, setDefs = null, setLogoNew = "", setLogoReset = false, setSections = [], setHeroNew = "", setHeroReset = false;
 function colorField(k, label, val) {
   const t = h("input", { type:"text", id:"c_" + k, value:val, maxlength:"7", "aria-label":label });
   const c = h("input", { type:"color", value:val, "aria-label":label + " (اختيار)" });
@@ -527,6 +526,15 @@ function renderSettings() {
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "الشعار"), h("div", { class:"logo-row" }, prev,
     h("div", {}, file, h("div", { class:"hint", style:"font-size:12px;color:var(--muted);margin-top:4px" }, "PNG أو JPG أو WEBP. يفضّل صورة مربعة. يظهر في الشريط العلوي وبطاقة الواجهة وأيقونة التبويب."),
       h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setLogoNew = ""; setLogoReset = true; file.value = ""; prev.src = "assets/logo.png"; toast("سيرجع الشعار الافتراضي عند الحفظ"); } }, "استرجاع الشعار الافتراضي")))));
+  const hPrev = h("img", { id:"heroPrev", alt:"", src: setHeroReset ? "assets/hero.webp" : (setData.heroImage || "assets/hero.webp"), style:"width:min(320px,100%);height:auto;aspect-ratio:16/9;border-radius:14px;border:1px solid var(--line);object-fit:cover" });
+  const hFile = h("input", { type:"file", id:"heroFile", accept:"image/png,image/jpeg,image/webp" });
+  hFile.addEventListener("change", async (e) => {
+    const f = e.target.files[0]; setHeroNew = ""; if (!f) return;
+    try { setHeroNew = await compressImage(f, 1280, 420000); setHeroReset = false; hPrev.src = setHeroNew; } catch (err) { toast(err.message); e.target.value = ""; }
+  });
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "صورة الواجهة الرئيسية"), h("div", { class:"logo-row" }, hPrev,
+    h("div", {}, hFile, h("div", { style:"font-size:12px;color:var(--muted);margin-top:4px" }, "تظهر بجانب العنوان في أول الصفحة. الأفضل صورة عريضة بنسبة 16:9."),
+      h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setHeroNew = ""; setHeroReset = true; hFile.value = ""; hPrev.src = "assets/hero.webp"; toast("ترجع الصورة الافتراضية عند الحفظ"); } }, "استرجاع الصورة الافتراضية")))));
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "الألوان"), h("div", { class:"set-grid" }, COLOR_FIELDS.map(([k, l]) => colorField(k, l, st.colors[k] || d.colors[k])))));
   const secBox = h("div", { class:"set-card" }, h("h3", {}, "أقسام المنتجات (الاسم والترتيب)"),
     h("p", { style:"color:var(--muted);font-size:13px;margin:-6px 0 12px" }, "الترتيب هنا هو ترتيب الأقسام في المتجر (التبويبات والقائمة المنسدلة)، وهو نفس ترتيبها في تبويب «المنتجات والأسعار»."));
@@ -552,7 +560,7 @@ function renderSettings() {
   $("setBody").replaceChildren(...parts);
 }
 async function loadSettings() {
-  try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); renderSettings(); } catch (e) { fail(e); }
+  try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); renderSettings(); } catch (e) { fail(e); }
 }
 async function saveSettings(reset) {
   const body = { colors:{}, texts:{} };
@@ -565,12 +573,14 @@ async function saveSettings(reset) {
     TEXT_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("t_" + k).value; }));
     body.sections = setSections.map((x) => ({ id:x.id, label:x.label, sub:x.sub }));
     if (setLogoNew) body.logo = setLogoNew;
+    if (setHeroNew) body.heroImage = setHeroNew;
+    if (setHeroReset) body.resetHeroImage = true;
     if (setLogoReset) body.resetLogo = true;
-  } else body.resetLogo = true;
+  } else { body.resetLogo = true; body.resetHeroImage = true; }
   const btns = [$("setSave"), $("setReset")]; btns.forEach((b) => (b.disabled = true));
   try {
     const r = await api("/api/admin/settings", { method:"PUT", body });
-    setData = r.settings; setLogoNew = ""; setLogoReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); SECTIONS = r.settings.sections; fillGroupSelect(); renderSettings();
+    setData = r.settings; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); SECTIONS = r.settings.sections; fillGroupSelect(); renderSettings();
     toast(reset ? "رجعت الإعدادات الافتراضية" : "تم الحفظ وظهر في المتجر");
   } catch (e) { fail(e); }
   btns.forEach((b) => (b.disabled = false));
