@@ -168,7 +168,7 @@
       <div class="sec-head">
         <div>
           <h2>المنتجات والأسعار</h2>
-          <p>أي تغيير يظهر في المتجر مباشرة. الإضافة والتعديل والحذف للمالك فقط.</p>
+          <p>أي تغيير يظهر في المتجر مباشرة. الإضافة والتعديل والحذف لأصحاب رتبة الإدارة.</p>
         </div>
         <button class="btn primary" id="addBtn" type="button">＋ إضافة منتج</button>
       </div>
@@ -193,7 +193,7 @@
       <div class="sec-head">
         <div>
           <h2>تقييم العملاء</h2>
-          <p>تظهر في آخر صفحة المتجر. الإضافة والتعديل والحذف للمالك فقط.</p>
+          <p>تظهر في آخر صفحة المتجر. الإضافة والتعديل والحذف لأصحاب رتبة الإدارة.</p>
         </div>
         <button class="btn primary" id="addRevBtn" type="button">＋ إضافة تقييم</button>
       </div>
@@ -206,7 +206,8 @@
   <form id="rdlgForm" class="dlg-in" novalidate>
     <h3 id="rdlgTitle">إضافة تقييم</h3>
     <div class="full"><label for="rName">اسم العميل</label><input type="text" id="rName" maxlength="40" required /></div>
-    <div class="full"><label for="rText">نص التقييم</label><textarea id="rText" maxlength="200" rows="3" required></textarea></div>
+    <div class="full"><label for="rGender">الصورة</label><select id="rGender"><option value="male">👦 ولد</option><option value="female">👧 بنت</option></select></div>
+    <div class="full"><label for="rText">نص التقييم (اختياري)</label><textarea id="rText" maxlength="200" rows="3"></textarea></div>
     <div class="full"><label for="rStars">عدد النجوم</label><select id="rStars"><option value="5">★★★★★ (5)</option><option value="4">★★★★☆ (4)</option><option value="3">★★★☆☆ (3)</option><option value="2">★★☆☆☆ (2)</option><option value="1">★☆☆☆☆ (1)</option></select></div>
     <div class="dlg-foot">
       <label class="grow" style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="rActive" checked /><span></span></span> ظاهر في المتجر</label>
@@ -471,6 +472,9 @@ $("dlgForm").addEventListener("submit", async (e) => {
 });
 
 /* ---------- تقييم العملاء (للمالك فقط) ---------- */
+const rvAvatar = (g) => g === "female"
+  ? '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#fff"/><path d="M14 64c0-13 8-19 18-19s18 6 18 19z" fill="#e0679a"/><path d="M15 38c-3-22 8-27 17-27s20 5 17 27c-1 8-4 10-4 10H19s-3-2-4-10z" fill="#4a2c1d"/><path d="M27 42h10v7c0 3-10 3-10 0z" fill="#f1c7a3"/><ellipse cx="32" cy="30" rx="11" ry="13" fill="#f6d3b3"/><path d="M21 28c2-9 9-12 14-10 5 1 8 5 8 10-5-1-9-4-11-7-2 4-6 7-11 7z" fill="#4a2c1d"/><circle cx="27.5" cy="31" r="1.4" fill="#2b2b2b"/><circle cx="36.5" cy="31" r="1.4" fill="#2b2b2b"/><path d="M28.5 37c2 2 5 2 7 0" stroke="#b5655a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>'
+  : '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#fff"/><path d="M12 64c0-12 8-18 20-18s20 6 20 18z" fill="#3b6fb6"/><path d="M27 42h10v6c0 3-10 3-10 0z" fill="#e8b98f"/><ellipse cx="32" cy="30" rx="11" ry="13" fill="#f1c7a3"/><path d="M20.5 28c-1-11 6-16 12-16s13 5 11 16c-2-5-5-7-8-8-4 3-10 5-15 8z" fill="#2f2a2a"/><circle cx="27.5" cy="31" r="1.4" fill="#2b2b2b"/><circle cx="36.5" cy="31" r="1.4" fill="#2b2b2b"/><path d="M28.5 37c2 2 5 2 7 0" stroke="#b5655a" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
 let reviews = [], editingRev = null;
 const stars = (n) => "★".repeat(n) + "☆".repeat(5 - n);
 function revRow(r) {
@@ -480,7 +484,7 @@ function revRow(r) {
     catch (err) { e.target.checked = !on; fail(err); }
   } });
   return h("div", { class:"prow" + (r.active ? "" : " off") },
-    h("div", { class:"thumb", style:"display:grid;place-items:center;font-weight:800" }, Array.from(r.name)[0] || "؟"),
+    Object.assign(h("div", { class:"thumb", style:"overflow:hidden;padding:0" }), { innerHTML: rvAvatar(r.gender) }),
     h("div", {}, h("div", { class:"p-name" }, r.name), h("div", { class:"p-sub" }, r.text + (r.active ? "" : " · مخفي"))),
     h("div", { class:"p-price", style:"color:#e0b36a;letter-spacing:2px" }, stars(r.stars)),
     h("label", { class:"switch", title:"ظاهر في المتجر" }, vis, h("span")),
@@ -500,14 +504,14 @@ function openRevDialog(r) {
   editingRev = r || null;
   $("rdlgTitle").textContent = r ? "تعديل التقييم" : "إضافة تقييم";
   $("rName").value = r ? r.name : ""; $("rText").value = r ? r.text : "";
-  $("rStars").value = r ? r.stars : 5; $("rActive").checked = r ? r.active : true;
+  $("rStars").value = r ? r.stars : 5; $("rGender").value = r ? (r.gender || "male") : "male"; $("rActive").checked = r ? r.active : true;
   $("rdlg").showModal();
 }
 $("addRevBtn").addEventListener("click", () => openRevDialog(null));
 $("rdlgCancel").addEventListener("click", () => $("rdlg").close());
 $("rdlgForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const body = { name:$("rName").value, text:$("rText").value, stars:Number($("rStars").value), active:$("rActive").checked };
+  const body = { name:$("rName").value, text:$("rText").value, stars:Number($("rStars").value), gender:$("rGender").value, active:$("rActive").checked };
   const btn = $("rdlgSubmit"); btn.disabled = true;
   try {
     if (editingRev) { Object.assign(editingRev, await api("/api/admin/reviews/" + encodeURIComponent(editingRev.id), { method:"PATCH", body })); toast("تم حفظ التقييم"); }
@@ -629,9 +633,9 @@ $("search").addEventListener("input", renderOrders);
   try { me = await api("/api/admin/me"); } catch (e) { return; }
   $("meName").textContent = me.name;
   if (me.avatar) $("meAvatar").src = `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=64`; else $("meAvatar").classList.add("hidden");
-  if (me.owner) { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); }
+  { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); }
   $("appView").classList.remove("hidden");
-  renderChips(); loadOrders(); if (me.owner) loadSections();
+  renderChips(); loadOrders(); loadSections();
   timer = setInterval(loadOrders, 15000);
 })();
 </script>
