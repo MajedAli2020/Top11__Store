@@ -23,7 +23,7 @@
         --text: #f7f1ea;
         --muted: #a8967f;
         --blue: #a07a58;
-        --blue2: var(--blue2);
+        --blue2: #c9a07a;
         --ice: #ecd5bb;
         --green: #72c7a0;
         --red: #d0645f;
@@ -263,12 +263,12 @@
       .upload input { display: none; }
       .chosen { color: var(--green); font-size: 12px; margin-top: 7px; }
       .form-actions { display: flex; gap: 10px; margin-top: 23px; }
-      .notice { margin-top: 22px; border: 1px solid var(--blue2)77; background: var(--blue2)14; border-radius: 16px; padding: 16px 18px; line-height: 1.9; }
+      .notice { margin-top: 22px; border: 1px solid color-mix(in srgb, var(--blue2) 47%, transparent); background: color-mix(in srgb, var(--blue2) 8%, transparent); border-radius: 16px; padding: 16px 18px; line-height: 1.9; }
       .notice h4 { color: var(--ice); font-size: 17px; margin-bottom: 6px; }
       .notice ul { padding-inline-start: 20px; color: #ffffffcc; }
       .notice li { margin-top: 4px; }
       .notice li b { color: var(--ice); }
-      .ack { display: flex; gap: 11px; align-items: flex-start; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--blue2)55; cursor: pointer; font-weight: 700; line-height: 1.8; }
+      .ack { display: flex; gap: 11px; align-items: flex-start; margin-top: 14px; padding-top: 14px; border-top: 1px dashed color-mix(in srgb, var(--blue2) 33%, transparent); cursor: pointer; font-weight: 700; line-height: 1.8; }
       .ack input { width: 21px; height: 21px; margin-top: 4px; flex: none; accent-color: var(--blue2); cursor: pointer; }
       #submitBtn:disabled { opacity: 0.45; cursor: not-allowed; }
       .track-box { max-width: 620px; margin-top: 30px; }
@@ -389,7 +389,7 @@
       .p-step.done i { background: var(--green); border-color: var(--green); color: var(--bg); font-weight: 900; }
       .p-step.done::before { background: var(--green); }
       .p-step.now { color: var(--ice); }
-      .p-step.now i { border-color: var(--blue2); box-shadow: 0 0 0 4px var(--blue2)22; color: var(--ice); }
+      .p-step.now i { border-color: var(--blue2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue2) 13%, transparent); color: var(--ice); }
       .p-bad { color: var(--red); border: 1px solid #d0645f66; border-radius: 14px; padding: 12px 14px; margin: 6px 0 22px; background: #d0645f12; font-weight: 800; }
       .toast.big { max-width: min(430px, calc(100% - 44px)); font-weight: 700; line-height: 1.7; border-color: var(--green); }
       /* Products dropdown + category tabs */
@@ -402,10 +402,10 @@
       .navlinks .dd-menu button small { display: block; color: #ffffff66; font-weight: 500; font-size: 11px; margin-top: 2px; }
       @media (max-width: 850px) { .nav-dd { flex: 1; } .dd-menu { top: auto; bottom: calc(100% + 14px); right: 0; left: 0; } }
       .sec-divider { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; margin: 14px 0 2px; color: var(--ice); font-weight: 900; font-size: 15px; }
-      .sec-divider::before, .sec-divider::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--blue2)99, transparent); }
+      .sec-divider::before, .sec-divider::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--blue2) 60%, transparent), transparent); }
       .sec-divider small { color: #ffffff66; font-weight: 600; font-size: 12px; margin-inline-start: 8px; }
       .sec-divider:first-child { margin-top: 0; }
-      .cat-line { height: 1px; margin: 0 0 24px; background: linear-gradient(90deg, transparent, var(--blue2)88, transparent); }
+      .cat-line { height: 1px; margin: 0 0 24px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--blue2) 53%, transparent), transparent); }
       .cat-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 6px 0 18px; }
       .cat-tab { text-align: right; color: var(--text); border: 1px solid #ffffff18; background: #ffffff06; border-radius: 16px; padding: 14px 16px; cursor: pointer; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
       .cat-tab:hover { background: #ffffff0d; border-color: color-mix(in srgb, var(--ice) 40%, transparent); transform: translateY(-2px); }
@@ -515,6 +515,7 @@
           r.setProperty("--line", "color-mix(in srgb, var(--blue) 55%, var(--bg))");
         }
         SITE.st = st;
+        if (window.onSiteSettings) window.onSiteSettings(st);
         var paint = function () {
           var t = st.texts || {};
           document.querySelectorAll("[data-s]").forEach(function (el) {
@@ -552,17 +553,17 @@
           <span><b id="brandName">توب <span>ستور</span></b><small data-s="navSub">Discord Services</small></span>
         </a>
         <nav class="navlinks">
-          <button data-nav="home" class="active" onclick="go('home')">الرئيسية</button>
+          <button data-nav="home" class="active" onclick="go('home')" data-s="navHome">الرئيسية</button>
           <div class="nav-dd" id="navDd">
-            <button data-nav="products" onclick="toggleDd(event)">المنتجات ▾</button>
+            <button data-nav="products" onclick="toggleDd(event)"><span data-s="navProducts">المنتجات</span> ▾</button>
             <div class="dd-menu" id="ddMenu"></div>
           </div>
-          <button data-nav="how" onclick="go('how')">كيف تطلب؟</button>
-          <button data-nav="tracking" onclick="go('tracking')">تتبع طلبي</button>
+          <button data-nav="how" onclick="go('how')" data-s="navHow">كيف تطلب؟</button>
+          <button data-nav="tracking" onclick="go('tracking')" data-s="navTrack">تتبع طلبي</button>
         </nav>
         <div class="nav-actions">
           <span id="navUser"></span>
-          <button class="cart-btn" onclick="go('cart')">السلة <span id="count" class="badge">0</span></button>
+          <button class="cart-btn" onclick="go('cart')"><span data-s="navCart">السلة</span> <span id="count" class="badge">0</span></button>
         </div>
       </div>
     </header>
@@ -804,7 +805,7 @@
       // المنتجات تجي من السيرفر (/api/products) والأسعار تُحسب هناك
       let products = [];
       const CATS_ALL = { id: "all", label: "الكل", sub: "كل المنتجات" };
-      const CATS = [
+      let CATS = [
         { id: "main", label: "نيترو وبوست", sub: "نيترو وبوستات السيرفرات" },
         { id: "subs", label: "اشتراكات", sub: "اشتراكات رقمية" },
         { id: "accounts", label: "حسابات دسكورد", sub: "حسابات قديمة ومميزة" },
@@ -812,6 +813,18 @@
       ];
       let curCat = "all";
       let allProducts = [];
+      const CATS_DEFAULT_ALL = { label: CATS_ALL.label, sub: CATS_ALL.sub };
+      // يُستدعى من إعدادات المتجر: أسماء الأقسام وترتيبها ونص «الكل»
+      window.onSiteSettings = function (st) {
+        const t = st.texts || {};
+        if (Array.isArray(st.sections) && st.sections.length) CATS = st.sections.map((x) => ({ id: x.id, label: x.label, sub: x.sub }));
+        CATS_ALL.label = t.catAllLabel || CATS_DEFAULT_ALL.label;
+        CATS_ALL.sub = t.catAllSub || CATS_DEFAULT_ALL.sub;
+        const m = document.getElementById("ddMenu");
+        if (m) m.textContent = "";
+        if (allProducts.length) renderProducts(); else renderCatMenus();
+      };
+      if (window.SITE && SITE.st) setTimeout(() => window.onSiteSettings(SITE.st), 0);
       let cart = {};
       try { cart = JSON.parse(localStorage.getItem("rouh-cart") || "{}"); } catch (e) { cart = {}; }
 

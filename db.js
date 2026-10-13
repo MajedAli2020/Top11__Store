@@ -44,10 +44,19 @@ const TEXT_FIELDS = {
   showPill: ["توب ستور / 2026", 40], showSmall: ["منتجك الرقمي", 40], showStrong: ["جاهز يوصل لك", 40], showSecure: ["تسليم آمن", 40],
   homeHeading: ["تجربة مرتبة من البداية", 80],
   ctaTitle: ["جاهز تبدأ؟", 60], ctaText: ["اختر منتجك، أضفه للسلة، وابدأ تجربة توب ستور.", 200], ctaButton: ["ابدأ طلبك الآن ←", 40],
+  navHome: ["الرئيسية", 24], navProducts: ["المنتجات", 24], navHow: ["كيف تطلب؟", 24], navTrack: ["تتبع طلبي", 24], navCart: ["السلة", 24],
+  catAllLabel: ["الكل", 30], catAllSub: ["كل المنتجات", 50],
   reviewsTitle: ["تقييمات العملاء", 60], footerLeft: ["توب ستور — منتجات رقمية بتجربة مختلفة", 120], footerRight: ["Top STORE / 2026", 60],
 };
-const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])) };
-const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "" });
+// أقسام المنتجات: المعرّفات ثابتة (المنتجات مرتبطة فيها)، والاسم والوصف والترتيب تتعدل
+const SECTION_DEFAULTS = [
+  { id: "main", label: "نيترو وبوست", sub: "نيترو وبوستات السيرفرات" },
+  { id: "subs", label: "اشتراكات", sub: "اشتراكات رقمية" },
+  { id: "accounts", label: "حسابات دسكورد", sub: "حسابات قديمة ومميزة" },
+  { id: "bots", label: "سورسات (بوتات الديسكورد)", sub: "سورسات وبوتات جاهزة" },
+];
+const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])), sections: SECTION_DEFAULTS };
+const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", sections: Array.isArray(x && x.sections) ? x.sections : null });
 
 const GROUPS = ["main", "subs", "accounts", "bots"];
 const DEFAULT_CAT = { main: "نيترو وبوست", subs: "اشتراكات", accounts: "حسابات دسكورد", bots: "سورسات (بوتات ديسكورد)" };
@@ -315,9 +324,9 @@ function moveProduct(id, dir) {
 }
 
 /* ---------- إعدادات المتجر ---------- */
-const getSettings = () => state.settings;
+const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
-  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo };
+  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, sections: null };
   const bc = b.colors || {}, bt = b.texts || {};
   for (const k of Object.keys(COLOR_DEFAULTS)) {
     const v = String(bc[k] ?? "").trim().toLowerCase();
@@ -331,13 +340,28 @@ async function updateSettings(b) {
     if (v.length > max) fail("النص طويل (حد أقصى " + max + " حرف)");
     next.texts[k] = v;
   }
+  if (b.sections !== undefined) {
+    if (!Array.isArray(b.sections)) fail("ترتيب الأقسام غير صالح");
+    const seen = new Set(), list = [];
+    for (const it of b.sections) {
+      const d = SECTION_DEFAULTS.find((x) => x.id === (it && it.id));
+      if (!d || seen.has(d.id)) continue;
+      seen.add(d.id);
+      const label = String(it.label ?? "").trim() || d.label, sub = String(it.sub ?? "").trim() || d.sub;
+      if (label.length > 40) fail("اسم القسم طويل (حد أقصى 40 حرف)");
+      if (sub.length > 60) fail("وصف القسم طويل (حد أقصى 60 حرف)");
+      list.push({ id: d.id, label, sub });
+    }
+    for (const d of SECTION_DEFAULTS) if (!seen.has(d.id)) list.push({ ...d });
+    if (JSON.stringify(list) !== JSON.stringify(SECTION_DEFAULTS)) next.sections = list;
+  }
   const oldLogo = cur.logo;
   if (b.resetLogo === true) next.logo = "";
   if (b.logo) next.logo = "/img/" + (await storeImage(b.logo));
   if (oldLogo && oldLogo !== next.logo) removeImage(oldLogo);
   state.settings = next;
   save();
-  return next;
+  return getSettings();
 }
 
 /* ---------- تقييمات العملاء ---------- */
