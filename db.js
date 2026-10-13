@@ -45,6 +45,7 @@ const TEXT_FIELDS = {
   ctaTitle: ["جاهز تبدأ؟", 60], ctaText: ["اختر منتجك، أضفه للسلة، وابدأ تجربة توب ستور.", 200], ctaButton: ["ابدأ طلبك الآن ←", 40],
   navHome: ["الرئيسية", 24], navProducts: ["المنتجات", 24], navHow: ["كيف تطلب؟", 24], navTrack: ["تتبع طلبي", 24], navCart: ["السلة", 24],
   catAllLabel: ["الكل", 30], catAllSub: ["كل المنتجات", 50],
+  visitorsLabel: ["عدد الزوار", 30],
   reviewsTitle: ["تقييمات العملاء", 60], footerLeft: ["توب ستور — منتجات رقمية بتجربة مختلفة", 120], footerRight: ["Top STORE / 2026", 60],
 };
 // أقسام المنتجات: المعرّفات ثابتة (المنتجات مرتبطة فيها)، والاسم والوصف والترتيب تتعدل
@@ -55,7 +56,11 @@ const SECTION_DEFAULTS = [
   { id: "bots", label: "سورسات (بوتات الديسكورد)", sub: "سورسات وبوتات جاهزة" },
 ];
 const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])), sections: SECTION_DEFAULTS };
-const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", sections: Array.isArray(x && x.sections) ? x.sections : null });
+const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", showVisitors: !!(x && x.showVisitors), sections: Array.isArray(x && x.sections) ? x.sections : null });
+
+// إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
+const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
+const dayKey = (t = Date.now()) => new Date(t + 3 * 3600 * 1000).toISOString().slice(0, 10); // توقيت السعودية
 
 const GROUPS = ["main", "subs", "accounts", "bots"];
 const DEFAULT_CAT = { main: "نيترو وبوست", subs: "اشتراكات", accounts: "حسابات دسكورد", bots: "سورسات (بوتات ديسكورد)" };
@@ -79,10 +84,10 @@ const fromRaw = (s) => {
   if ((s.v || 0) < 3 && !products.some((p) => p.id === BUNDLE.id)) products.push(normProduct(BUNDLE));
   // ترحيل (مرة وحدة): نضيف تقييمات العملاء الافتراضية، ولو حذفتها كلها بعدها ما ترجع
   const reviews = Array.isArray(s.reviews) ? s.reviews : (s.v || 0) < 4 ? SEED_REVIEWS.map((r) => ({ ...r })) : [];
-  return { v: 5, orders: s.orders || [], products, reviews, settings: normSettings(s.settings) };
+  return { v: 5, orders: s.orders || [], products, reviews, settings: normSettings(s.settings), stats: normStats(s.stats) };
 };
 
-let state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings() };
+let state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings(), stats: normStats() };
 
 // تخزين خارجي اختياري (Upstash Redis - مجاني بدون بطاقة) للاستضافات اللي تمسح الملفات مثل Render
 const REMOTE_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");
@@ -128,7 +133,7 @@ function load() {
   try {
     state = fromRaw(JSON.parse(fs.readFileSync(FILE, "utf8")));
   } catch (e) {
-    state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings() };
+    state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings(), stats: normStats() };
   }
   save();
 }
@@ -325,7 +330,7 @@ function moveProduct(id, dir) {
 /* ---------- إعدادات المتجر ---------- */
 const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
-  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", sections: null };
+  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), sections: null };
   const bc = b.colors || {}, bt = b.texts || {};
   for (const k of Object.keys(COLOR_DEFAULTS)) {
     const v = String(bc[k] ?? "").trim().toLowerCase();
@@ -365,6 +370,34 @@ async function updateSettings(b) {
   state.settings = next;
   save();
   return getSettings();
+}
+
+/* ---------- زوار الموقع ---------- */
+let statsTimer = null;
+function saveSoon() { // الزيارات كثيرة، فنحفظ كل 30 ثانية بدل كل زيارة
+  if (statsTimer) return;
+  statsTimer = setTimeout(() => { statsTimer = null; save(); }, 30000);
+  statsTimer.unref();
+}
+function flush() { if (statsTimer) { clearTimeout(statsTimer); statsTimer = null; save(); } }
+// lastDay: قيمة كوكي آخر زيارة ("" لو ما فيه). يرجع اليوم الجديد لو لازم يتحدث الكوكي.
+function trackVisit(lastDay, countIt) {
+  const today = dayKey(), st = state.stats;
+  if (!countIt) return { day: lastDay || today, visitors: st.visitors };
+  const d = (st.days[today] = st.days[today] || { v: 0, u: 0 });
+  st.visits++; d.v++;
+  if (!lastDay) st.visitors++;
+  if (lastDay !== today) d.u++;
+  const keep = dayKey(Date.now() - 60 * 86400 * 1000);
+  for (const k of Object.keys(st.days)) if (k < keep) delete st.days[k];
+  saveSoon();
+  return { day: today, visitors: st.visitors };
+}
+function getStats() {
+  const st = state.stats, t = st.days[dayKey()] || { v: 0, u: 0 };
+  let week = 0;
+  for (let i = 0; i < 7; i++) week += (st.days[dayKey(Date.now() - i * 86400000)] || { u: 0 }).u;
+  return { visitors: st.visitors, visits: st.visits, todayVisitors: t.u, todayVisits: t.v, weekVisitors: week };
 }
 
 /* ---------- تقييمات العملاء ---------- */
@@ -448,7 +481,7 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
-  getSettings, updateSettings, SETTINGS_DEFAULTS,
+  getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, flush,
   getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };

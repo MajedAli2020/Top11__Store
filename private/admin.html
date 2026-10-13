@@ -155,6 +155,7 @@
 
     <section id="ordersTab">
       <div class="stats" id="stats"></div>
+      <div class="stats" id="vstats"></div>
       <div class="tools">
         <input id="search" type="search" placeholder="ابحث برقم الطلب أو اسم المحوّل" />
         <div id="chips"></div>
@@ -321,8 +322,16 @@ function renderOrders() {
   const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
   $("ordersList").replaceChildren(...(list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
 }
+async function loadVisitors() {
+  try {
+    const v = await api("/api/admin/stats"), n = (x) => Number(x).toLocaleString("ar-SA");
+    const cell = (a, l) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l));
+    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.weekVisitors), "زوار آخر 7 أيام"), cell(n(v.visitors), "إجمالي الزوار"), cell(n(v.visits), "إجمالي الزيارات"));
+  } catch (e) { /* الطلبات أهم، نتجاهل خطأ الإحصائيات */ }
+}
 async function loadOrders() {
   try { orders = await api("/api/admin/orders"); renderStats(); renderOrders(); } catch (e) { fail(e); }
+  loadVisitors();
 }
 async function setStatus(id, status, btn) {
   const cur = orders.find((o) => o.id === id);
@@ -505,6 +514,7 @@ const TEXT_GROUPS = [
   ["الهوية", [["storeName","اسم المتجر"],["navSub","النص الصغير تحت الاسم"],["tabSuffix","عنوان التبويب (بعد اسم المتجر)"]]],
   ["الواجهة الرئيسية", [["heroEyebrow","الشارة فوق العنوان"],["heroTitle1","العنوان - السطر 1"],["heroTitle2","العنوان - السطر 2 (ملوّن)"],["heroTitle3","العنوان - السطر 3"],["heroLead","الوصف تحت العنوان",1],["btnProducts","زر المنتجات"],["btnCart","زر السلة"]]],
   ["أسماء القوائم", [["navHome","القائمة: الرئيسية"],["navProducts","القائمة: المنتجات"],["navHow","القائمة: كيف تطلب؟"],["navTrack","القائمة: تتبع طلبي"],["navCart","زر السلة"],["catAllLabel","تبويب «الكل» في المنتجات"],["catAllSub","وصف «الكل» في القائمة المنسدلة"]]],
+  ["الفوتر", [["visitorsLabel","كلمة «عدد الزوار»"]]],
   ["أقسام الصفحة", [["homeHeading","عنوان قسم المميزات"],["ctaTitle","عنوان «جاهز تبدأ؟»"],["ctaText","نص «جاهز تبدأ؟»",1],["ctaButton","زر «جاهز تبدأ؟»"],["reviewsTitle","عنوان التقييمات"],["footerLeft","نص الفوتر (يمين)"],["footerRight","نص الفوتر (يسار)"]]],
 ];
 let setData = null, setDefs = null, setLogoNew = "", setLogoReset = false, setSections = [], setHeroNew = "", setHeroReset = false;
@@ -535,6 +545,10 @@ function renderSettings() {
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "صورة الواجهة الرئيسية"), h("div", { class:"logo-row" }, hPrev,
     h("div", {}, hFile, h("div", { style:"font-size:12px;color:var(--muted);margin-top:4px" }, "تظهر بجانب العنوان في أول الصفحة. الأفضل صورة عريضة بنسبة 16:9."),
       h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setHeroNew = ""; setHeroReset = true; hFile.value = ""; hPrev.src = "assets/hero.webp"; toast("ترجع الصورة الافتراضية عند الحفظ"); } }, "استرجاع الصورة الافتراضية")))));
+  const vis = h("input", { type:"checkbox", id:"showVisitors", checked: !!setData.showVisitors });
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "عدّاد الزوار"),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, vis, h("span")), "إظهار عدد الزوار في أسفل المتجر"),
+    h("div", { style:"font-size:12px;color:var(--muted);margin-top:8px" }, "الأرقام تظهر لك دائماً في تبويب «الطلبات». يُحسب الزائر مرة وحدة لكل متصفح بدون تخزين أي IP أو بيانات شخصية.")));
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "الألوان"), h("div", { class:"set-grid" }, COLOR_FIELDS.map(([k, l]) => colorField(k, l, st.colors[k] || d.colors[k])))));
   const secBox = h("div", { class:"set-card" }, h("h3", {}, "أقسام المنتجات (الاسم والترتيب)"),
     h("p", { style:"color:var(--muted);font-size:13px;margin:-6px 0 12px" }, "الترتيب هنا هو ترتيب الأقسام في المتجر (التبويبات والقائمة المنسدلة)، وهو نفس ترتيبها في تبويب «المنتجات والأسعار»."));
@@ -572,6 +586,7 @@ async function saveSettings(reset) {
     COLOR_FIELDS.forEach(([k]) => { body.colors[k] = $("c_" + k).value; });
     TEXT_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("t_" + k).value; }));
     body.sections = setSections.map((x) => ({ id:x.id, label:x.label, sub:x.sub }));
+    body.showVisitors = $("showVisitors").checked;
     if (setLogoNew) body.logo = setLogoNew;
     if (setHeroNew) body.heroImage = setHeroNew;
     if (setHeroReset) body.resetHeroImage = true;

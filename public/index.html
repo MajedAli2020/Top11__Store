@@ -792,6 +792,7 @@
       </section>
       <footer class="footer">
         <span data-s="footerLeft">توب ستور — منتجات رقمية بتجربة مختلفة</span>
+        <span id="visitorsBox" hidden><span data-s="visitorsLabel">عدد الزوار</span>: <b id="visitorsNum"></b></span>
         <span class="mono" data-s="footerRight">Top STORE / 2026</span>
       </footer>
     </main>
@@ -1207,6 +1208,19 @@
         auto() { clearInterval(this.timer); this.timer = setInterval(() => this.go(this.idx + 1), 4500); },
       };
       Reviews.load();
+      /* عدّاد الزوار: نعدّ الزيارة مرة وحدة لكل جلسة تصفح */
+      (function () {
+        var first = false;
+        try { if (!sessionStorage.getItem("vc")) { first = true; sessionStorage.setItem("vc", "1"); } } catch (e) {}
+        fetch("/api/visit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ count: first }) })
+          .then(function (r) { return r.ok ? r.json() : {}; })
+          .then(function (d) {
+            if (d && typeof d.visitors === "number") {
+              document.getElementById("visitorsNum").textContent = d.visitors.toLocaleString("ar-SA");
+              document.getElementById("visitorsBox").hidden = false;
+            }
+          }).catch(function () {});
+      })();
 
       async function loadProducts() {
         try {

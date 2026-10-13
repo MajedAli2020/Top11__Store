@@ -92,6 +92,15 @@ function parseReceipt(v) {
 const CUSTOMER_MS = 7 * 24 * 60 * 60 * 1000;
 const readCustomer = (req) => readToken(cookies(req).customer);
 
+// عدّاد الزوار: كوكي فيه تاريخ آخر زيارة فقط (ما نخزّن IP). لا نعدّ الروبوتات.
+app.post("/api/visit", limit(60, 10 * 60 * 1000), (req, res) => {
+  const ck = cookies(req), last = /^\d{4}-\d{2}-\d{2}$/.test(ck.vday || "") ? ck.vday : "";
+  const bot_ = /bot|crawl|spider|slurp|preview|facebookexternalhit|headless/i.test(req.get("user-agent") || "");
+  const r = db.trackVisit(last, !bot_ && !!(req.body && req.body.count));
+  if (!bot_ && r.day !== last) setCookie(res, "vday", r.day, 365 * 24 * 60 * 60 * 1000);
+  res.set("Cache-Control", "no-store");
+  res.json(db.getSettings().showVisitors ? { visitors: r.visitors } : {});
+});
 app.get("/api/settings", (req, res) => { res.set("Cache-Control", "no-cache"); res.json(db.getSettings()); });
 app.get("/api/reviews", (req, res) => res.json(db.getActiveReviews().map(({ id, name, text, stars }) => ({ id, name, text, stars }))));
 app.get("/api/products", (req, res) => res.json(db.getActiveProducts().map(publicProduct)));
@@ -274,6 +283,8 @@ const wrap = (fn) => async (req, res) => {
 app.get("/api/admin/me", requireStaff, (req, res) =>
   res.json({ id: req.staff.uid, name: req.staff.name, avatar: req.staff.avatar, owner: bot.isOwner(req.staff.uid) }));
 
+app.get("/api/admin/stats", requireStaff, (req, res) => res.json(db.getStats()));
+
 app.get("/api/admin/orders", requireStaff, (req, res) =>
   res.json(db.listOrders().map(adminOrder)));
 
@@ -365,6 +376,8 @@ app.use((err, req, res, next) => {
   if (err.type === "entity.parse.failed") return res.status(400).json({ error: "بيانات غير صالحة" });
   next(err);
 });
+
+for (const sig of ["SIGTERM", "SIGINT"]) process.on(sig, () => { try { db.flush(); } catch (e) { /* نخرج على أي حال */ } process.exit(0); });
 
 db.ready.then(() => bot.startBot()).then(() => {
   app.listen(PORT, () => {
