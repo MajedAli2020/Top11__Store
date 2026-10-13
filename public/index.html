@@ -124,6 +124,8 @@
         background: linear-gradient(110deg, var(--ice), var(--blue2), var(--blue));
         -webkit-background-clip: text; background-clip: text; color: transparent;
       }
+      .hero-text { container-type: inline-size; min-width: 0; }
+      .hero-text h1 { font-size: max(32px, min(80px, 14.5cqw)); white-space: nowrap; }
       .lead { color: #ffffff88; font-size: 18px; line-height: 2; margin-top: 24px; max-width: 540px; }
       .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 31px; }
       .showcase {
@@ -573,7 +575,7 @@
     <main class="wrap">
       <section id="home" class="page active">
         <div class="hero">
-          <div class="reveal">
+          <div class="reveal hero-text">
             <span class="eyebrow"><i class="dot"></i><span data-s="heroEyebrow">تسليم سريع • موثوق • آمن</span></span>
             <h1><span data-s="heroTitle1">خلّ تجربتك</span><br /><em data-s="heroTitle2">أفضل مع متجر</em><br /><span data-s="heroTitle3">توب.</span></h1>
             <p class="lead" data-s="heroLead">منتجات رقمية مختارة بعناية، طلب سهل بالتحويل البنكي، وتسليم مباشر إلى حسابك في Discord بعد اعتماد الإيصال.</p>
