@@ -613,11 +613,11 @@
       @keyframes saFr{from{opacity:0;transform:scale(.05) rotate(-25deg)}to{opacity:1;transform:none}}
       #saSplash .sa-flash{transform-box:fill-box;transform-origin:center;animation:saFlash .8s 1.38s ease-out both}
       @keyframes saFlash{from{opacity:1;transform:scale(0)}to{opacity:0;transform:scale(5)}}
-      #saSplash .sa-title{margin:10px 0 0;font-weight:700;font-size:clamp(34px,8.4vw,88px);line-height:1.5;white-space:nowrap;opacity:0;animation:saTitle 1s 2.5s cubic-bezier(.2,.8,.2,1) forwards}
+      #saSplash .sa-title{margin:10px 0 0;font-family:Tajawal,"Segoe UI",Tahoma,Arial,sans-serif;font-weight:900;font-size:clamp(24px,6.1vw,76px);line-height:1.6;white-space:nowrap;opacity:0;animation:saTitle 1s 2.5s cubic-bezier(.2,.8,.2,1) forwards}
       @keyframes saTitle{from{opacity:0;transform:translateY(26px);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
-      #saSplash .sa-title span{display:inline-block;padding:.7em .15em .45em;margin:-.7em -.15em -.45em;-webkit-background-clip:text;background-clip:text;color:transparent}
+      #saSplash .sa-title span{display:inline-block;padding:.7em .3em .45em;margin:-.7em -.3em -.45em;-webkit-background-clip:text;background-clip:text;color:transparent}
       #saSplash .sa-w1{background-image:linear-gradient(180deg,#fff6d2,#e9c556 45%,#a97a14);filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
-      #saSplash .sa-w2{background-image:linear-gradient(180deg,#ff6a74,#e3101f 55%,#a00712);filter:drop-shadow(0 0 14px rgba(255,30,45,.55));}
+      #saSplash .sa-title span.sa-w2{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ff2a3a;-webkit-text-fill-color:#ff2a3a;filter:none;text-shadow:0 0 14px rgba(255,30,45,.65),0 3px 8px rgba(0,0,0,.55)}
       #saSplash .sa-line{position:relative;width:min(820px,88vw);height:6px;margin-top:8px;display:flex;align-items:center}
       #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#7d0510,#ff1f30 50%,#7d0510);box-shadow:0 0 18px 2px rgba(255,30,45,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
       @keyframes saLine{to{transform:scaleX(1)}}
@@ -661,7 +661,7 @@
         <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" /></div></div>
         </div>
         <div class="sa-tw"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>
-        <h1 class="sa-title"><span class="sa-w1">السعـــــودية</span> <span class="sa-w2">خط أحمر</span></h1></div>
+        <h1 class="sa-title"><span class="sa-w1">السعـــــودية</span> <span class="sa-w2">خـــــط أحـــــمر</span></h1></div>
         <div class="sa-line"><i></i></div>
       </div>
     </div>
@@ -1077,14 +1077,20 @@
       let me = null; // حساب العميل المسجّل دخوله بديسكورد
       const avatarUrl = (u) =>
         u && u.avatar ? "https://cdn.discordapp.com/avatars/" + encodeURIComponent(u.id) + "/" + encodeURIComponent(u.avatar) + ".png?size=64" : "";
-      async function loadMe() {
+      const meSig = (u) => (u ? [u.id, u.avatar, u.name, u.username].join("|") : "");
+      async function loadMe(silent) {
+        const before = meSig(me);
         try {
-          const r = await fetch("/api/me");
-          me = r.ok ? await r.json() : null;
+          // silent = تحديث تلقائي في الخلفية: نطلب من السيرفر يجدد بيانات الحساب من Discord
+          const r = await fetch("/api/me" + (silent ? "?refresh=1" : ""), { cache: "no-store" });
+          if (r.ok) me = await r.json();
+          else if (!silent || r.status === 401) me = null;
         } catch (e) {
-          me = null;
+          if (!silent) me = null;
         }
+        if (silent && meSig(me) === before) return; // ما تغيّر شي
         renderNavUser();
+        if (silent && document.getElementById("checkout").classList.contains("active")) renderCheckout();
       }
       const snowflakeDate = (id) => {
         try { return new Date(Number((BigInt(id) >> 22n) + 1420070400000n)).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" }); } catch (e) { return ""; }
@@ -1747,6 +1753,12 @@ const rvAvatar = (g) => g === "female"
       });
       pollOrders();
       setInterval(pollOrders, 15000);
+      // مزامنة صورة واسم الحساب مع Discord: كل دقيقة، وعند الرجوع للصفحة
+      let meSyncAt = 0;
+      const syncMe = () => { if (!me || Date.now() - meSyncAt < 20000) return; meSyncAt = Date.now(); loadMe(true); };
+      setInterval(syncMe, 60000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) syncMe(); });
+      window.addEventListener("focus", syncMe);
       document.addEventListener("visibilitychange", () => { if (!document.hidden) pollOrders(); });
 
       /* Site-wide starfield + shooting-star (meteor) animation */
