@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Amiri:wght@700&family=Aref+Ruqaa:wght@700&family=JetBrains+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -320,6 +320,23 @@
         .bank { grid-template-columns: 1fr; }
         .form-actions { flex-direction: column; }
       }
+
+      /* شريط المنتجات المتحرك تحت السلة */
+      .rec { margin-top: 44px; }
+      .rec h2 { font-size: 26px; margin-bottom: 4px; }
+      .rec .rec-sub { color: #ffffff70; margin-bottom: 18px; }
+      .rec-wrap { overflow: hidden; direction: rtl; padding: 6px 0 12px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+      .rec-track { display: flex; gap: 16px; width: max-content; animation: recMove 40s linear infinite; }
+      .rec-wrap:hover .rec-track, .rec-wrap:focus-within .rec-track { animation-play-state: paused; }
+      @keyframes recMove { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+      .rec-card { position: relative; width: 230px; flex: none; border: 1px solid #ffffff18; border-radius: 20px; background: linear-gradient(145deg, var(--panel3), var(--panel2)); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+      .rec-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 14px; display: block; background: var(--panel); }
+      .rec-card b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .rec-badge { position: absolute; top: 18px; right: 18px; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--ice); color: #1d1711; }
+      .rec-badge.soft { background: #000000a0; color: var(--ice); border: 1px solid #ffffff30; }
+      .rec-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .rec-foot .btn-add { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 800; cursor: pointer; background: var(--ice); color: #1d1711; font-family: inherit; }
+      @media (prefers-reduced-motion: reduce) { .rec-wrap { overflow-x: auto; } .rec-track { animation: none; } }
       @media (prefers-reduced-motion: reduce) {
         *, *:before, *:after {
           animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
@@ -546,8 +563,242 @@
         try { localStorage.setItem("siteSettings", JSON.stringify(st)); } catch (e) {}
       }).catch(function () {});
     </script>
+
+    <style id="saSplashCss">
+      #saSplash{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:"Aref Ruqaa",Tajawal,serif;transition:opacity .9s ease,visibility .9s}
+      #saSplash.out{opacity:0;visibility:hidden;pointer-events:none}
+      #saSplash .sa-bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 38%,rgba(0,120,60,.55),rgba(3,22,12,.9) 68%);-webkit-backdrop-filter:blur(24px) saturate(1.15);backdrop-filter:blur(24px) saturate(1.15);animation:saBlur .7s ease-out both}
+      @keyframes saBlur{from{-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);opacity:0}to{-webkit-backdrop-filter:blur(24px) saturate(1.15);backdrop-filter:blur(24px) saturate(1.15);opacity:1}}
+      #saSplash .sa-bg::before{content:"";position:absolute;inset:14px;border:1px solid rgba(212,175,55,.45);border-radius:6px;box-shadow:inset 0 0 0 6px rgba(0,0,0,0),inset 0 0 0 7px rgba(212,175,55,.16)}
+      #saSplash .sa-skip{position:absolute;top:26px;left:30px;z-index:4;background:rgba(0,0,0,.25);color:#e8d9a0;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:6px 18px;font:700 14px Tajawal,sans-serif;cursor:pointer;opacity:0;animation:saIn .5s 1s forwards}
+      #saSplash .sa-skip:hover{background:rgba(212,175,55,.2)}
+      #saSplash .sa-dust{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+      #saSplash .sa-dust i{position:absolute;bottom:-12px;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle,#fff6c8,#d4af37 55%,rgba(212,175,55,0));opacity:0;animation:saRise var(--t) var(--dl) linear infinite}
+      @keyframes saRise{0%{transform:translate(0,0);opacity:0}12%{opacity:.85}100%{transform:translate(var(--x),-108vh);opacity:0}}
+      #saSplash .sa-stage{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:20px;text-align:center}
+      #saSplash .sa-row{display:flex;direction:rtl;align-items:center;justify-content:center;gap:clamp(20px,6vw,90px)}
+      #saSplash .sa-emb{position:relative;width:min(400px,36vw,48vh);aspect-ratio:400/410}
+      @media (max-width:700px){#saSplash .sa-row{flex-direction:column;gap:14px}#saSplash .sa-emb{width:min(70vw,30vh)}}
+      /* ===== الصورة ===== */
+      #saSplash .sa-port{position:relative;display:none;width:min(300px,28vw,40vh);aspect-ratio:1}
+      #saSplash .sa-port.ok{display:block}
+      @media (max-width:700px){#saSplash .sa-port{width:min(56vw,26vh)}}
+      #saSplash .sa-pring{position:absolute;inset:-9%;border-radius:50%;border:2px dashed rgba(212,175,55,.85);opacity:0;animation:saIn 1s 1s forwards,saSpinR 40s linear infinite}
+      @keyframes saSpinR{to{transform:rotate(-360deg)}}
+      #saSplash .sa-pring2{position:absolute;inset:-17%;border-radius:50%;border:1px solid rgba(212,175,55,.4);opacity:0;animation:saIn 1s 1.2s forwards}
+      #saSplash .sa-pimg{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:4px solid #d4af37;box-shadow:0 0 0 7px rgba(0,0,0,.35),0 0 0 9px #b98a1e,0 0 46px rgba(212,175,55,.6),0 18px 40px rgba(0,0,0,.6);opacity:0;animation:saPhoto 1.3s 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+      #saSplash .sa-pimg img{width:100%;height:100%;object-fit:cover;display:block}
+      #saSplash .sa-pimg::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,246,200,.55) 50%,transparent 65%);transform:translateX(-120%);animation:saShine 1.4s 2.2s ease-out forwards}
+      @keyframes saShine{to{transform:translateX(120%)}}
+      @keyframes saPhoto{from{opacity:0;transform:scale(.55);filter:blur(14px) brightness(1.6)}to{opacity:1;transform:none;filter:none}}
+      /* ===== مؤثرات عسكرية ===== */
+      #saSplash .sa-radar{position:absolute;left:50%;top:46%;width:min(1200px,170vmin);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);opacity:0;pointer-events:none;background:repeating-radial-gradient(circle,transparent 0 9.6%,rgba(120,255,170,.16) 9.7% 10%);-webkit-mask-image:radial-gradient(circle,#000 50%,transparent 70%);mask-image:radial-gradient(circle,#000 50%,transparent 70%);animation:saRad 1s .3s forwards}
+      @keyframes saRad{to{opacity:.7}}
+      #saSplash .sa-radar::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 290deg,rgba(80,255,150,.30) 350deg,rgba(190,255,220,.6) 360deg);animation:saSweep 3.4s linear infinite}
+      @keyframes saSweep{to{transform:rotate(360deg)}}
+      #saSplash .sa-beam{position:absolute;bottom:-4%;width:22vmin;height:125vh;transform-origin:50% 100%;background:linear-gradient(to top,rgba(255,244,200,.5),rgba(255,244,200,0));clip-path:polygon(44% 100%,56% 100%,100% 0,0 0);filter:blur(5px);opacity:0;z-index:0;pointer-events:none;animation:saIn3 1s .7s forwards,saSwing 3.2s .7s ease-in-out infinite alternate}
+      #saSplash .sa-beam.l{left:9%;--a:-26deg;--b:22deg}#saSplash .sa-beam.r{right:9%;--a:26deg;--b:-22deg}
+      @keyframes saIn3{to{opacity:.3}}
+      @keyframes saSwing{from{transform:rotate(var(--a))}to{transform:rotate(var(--b))}}
+      #saSplash .sa-jets{position:absolute;left:0;top:11%;width:0;height:0;z-index:1;font-size:clamp(46px,6.5vw,92px);pointer-events:none;animation:saFly 3s .5s cubic-bezier(.35,.05,.55,.95) both}
+      @keyframes saFly{from{transform:translateX(-35vw)}to{transform:translateX(130vw)}}
+      #saSplash .sa-jet{position:absolute;width:1em;height:.5em}
+      #saSplash .sa-jet svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 6px 7px rgba(0,0,0,.55))}
+      #saSplash .sa-tr{position:absolute;right:86%;top:50%;height:.075em;width:32vw;transform:translateY(-50%);background:linear-gradient(90deg,transparent,var(--c) 70%);filter:blur(1.6px);opacity:.92}
+      #saSplash .sa-tw{position:relative;padding:6px clamp(18px,3.4vw,52px);margin-top:10px}
+      #saSplash .sa-tw .sa-title{margin:0}
+      #saSplash .sa-tw b{position:absolute;width:24px;height:24px;border:0 solid #ff2a3a;filter:drop-shadow(0 0 6px rgba(255,40,55,.85));opacity:0;animation:saLock .7s 3s cubic-bezier(.2,.9,.3,1) forwards}
+      #saSplash .sa-tw .tl{top:0;left:0;border-top-width:3px;border-left-width:3px;--ox:-46px;--oy:-26px}
+      #saSplash .sa-tw .tr{top:0;right:0;border-top-width:3px;border-right-width:3px;--ox:46px;--oy:-26px}
+      #saSplash .sa-tw .bl{bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;--ox:-46px;--oy:26px}
+      #saSplash .sa-tw .br{bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;--ox:46px;--oy:26px}
+      @keyframes saLock{from{opacity:0;transform:translate(var(--ox),var(--oy)) scale(1.7)}to{opacity:1;transform:none}}
+
+      #saSplash .sa-orn{position:absolute;left:50%;top:50%;width:200%;height:auto;opacity:0;pointer-events:none;transform:translate(-50%,-50%);animation:saIn1 1.4s .2s forwards,saSpin 120s linear infinite}
+      @keyframes saIn1{from{opacity:0}to{opacity:.3}}
+      @keyframes saSpin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+      #saSplash .sa-orn .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:saDraw 2.6s .3s cubic-bezier(.4,0,.2,1) forwards}
+      @keyframes saDraw{to{stroke-dashoffset:0}}
+      #saSplash .sa-glow{position:absolute;left:50%;top:46%;width:150%;height:110%;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(212,175,55,.34),transparent 62%);filter:blur(28px);opacity:0;animation:saIn 1.6s 1.3s forwards}
+      #saSplash .sa-embsvg{position:relative;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 14px 20px rgba(0,0,0,.6)) drop-shadow(0 0 16px rgba(212,175,55,.35))}
+      @keyframes saIn{from{opacity:0}to{opacity:1}}
+      #saSplash .sa-sw{transform-origin:200px 300px;animation:saSw 1s .5s cubic-bezier(.15,.85,.25,1) both}
+      @keyframes saSw{from{opacity:0;transform:translate(-300px,70px) rotate(-38deg)}to{opacity:1;transform:none}}
+      #saSplash .sa-trunk{transform-box:fill-box;transform-origin:50% 100%;animation:saGrow 1s 1.25s cubic-bezier(.3,.8,.3,1) both}
+      @keyframes saGrow{from{opacity:.2;transform:scaleY(0)}to{opacity:1;transform:none}}
+      #saSplash .sa-fr{transform-origin:200px 128px;animation:saFr .9s var(--d,1.9s) cubic-bezier(.2,1.15,.3,1) both}
+      @keyframes saFr{from{opacity:0;transform:scale(.05) rotate(-25deg)}to{opacity:1;transform:none}}
+      #saSplash .sa-flash{transform-box:fill-box;transform-origin:center;animation:saFlash .8s 1.38s ease-out both}
+      @keyframes saFlash{from{opacity:1;transform:scale(0)}to{opacity:0;transform:scale(5)}}
+      #saSplash .sa-title{margin:10px 0 0;font-family:Tajawal,"Segoe UI",Tahoma,Arial,sans-serif;font-weight:900;font-size:clamp(24px,6.1vw,76px);line-height:1.6;white-space:nowrap;opacity:0;animation:saTitle 1s 2.5s cubic-bezier(.2,.8,.2,1) forwards}
+      @keyframes saTitle{from{opacity:0;transform:translateY(26px);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+      #saSplash .sa-title span{display:inline-block;padding:.7em .3em .45em;margin:-.7em -.3em -.45em;-webkit-background-clip:text;background-clip:text;color:transparent}
+      #saSplash .sa-w1{background-image:linear-gradient(180deg,#fff6d2,#e9c556 45%,#a97a14);filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
+      #saSplash .sa-title span.sa-w2{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ff2a3a;-webkit-text-fill-color:#ff2a3a;filter:none;text-shadow:0 0 14px rgba(255,30,45,.65),0 3px 8px rgba(0,0,0,.55)}
+      #saSplash .sa-line{position:relative;width:min(820px,88vw);height:6px;margin-top:8px;display:flex;align-items:center}
+      #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#7d0510,#ff1f30 50%,#7d0510);box-shadow:0 0 18px 2px rgba(255,30,45,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
+      @keyframes saLine{to{transform:scaleX(1)}}
+      #saSplash .sa-line::before,#saSplash .sa-line::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:#d4af37;border:2px solid #fff3bd;transform:translateY(-50%) rotate(45deg) scale(0);animation:saDia .5s 3.8s forwards}
+      #saSplash .sa-line::before{right:-22px}#saSplash .sa-line::after{left:-22px}
+      @keyframes saDia{to{transform:translateY(-50%) rotate(45deg) scale(1)}}
+      #saSplash .sa-najdi{position:absolute;left:30px;right:30px;height:24px;z-index:1;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24'%3E%3Cpath d='M0 0L24 24L48 0Z' fill='%23d4af37'/%3E%3Cpath d='M12 0L24 12L36 0Z' fill='%23052612'/%3E%3C/svg%3E") repeat-x center/48px 24px;opacity:.85;clip-path:inset(0 50% 0 50%);animation:saNajdi 1.4s .35s cubic-bezier(.3,.8,.2,1) forwards}
+      #saSplash .sa-najdi.t{top:24px}
+      #saSplash .sa-najdi.b{bottom:24px;transform:scaleY(-1)}
+      @keyframes saNajdi{to{clip-path:inset(0 0 0 0)}}
+      html.sa-lock,html.sa-lock body{overflow:hidden!important}
+    </style>
   </head>
   <body>
+
+    <div id="saSplash" role="dialog" aria-label="السعودية خط أحمر">
+      <div class="sa-bg"></div>
+      <div class="sa-radar"></div><div class="sa-beam l"></div><div class="sa-beam r"></div><div class="sa-jets" id="saJets"></div>
+      <div class="sa-najdi t"></div><div class="sa-najdi b"></div>
+      <div class="sa-dust" id="saDust"></div>
+      <button class="sa-skip" type="button" id="saSkip">تخطي</button>
+      <div class="sa-stage">
+        <div class="sa-row">
+        <div class="sa-emb">
+          <svg class="sa-orn" viewBox="-400 -400 800 800" aria-hidden="true" id="saOrn" fill="none" stroke="#d4af37" stroke-width="1.3"></svg>
+          <div class="sa-glow"></div>
+          <svg class="sa-embsvg" viewBox="0 10 400 410" aria-hidden="true">
+            <defs>
+              <linearGradient id="saGold" gradientUnits="userSpaceOnUse" x1="-800" y1="0" x2="-100" y2="400">
+                <stop offset="0" stop-color="#b98a1e"/><stop offset=".3" stop-color="#e2bb4c"/><stop offset=".42" stop-color="#fff1b8"/><stop offset=".5" stop-color="#f0cf6a"/><stop offset=".72" stop-color="#c79a2c"/><stop offset="1" stop-color="#8a6410"/>
+                <animate attributeName="x1" from="-800" to="-100" begin="2.1s" dur="1.5s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".3 .1 .2 1"/>
+                <animate attributeName="x2" from="-100" to="600" begin="2.1s" dur="1.5s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".3 .1 .2 1"/>
+              </linearGradient>
+            </defs>
+            <g id="saTrunkG" class="sa-trunk"></g>
+            <g id="saCrown"></g>
+            <g id="saSwords"></g>
+            <g class="sa-flash"><circle cx="200" cy="284" r="9" fill="#fff6c8"/><g stroke="#fff6c8" stroke-width="2" stroke-linecap="round" id="saRays"></g></g>
+          </svg>
+        </div>
+        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" /></div></div>
+        </div>
+        <div class="sa-tw"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>
+        <h1 class="sa-title"><span class="sa-w1">السعـــــودية</span> <span class="sa-w2">خـــــط أحـــــمر</span></h1></div>
+        <div class="sa-line"><i></i></div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var root = document.getElementById("saSplash"); if (!root) return;
+        var NS = "http://www.w3.org/2000/svg", done = false, DURATION = 5600; /* مدة العرض بالمللي ثانية */
+        var GOLD = "url(#saGold)", DARK = "#6b4a08";
+        document.documentElement.classList.add("sa-lock");
+        function el(n, a, p) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+        function f(n) { return n.toFixed(1); }
+        function q(P, t) { var u = 1 - t; return [u * u * P[0][0] + 2 * u * t * P[1][0] + t * t * P[2][0], u * u * P[0][1] + 2 * u * t * P[1][1] + t * t * P[2][1]]; }
+        function dir(P, t) { var u = 1 - t, x = 2 * u * (P[1][0] - P[0][0]) + 2 * t * (P[2][0] - P[1][0]), y = 2 * u * (P[1][1] - P[0][1]) + 2 * t * (P[2][1] - P[1][1]), l = Math.hypot(x, y) || 1; return [x / l, y / l]; }
+
+        /* ===== السيف ===== */
+        function sword(parent) {
+          var P = [[128, 352], [190, 306], [326, 172]], g = el("g", { "class": "sa-sw" }, parent), L = [], R = [], i, N = 30;
+          for (i = 0; i <= N; i++) {
+            var t = i / N, p = q(P, t), n = dir(P, t), w = i === N ? 0.2 : (1 - Math.pow(t, 1.5)) * 8.5 + 0.7;
+            L.push([p[0] - n[1] * w, p[1] + n[0] * w]); R.push([p[0] + n[1] * w, p[1] - n[0] * w]);
+          }
+          var pts = L.concat(R.reverse());
+          el("path", { d: "M" + pts.map(function (a) { return f(a[0]) + " " + f(a[1]); }).join(" L") + " Z", fill: GOLD, stroke: DARK, "stroke-width": ".9", "stroke-linejoin": "round" }, g);
+          var fp = []; for (i = 3; i <= 23; i++) { var pp = q(P, i / N); fp.push(f(pp[0]) + " " + f(pp[1])); }
+          el("path", { d: "M" + fp.join(" L"), fill: "none", stroke: "#7a560a", "stroke-width": "1.3", "stroke-linecap": "round", opacity: ".55" }, g);
+          var A = P[0], t0 = dir(P, 0), nx = -t0[1], ny = t0[0], gx = nx * 19, gy = ny * 19;
+          var e = [A[0] - t0[0] * 50, A[1] - t0[1] * 50];
+          el("line", { x1: f(A[0]), y1: f(A[1]), x2: f(e[0]), y2: f(e[1]), stroke: DARK, "stroke-width": "11", "stroke-linecap": "round" }, g);
+          el("line", { x1: f(A[0]), y1: f(A[1]), x2: f(e[0]), y2: f(e[1]), stroke: GOLD, "stroke-width": "8.6", "stroke-linecap": "round" }, g);
+          el("line", { x1: f(A[0]), y1: f(A[1]), x2: f(e[0]), y2: f(e[1]), stroke: DARK, "stroke-width": "8.6", "stroke-dasharray": "1.4 4.4", opacity: ".55" }, g);
+          el("line", { x1: f(A[0] - gx), y1: f(A[1] - gy), x2: f(A[0] + gx), y2: f(A[1] + gy), stroke: DARK, "stroke-width": "9.5", "stroke-linecap": "round" }, g);
+          el("line", { x1: f(A[0] - gx), y1: f(A[1] - gy), x2: f(A[0] + gx), y2: f(A[1] + gy), stroke: GOLD, "stroke-width": "7", "stroke-linecap": "round" }, g);
+          [-1, 1].forEach(function (s) { el("circle", { cx: f(A[0] + gx * s), cy: f(A[1] + gy * s), r: "5", fill: GOLD, stroke: DARK, "stroke-width": ".9" }, g); });
+          el("circle", { cx: f(e[0] - t0[0] * 5), cy: f(e[1] - t0[1] * 5), r: "8", fill: GOLD, stroke: DARK, "stroke-width": ".9" }, g);
+          el("circle", { cx: f(e[0] - t0[0] * 5), cy: f(e[1] - t0[1] * 5), r: "3", fill: "none", stroke: DARK, "stroke-width": "1", opacity: ".6" }, g);
+        }
+        var sw = document.getElementById("saSwords");
+        sword(el("g", {}, sw));
+        sword(el("g", { transform: "translate(400 0) scale(-1 1)" }, sw));
+
+        /* ===== جذع النخلة ===== */
+        var tr = document.getElementById("saTrunkG");
+        el("path", { d: "M187 298 C192 240 194 190 194 128 L206 128 C206 190 208 240 213 298 Z", fill: GOLD, stroke: DARK, "stroke-width": ".9", "stroke-linejoin": "round" }, tr);
+        for (var y = 140, k = 0; y < 292; y += 11, k++) {
+          var hw = 6 + (y - 128) / 170 * 6.5;
+          el("path", { d: "M" + f(200 - hw) + " " + f(y) + " L200 " + f(y + 11) + " L" + f(200 + hw) + " " + f(y), fill: "none", stroke: DARK, "stroke-width": "1", opacity: ".55", "stroke-linejoin": "round" }, tr);
+        }
+        el("ellipse", { cx: "200", cy: "130", rx: "11", ry: "9", fill: GOLD, stroke: DARK, "stroke-width": ".9" }, tr);
+
+        /* ===== السعف ===== */
+        var crown = document.getElementById("saCrown"), cx = 200, cy = 128;
+        var FR = [[-86, 96], [-62, 102], [-38, 98], [-15, 86], [0, 74], [15, 86], [38, 98], [62, 102], [86, 96]];
+        FR.forEach(function (a, idx) {
+          var th = a[0] * Math.PI / 180, Ln = a[1] * 1.22, sx = Math.sin(th), co = Math.cos(th), ab = Math.abs(sx);
+          var P = [[cx, cy], [cx + sx * Ln * 0.55, cy - co * Ln * 0.55 - Ln * 0.18 * (0.4 + ab)], [cx + sx * Ln, cy - co * Ln * 0.95 + Ln * 0.42 * Math.pow(ab, 1.4)]];
+          var g = el("g", { "class": "sa-fr", style: "--d:" + (1.85 + Math.abs(idx - 4) * 0.12).toFixed(2) + "s" }, crown), d = "", i, M = 17;
+          for (i = 1; i <= M; i++) {
+            var t = 0.1 + 0.9 * i / M, p = q(P, t), n = dir(P, t), len = 7 + 17 * Math.sin(Math.PI * Math.min(1, t * 1.05)), an = 0.82 + 0.1 * t;
+            [-1, 1].forEach(function (s) {
+              var c = Math.cos(an * s), si = Math.sin(an * s), vx = n[0] * c - n[1] * si, vy = n[0] * si + n[1] * c;
+              d += "M" + f(p[0]) + " " + f(p[1]) + " L" + f(p[0] + vx * len) + " " + f(p[1] + vy * len + len * 0.18) + " ";
+            });
+          }
+          el("path", { d: d, fill: "none", stroke: GOLD, "stroke-width": "2.3", "stroke-linecap": "round" }, g);
+          el("path", { d: "M" + P[0][0] + " " + P[0][1] + " Q" + f(P[1][0]) + " " + f(P[1][1]) + " " + f(P[2][0]) + " " + f(P[2][1]), fill: "none", stroke: DARK, "stroke-width": "4.2", "stroke-linecap": "round" }, g);
+          el("path", { d: "M" + P[0][0] + " " + P[0][1] + " Q" + f(P[1][0]) + " " + f(P[1][1]) + " " + f(P[2][0]) + " " + f(P[2][1]), fill: "none", stroke: GOLD, "stroke-width": "2.8", "stroke-linecap": "round" }, g);
+        });
+        [[191, 142], [200, 146], [209, 142], [196, 150], [204, 150]].forEach(function (c, i) {
+          el("circle", { cx: c[0], cy: c[1], r: "3.6", fill: GOLD, stroke: DARK, "stroke-width": ".8", "class": "sa-fr", style: "--d:" + (2.3 + i * 0.05) + "s" }, crown);
+        });
+
+        /* شرارة التقاء السيفين */
+        var rays = document.getElementById("saRays");
+        for (var r = 0; r < 10; r++) { var a = r * Math.PI / 5; el("line", { x1: f(200 + Math.cos(a) * 14), y1: f(284 + Math.sin(a) * 14), x2: f(200 + Math.cos(a) * 30), y2: f(284 + Math.sin(a) * 30) }, rays); }
+
+        /* ===== زخرفة النجمة الثمانية (رُبع الحزب) ===== */
+        var orn = document.getElementById("saOrn");
+        function poly(R, rot, n) { var d = ""; for (var i = 0; i < n; i++) { var a = rot + i * 2 * Math.PI / n; d += (i ? " L" : "M") + f(Math.cos(a) * R) + " " + f(Math.sin(a) * R); } return d + " Z"; }
+        el("circle", { cx: 0, cy: 0, r: 380, pathLength: 1, "class": "dr" }, orn);
+        el("circle", { cx: 0, cy: 0, r: 364, pathLength: 1, "class": "dr", "stroke-dasharray": "0.004 0.006", opacity: ".7" }, orn);
+        [[330, 0], [330, Math.PI / 4], [250, Math.PI / 8], [250, Math.PI / 8 + Math.PI / 4]].forEach(function (a) { el("path", { d: poly(a[0], a[1], 4), pathLength: 1, "class": "dr" }, orn); });
+        el("circle", { cx: 0, cy: 0, r: 300, pathLength: 1, "class": "dr", opacity: ".7" }, orn);
+        for (var m = 0; m < 16; m++) { var an2 = m * Math.PI / 8; el("circle", { cx: f(Math.cos(an2) * 380), cy: f(Math.sin(an2) * 380), r: "4", fill: "#d4af37", stroke: "none", opacity: ".8" }, orn); }
+
+        /* ===== غبار ذهبي ===== */
+        var dust = document.getElementById("saDust");
+        for (var j = 0; j < 36; j++) {
+          var it = document.createElement("i");
+          it.style.cssText = "left:" + (Math.random() * 100).toFixed(1) + "%;--s:" + (2 + Math.random() * 5).toFixed(1) + "px;--t:" + (3.5 + Math.random() * 3).toFixed(1) + "s;--dl:" + (Math.random() * 3).toFixed(1) + "s;--x:" + ((Math.random() - 0.5) * 120).toFixed(0) + "px";
+          dust.appendChild(it);
+        }
+
+
+        /* ===== الصورة: ضع ملف الصورة في public/assets/ باسم prince.jpg (أو png / webp) ===== */
+        (function () {
+          var names = ["assets/prince.jpg", "assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
+          img.onload = function () { port.classList.add("ok"); };
+          img.onerror = function () { if (i < names.length) img.src = names[i++]; };
+          img.src = names[i++];
+        })();
+
+        /* ===== تشكيل طائرات (صقور السعودية) بدخان أخضر وأبيض ===== */
+        var jets = document.getElementById("saJets"), JET = "M118 30 L88 24 L66 24 L40 3 L29 3 L44 24 L20 24 L7 12 L2 12 L10 30 L2 48 L7 48 L20 36 L44 36 L29 57 L40 57 L66 36 L88 36 Z";
+        [[0, 0, "#22c870"], [-0.72, -0.46, "#ffffff"], [-0.72, 0.46, "#ffffff"], [-1.44, -0.92, "#22c870"], [-1.44, 0.92, "#22c870"]].forEach(function (o) {
+          var d = document.createElement("div"); d.className = "sa-jet";
+          d.style.left = o[0] + "em"; d.style.top = o[1] + "em"; d.style.setProperty("--c", o[2]);
+          d.innerHTML = '<i class="sa-tr"></i><svg viewBox="0 0 120 60"><path d="' + JET + '" fill="#e3e9ef" stroke="#8793a1" stroke-width="1.2" stroke-linejoin="round"/><path d="M30 30 H110" stroke="#9aa6b3" stroke-width="1.4"/><ellipse cx="84" cy="30" rx="9" ry="3.2" fill="#2b3a4a"/></svg>';
+          jets.appendChild(d);
+        });
+
+        function finish() {
+          if (done) return; done = true;
+          root.classList.add("out");
+          document.documentElement.classList.remove("sa-lock");
+          setTimeout(function () { if (root.parentNode) root.parentNode.removeChild(root); }, 1000);
+        }
+        document.getElementById("saSkip").addEventListener("click", finish);
+        setTimeout(finish, DURATION);
+      })();
+    </script>
     <canvas id="skyLayer"></canvas>
     <img class="side-diamond top-right" src="assets/diamond.png" alt="" />
     <img class="side-diamond bottom-left" src="assets/diamond.png" alt="" />
@@ -660,6 +911,11 @@
           <div class="cart-layout">
             <div class="surface"><div id="cartLines"></div></div>
             <div id="cartSummary" class="surface summary"></div>
+          </div>
+          <div id="recBox" class="rec" style="display: none">
+            <h2>🔥 اكتشف المزيد</h2>
+            <p class="rec-sub">الأكثر طلباً ومنتجات قد تعجبك</p>
+            <div class="rec-wrap"><div class="rec-track" id="recTrack"></div></div>
           </div>
         </div>
       </section>
@@ -843,14 +1099,22 @@
       let me = null; // حساب العميل المسجّل دخوله بديسكورد
       const avatarUrl = (u) =>
         u && u.avatar ? "https://cdn.discordapp.com/avatars/" + encodeURIComponent(u.id) + "/" + encodeURIComponent(u.avatar) + ".png?size=64" : "";
-      async function loadMe() {
+      const meSig = (u) => (u ? [u.id, u.avatar, u.name, u.username].join("|") : "");
+      async function loadMe(silent) {
+        const before = meSig(me);
         try {
-          const r = await fetch("/api/me");
-          me = r.ok ? await r.json() : null;
+          // silent = تحديث تلقائي في الخلفية: نطلب من السيرفر يجدد بيانات الحساب من Discord
+          const r = await fetch("/api/me" + (silent ? "?refresh=1" : ""), { cache: "no-store" });
+          if (r.ok) me = await r.json();
+          else if (!silent || r.status === 401) me = null;
         } catch (e) {
-          me = null;
+          if (!silent) me = null;
         }
+        if (silent && meSig(me) === before) return; // ما تغيّر شي
+        const wasOpen = !!document.querySelector("#acctPanel.open");
         renderNavUser();
+        if (wasOpen && me) { const pn = document.getElementById("acctPanel"); if (pn) { pn.classList.add("open"); fillAcctPanel(pn); } }
+        if (silent && document.getElementById("checkout").classList.contains("active")) renderCheckout();
       }
       const snowflakeDate = (id) => {
         try { return new Date(Number((BigInt(id) >> 22n) + 1420070400000n)).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" }); } catch (e) { return ""; }
@@ -1241,7 +1505,46 @@ const rvAvatar = (g) => g === "female"
           toast("تعذر تحميل المنتجات، تأكد أن السيرفر شغال");
         }
       }
+      let popularIds = [];
+      let recSig = "";
+      async function loadPopular() {
+        try { const r = await fetch("/api/popular"); if (r.ok) { popularIds = await r.json(); recSig = ""; renderRec(); } } catch (e) {}
+      }
+      // الشريط يُعاد بناؤه فقط لو تغيّرت القائمة، عشان الحركة ما ترجع تبدأ مع كل ضغطة
+      function renderRec() {
+        const box = document.getElementById("recBox"), track = document.getElementById("recTrack");
+        if (!box || !track) return;
+        const rank = (p) => { const i = popularIds.indexOf(p.id); return i < 0 ? 999 : i; };
+        const list = allProducts.filter((p) => !p.soldOut && !cart[p.id]).sort((a, b) => rank(a) - rank(b));
+        if (!list.length) { box.style.display = "none"; recSig = ""; return; }
+        const sig = list.map((p) => p.id + ":" + p.price + ":" + p.name + ":" + p.image).join("|") + "#" + popularIds.slice(0, 3).join(",");
+        box.style.display = "";
+        if (sig === recSig) return;
+        recSig = sig;
+        track.textContent = "";
+        const top = new Set(popularIds.slice(0, 3));
+        let base = list;
+        while (base.length < 6) base = base.concat(list); // نكرر القائمة لو قليلة عشان الشريط يمتلي
+        const mk = (p, hidden) => {
+          const c = el("div", "rec-card");
+          if (hidden) c.setAttribute("aria-hidden", "true");
+          c.append(el("span", "rec-badge" + (top.has(p.id) ? "" : " soft"), top.has(p.id) ? "🔥 الأكثر طلباً" : "✨ قد يعجبك"));
+          const im = el("img"); im.src = p.image; im.alt = p.name; im.loading = "lazy"; c.append(im);
+          c.append(el("b", "", p.name));
+          const f = el("div", "rec-foot");
+          f.append(el("strong", "", money(p.price)));
+          const b = el("button", "btn-add", "أضف +");
+          b.type = "button"; b.tabIndex = hidden ? -1 : 0;
+          b.onclick = () => add(p.id);
+          f.append(b); c.append(f);
+          return c;
+        };
+        base.forEach((p) => track.append(mk(p, false)));
+        base.forEach((p) => track.append(mk(p, true))); // النسخة الثانية للّفّ المتواصل
+        track.style.animationDuration = Math.max(30, base.length * 6) + "s";
+      }
       function renderCart() {
+        renderRec();
         const l = document.getElementById("cartLines"),
           s = document.getElementById("cartSummary"),
           is = items();
@@ -1499,7 +1802,7 @@ const rvAvatar = (g) => g === "female"
         clearTimeout(timer);
         timer = setTimeout(() => e.classList.remove("show"), ms || 3000);
       }
-      loadProducts();
+      loadProducts().then(loadPopular);
       persist();
       loadMe().then(() => {
         const a = new URLSearchParams(location.search).get("auth");
@@ -1513,6 +1816,12 @@ const rvAvatar = (g) => g === "female"
       });
       pollOrders();
       setInterval(pollOrders, 15000);
+      // مزامنة صورة واسم الحساب مع Discord: كل 15 ثانية، وعند الرجوع للصفحة
+      let meSyncAt = 0;
+      const syncMe = () => { if (!me || Date.now() - meSyncAt < 8000) return; meSyncAt = Date.now(); loadMe(true); };
+      setInterval(syncMe, 15000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) syncMe(); });
+      window.addEventListener("focus", syncMe);
       document.addEventListener("visibilitychange", () => { if (!document.hidden) pollOrders(); });
 
       /* Site-wide starfield + shooting-star (meteor) animation */
