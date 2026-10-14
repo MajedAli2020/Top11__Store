@@ -559,9 +559,46 @@
       #saSplash .sa-dust i{position:absolute;bottom:-12px;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle,#fff6c8,#d4af37 55%,rgba(212,175,55,0));opacity:0;animation:saRise var(--t) var(--dl) linear infinite}
       @keyframes saRise{0%{transform:translate(0,0);opacity:0}12%{opacity:.85}100%{transform:translate(var(--x),-108vh);opacity:0}}
       #saSplash .sa-stage{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:20px;text-align:center}
-      #saSplash .sa-emb{position:relative;width:min(440px,72vw,50vh);aspect-ratio:400/410}
+      #saSplash .sa-row{display:flex;direction:rtl;align-items:center;justify-content:center;gap:clamp(20px,6vw,90px)}
+      #saSplash .sa-emb{position:relative;width:min(400px,36vw,48vh);aspect-ratio:400/410}
+      @media (max-width:700px){#saSplash .sa-row{flex-direction:column;gap:14px}#saSplash .sa-emb{width:min(70vw,30vh)}}
+      /* ===== الصورة ===== */
+      #saSplash .sa-port{position:relative;display:none;width:min(300px,28vw,40vh);aspect-ratio:1}
+      #saSplash .sa-port.ok{display:block}
+      @media (max-width:700px){#saSplash .sa-port{width:min(56vw,26vh)}}
+      #saSplash .sa-pring{position:absolute;inset:-9%;border-radius:50%;border:2px dashed rgba(212,175,55,.85);opacity:0;animation:saIn 1s 1s forwards,saSpinR 40s linear infinite}
+      @keyframes saSpinR{to{transform:rotate(-360deg)}}
+      #saSplash .sa-pring2{position:absolute;inset:-17%;border-radius:50%;border:1px solid rgba(212,175,55,.4);opacity:0;animation:saIn 1s 1.2s forwards}
+      #saSplash .sa-pimg{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:4px solid #d4af37;box-shadow:0 0 0 7px rgba(0,0,0,.35),0 0 0 9px #b98a1e,0 0 46px rgba(212,175,55,.6),0 18px 40px rgba(0,0,0,.6);opacity:0;animation:saPhoto 1.3s 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+      #saSplash .sa-pimg img{width:100%;height:100%;object-fit:cover;display:block}
+      #saSplash .sa-pimg::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,246,200,.55) 50%,transparent 65%);transform:translateX(-120%);animation:saShine 1.4s 2.2s ease-out forwards}
+      @keyframes saShine{to{transform:translateX(120%)}}
+      @keyframes saPhoto{from{opacity:0;transform:scale(.55);filter:blur(14px) brightness(1.6)}to{opacity:1;transform:none;filter:none}}
+      /* ===== مؤثرات عسكرية ===== */
+      #saSplash .sa-radar{position:absolute;left:50%;top:46%;width:min(1200px,170vmin);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);opacity:0;pointer-events:none;background:repeating-radial-gradient(circle,transparent 0 9.6%,rgba(120,255,170,.16) 9.7% 10%);-webkit-mask-image:radial-gradient(circle,#000 50%,transparent 70%);mask-image:radial-gradient(circle,#000 50%,transparent 70%);animation:saRad 1s .3s forwards}
+      @keyframes saRad{to{opacity:.7}}
+      #saSplash .sa-radar::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 290deg,rgba(80,255,150,.30) 350deg,rgba(190,255,220,.6) 360deg);animation:saSweep 3.4s linear infinite}
+      @keyframes saSweep{to{transform:rotate(360deg)}}
+      #saSplash .sa-beam{position:absolute;bottom:-4%;width:22vmin;height:125vh;transform-origin:50% 100%;background:linear-gradient(to top,rgba(255,244,200,.5),rgba(255,244,200,0));clip-path:polygon(44% 100%,56% 100%,100% 0,0 0);filter:blur(5px);opacity:0;z-index:0;pointer-events:none;animation:saIn3 1s .7s forwards,saSwing 3.2s .7s ease-in-out infinite alternate}
+      #saSplash .sa-beam.l{left:9%;--a:-26deg;--b:22deg}#saSplash .sa-beam.r{right:9%;--a:26deg;--b:-22deg}
+      @keyframes saIn3{to{opacity:.3}}
+      @keyframes saSwing{from{transform:rotate(var(--a))}to{transform:rotate(var(--b))}}
+      #saSplash .sa-jets{position:absolute;left:0;top:11%;width:0;height:0;z-index:1;font-size:clamp(46px,6.5vw,92px);pointer-events:none;animation:saFly 3s .5s cubic-bezier(.35,.05,.55,.95) both}
+      @keyframes saFly{from{transform:translateX(-35vw)}to{transform:translateX(130vw)}}
+      #saSplash .sa-jet{position:absolute;width:1em;height:.5em}
+      #saSplash .sa-jet svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 6px 7px rgba(0,0,0,.55))}
+      #saSplash .sa-tr{position:absolute;right:86%;top:50%;height:.075em;width:32vw;transform:translateY(-50%);background:linear-gradient(90deg,transparent,var(--c) 70%);filter:blur(1.6px);opacity:.92}
+      #saSplash .sa-tw{position:relative;padding:6px clamp(18px,3.4vw,52px);margin-top:10px}
+      #saSplash .sa-tw .sa-title{margin:0}
+      #saSplash .sa-tw b{position:absolute;width:24px;height:24px;border:0 solid #ff2a3a;filter:drop-shadow(0 0 6px rgba(255,40,55,.85));opacity:0;animation:saLock .7s 3s cubic-bezier(.2,.9,.3,1) forwards}
+      #saSplash .sa-tw .tl{top:0;left:0;border-top-width:3px;border-left-width:3px;--ox:-46px;--oy:-26px}
+      #saSplash .sa-tw .tr{top:0;right:0;border-top-width:3px;border-right-width:3px;--ox:46px;--oy:-26px}
+      #saSplash .sa-tw .bl{bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;--ox:-46px;--oy:26px}
+      #saSplash .sa-tw .br{bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;--ox:46px;--oy:26px}
+      @keyframes saLock{from{opacity:0;transform:translate(var(--ox),var(--oy)) scale(1.7)}to{opacity:1;transform:none}}
+
       #saSplash .sa-orn{position:absolute;left:50%;top:50%;width:200%;height:auto;opacity:0;pointer-events:none;transform:translate(-50%,-50%);animation:saIn1 1.4s .2s forwards,saSpin 120s linear infinite}
-      @keyframes saIn1{from{opacity:0}to{opacity:.38}}
+      @keyframes saIn1{from{opacity:0}to{opacity:.3}}
       @keyframes saSpin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
       #saSplash .sa-orn .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:saDraw 2.6s .3s cubic-bezier(.4,0,.2,1) forwards}
       @keyframes saDraw{to{stroke-dashoffset:0}}
@@ -576,17 +613,21 @@
       @keyframes saFr{from{opacity:0;transform:scale(.05) rotate(-25deg)}to{opacity:1;transform:none}}
       #saSplash .sa-flash{transform-box:fill-box;transform-origin:center;animation:saFlash .8s 1.38s ease-out both}
       @keyframes saFlash{from{opacity:1;transform:scale(0)}to{opacity:0;transform:scale(5)}}
-      #saSplash .sa-title{margin:10px 0 0;font-weight:700;font-size:clamp(36px,8vw,72px);line-height:1.25;opacity:0;animation:saTitle 1s 2.5s cubic-bezier(.2,.8,.2,1) forwards}
+      #saSplash .sa-title{margin:10px 0 0;font-weight:700;font-size:clamp(34px,8.4vw,88px);line-height:1.5;white-space:nowrap;opacity:0;animation:saTitle 1s 2.5s cubic-bezier(.2,.8,.2,1) forwards}
       @keyframes saTitle{from{opacity:0;transform:translateY(26px);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
-      #saSplash .sa-title span{display:inline-block;-webkit-background-clip:text;background-clip:text;color:transparent}
+      #saSplash .sa-title span{display:inline-block;padding:.7em .15em .45em;margin:-.7em -.15em -.45em;-webkit-background-clip:text;background-clip:text;color:transparent}
       #saSplash .sa-w1{background-image:linear-gradient(180deg,#fff6d2,#e9c556 45%,#a97a14);filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
-      #saSplash .sa-w2{background-image:linear-gradient(180deg,#ff6a74,#e3101f 55%,#a00712);filter:drop-shadow(0 0 14px rgba(255,30,45,.55));margin-inline-start:.28em}
-      #saSplash .sa-line{position:relative;width:min(540px,82vw);height:6px;margin-top:10px;display:flex;align-items:center}
+      #saSplash .sa-w2{background-image:linear-gradient(180deg,#ff6a74,#e3101f 55%,#a00712);filter:drop-shadow(0 0 14px rgba(255,30,45,.55));}
+      #saSplash .sa-line{position:relative;width:min(820px,88vw);height:6px;margin-top:8px;display:flex;align-items:center}
       #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#7d0510,#ff1f30 50%,#7d0510);box-shadow:0 0 18px 2px rgba(255,30,45,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
       @keyframes saLine{to{transform:scaleX(1)}}
       #saSplash .sa-line::before,#saSplash .sa-line::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:#d4af37;border:2px solid #fff3bd;transform:translateY(-50%) rotate(45deg) scale(0);animation:saDia .5s 3.8s forwards}
       #saSplash .sa-line::before{right:-22px}#saSplash .sa-line::after{left:-22px}
       @keyframes saDia{to{transform:translateY(-50%) rotate(45deg) scale(1)}}
+      #saSplash .sa-najdi{position:absolute;left:30px;right:30px;height:24px;z-index:1;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24'%3E%3Cpath d='M0 0L24 24L48 0Z' fill='%23d4af37'/%3E%3Cpath d='M12 0L24 12L36 0Z' fill='%23052612'/%3E%3C/svg%3E") repeat-x center/48px 24px;opacity:.85;clip-path:inset(0 50% 0 50%);animation:saNajdi 1.4s .35s cubic-bezier(.3,.8,.2,1) forwards}
+      #saSplash .sa-najdi.t{top:24px}
+      #saSplash .sa-najdi.b{bottom:24px;transform:scaleY(-1)}
+      @keyframes saNajdi{to{clip-path:inset(0 0 0 0)}}
       html.sa-lock,html.sa-lock body{overflow:hidden!important}
     </style>
   </head>
@@ -594,9 +635,12 @@
 
     <div id="saSplash" role="dialog" aria-label="السعودية خط أحمر">
       <div class="sa-bg"></div>
+      <div class="sa-radar"></div><div class="sa-beam l"></div><div class="sa-beam r"></div><div class="sa-jets" id="saJets"></div>
+      <div class="sa-najdi t"></div><div class="sa-najdi b"></div>
       <div class="sa-dust" id="saDust"></div>
       <button class="sa-skip" type="button" id="saSkip">تخطي</button>
       <div class="sa-stage">
+        <div class="sa-row">
         <div class="sa-emb">
           <svg class="sa-orn" viewBox="-400 -400 800 800" aria-hidden="true" id="saOrn" fill="none" stroke="#d4af37" stroke-width="1.3"></svg>
           <div class="sa-glow"></div>
@@ -614,14 +658,17 @@
             <g class="sa-flash"><circle cx="200" cy="284" r="9" fill="#fff6c8"/><g stroke="#fff6c8" stroke-width="2" stroke-linecap="round" id="saRays"></g></g>
           </svg>
         </div>
-        <h1 class="sa-title"><span class="sa-w1">السعودية</span><span class="sa-w2">خط أحمر</span></h1>
+        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" /></div></div>
+        </div>
+        <div class="sa-tw"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>
+        <h1 class="sa-title"><span class="sa-w1">السعـــــودية</span> <span class="sa-w2">خط أحمر</span></h1></div>
         <div class="sa-line"><i></i></div>
       </div>
     </div>
     <script>
       (function () {
         var root = document.getElementById("saSplash"); if (!root) return;
-        var NS = "http://www.w3.org/2000/svg", done = false, DURATION = 5200; /* مدة العرض بالمللي ثانية */
+        var NS = "http://www.w3.org/2000/svg", done = false, DURATION = 5600; /* مدة العرض بالمللي ثانية */
         var GOLD = "url(#saGold)", DARK = "#6b4a08";
         document.documentElement.classList.add("sa-lock");
         function el(n, a, p) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
@@ -706,6 +753,24 @@
           it.style.cssText = "left:" + (Math.random() * 100).toFixed(1) + "%;--s:" + (2 + Math.random() * 5).toFixed(1) + "px;--t:" + (3.5 + Math.random() * 3).toFixed(1) + "s;--dl:" + (Math.random() * 3).toFixed(1) + "s;--x:" + ((Math.random() - 0.5) * 120).toFixed(0) + "px";
           dust.appendChild(it);
         }
+
+
+        /* ===== الصورة: ضع ملف الصورة في public/assets/ باسم prince.jpg (أو png / webp) ===== */
+        (function () {
+          var names = ["assets/prince.jpg", "assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
+          img.onload = function () { port.classList.add("ok"); };
+          img.onerror = function () { if (i < names.length) img.src = names[i++]; };
+          img.src = names[i++];
+        })();
+
+        /* ===== تشكيل طائرات (صقور السعودية) بدخان أخضر وأبيض ===== */
+        var jets = document.getElementById("saJets"), JET = "M118 30 L88 24 L66 24 L40 3 L29 3 L44 24 L20 24 L7 12 L2 12 L10 30 L2 48 L7 48 L20 36 L44 36 L29 57 L40 57 L66 36 L88 36 Z";
+        [[0, 0, "#22c870"], [-0.72, -0.46, "#ffffff"], [-0.72, 0.46, "#ffffff"], [-1.44, -0.92, "#22c870"], [-1.44, 0.92, "#22c870"]].forEach(function (o) {
+          var d = document.createElement("div"); d.className = "sa-jet";
+          d.style.left = o[0] + "em"; d.style.top = o[1] + "em"; d.style.setProperty("--c", o[2]);
+          d.innerHTML = '<i class="sa-tr"></i><svg viewBox="0 0 120 60"><path d="' + JET + '" fill="#e3e9ef" stroke="#8793a1" stroke-width="1.2" stroke-linejoin="round"/><path d="M30 30 H110" stroke="#9aa6b3" stroke-width="1.4"/><ellipse cx="84" cy="30" rx="9" ry="3.2" fill="#2b3a4a"/></svg>';
+          jets.appendChild(d);
+        });
 
         function finish() {
           if (done) return; done = true;
