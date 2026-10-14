@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Amiri:wght@700&family=Aref+Ruqaa:wght@700&family=JetBrains+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -546,8 +546,177 @@
         try { localStorage.setItem("siteSettings", JSON.stringify(st)); } catch (e) {}
       }).catch(function () {});
     </script>
+
+    <style id="saSplashCss">
+      #saSplash{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:"Aref Ruqaa",Tajawal,serif;transition:opacity .9s ease,visibility .9s}
+      #saSplash.out{opacity:0;visibility:hidden;pointer-events:none}
+      #saSplash .sa-bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 38%,rgba(0,120,60,.55),rgba(3,22,12,.9) 68%);-webkit-backdrop-filter:blur(24px) saturate(1.15);backdrop-filter:blur(24px) saturate(1.15);animation:saBlur .7s ease-out both}
+      @keyframes saBlur{from{-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);opacity:0}to{-webkit-backdrop-filter:blur(24px) saturate(1.15);backdrop-filter:blur(24px) saturate(1.15);opacity:1}}
+      #saSplash .sa-bg::before{content:"";position:absolute;inset:14px;border:1px solid rgba(212,175,55,.45);border-radius:6px;box-shadow:inset 0 0 0 6px rgba(0,0,0,0),inset 0 0 0 7px rgba(212,175,55,.16)}
+      #saSplash .sa-skip{position:absolute;top:26px;left:30px;z-index:4;background:rgba(0,0,0,.25);color:#e8d9a0;border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:6px 18px;font:700 14px Tajawal,sans-serif;cursor:pointer;opacity:0;animation:saIn .5s 1s forwards}
+      #saSplash .sa-skip:hover{background:rgba(212,175,55,.2)}
+      #saSplash .sa-dust{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+      #saSplash .sa-dust i{position:absolute;bottom:-12px;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle,#fff6c8,#d4af37 55%,rgba(212,175,55,0));opacity:0;animation:saRise var(--t) var(--dl) linear infinite}
+      @keyframes saRise{0%{transform:translate(0,0);opacity:0}12%{opacity:.85}100%{transform:translate(var(--x),-108vh);opacity:0}}
+      #saSplash .sa-stage{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:20px;text-align:center}
+      #saSplash .sa-emb{position:relative;width:min(440px,72vw,50vh);aspect-ratio:400/410}
+      #saSplash .sa-orn{position:absolute;left:50%;top:50%;width:200%;height:auto;opacity:0;pointer-events:none;transform:translate(-50%,-50%);animation:saIn1 1.4s .2s forwards,saSpin 120s linear infinite}
+      @keyframes saIn1{from{opacity:0}to{opacity:.38}}
+      @keyframes saSpin{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+      #saSplash .sa-orn .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:saDraw 2.6s .3s cubic-bezier(.4,0,.2,1) forwards}
+      @keyframes saDraw{to{stroke-dashoffset:0}}
+      #saSplash .sa-glow{position:absolute;left:50%;top:46%;width:150%;height:110%;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(212,175,55,.34),transparent 62%);filter:blur(28px);opacity:0;animation:saIn 1.6s 1.3s forwards}
+      #saSplash .sa-embsvg{position:relative;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 14px 20px rgba(0,0,0,.6)) drop-shadow(0 0 16px rgba(212,175,55,.35))}
+      @keyframes saIn{from{opacity:0}to{opacity:1}}
+      #saSplash .sa-sw{transform-origin:200px 300px;animation:saSw 1s .5s cubic-bezier(.15,.85,.25,1) both}
+      @keyframes saSw{from{opacity:0;transform:translate(-300px,70px) rotate(-38deg)}to{opacity:1;transform:none}}
+      #saSplash .sa-trunk{transform-box:fill-box;transform-origin:50% 100%;animation:saGrow 1s 1.25s cubic-bezier(.3,.8,.3,1) both}
+      @keyframes saGrow{from{opacity:.2;transform:scaleY(0)}to{opacity:1;transform:none}}
+      #saSplash .sa-fr{transform-origin:200px 128px;animation:saFr .9s var(--d,1.9s) cubic-bezier(.2,1.15,.3,1) both}
+      @keyframes saFr{from{opacity:0;transform:scale(.05) rotate(-25deg)}to{opacity:1;transform:none}}
+      #saSplash .sa-flash{transform-box:fill-box;transform-origin:center;animation:saFlash .8s 1.38s ease-out both}
+      @keyframes saFlash{from{opacity:1;transform:scale(0)}to{opacity:0;transform:scale(5)}}
+      #saSplash .sa-title{margin:10px 0 0;font-weight:700;font-size:clamp(36px,8vw,72px);line-height:1.25;opacity:0;animation:saTitle 1s 2.5s cubic-bezier(.2,.8,.2,1) forwards}
+      @keyframes saTitle{from{opacity:0;transform:translateY(26px);filter:blur(10px)}to{opacity:1;transform:none;filter:blur(0)}}
+      #saSplash .sa-title span{display:inline-block;-webkit-background-clip:text;background-clip:text;color:transparent}
+      #saSplash .sa-w1{background-image:linear-gradient(180deg,#fff6d2,#e9c556 45%,#a97a14);filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
+      #saSplash .sa-w2{background-image:linear-gradient(180deg,#ff6a74,#e3101f 55%,#a00712);filter:drop-shadow(0 0 14px rgba(255,30,45,.55));margin-inline-start:.28em}
+      #saSplash .sa-line{position:relative;width:min(540px,82vw);height:6px;margin-top:10px;display:flex;align-items:center}
+      #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#7d0510,#ff1f30 50%,#7d0510);box-shadow:0 0 18px 2px rgba(255,30,45,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
+      @keyframes saLine{to{transform:scaleX(1)}}
+      #saSplash .sa-line::before,#saSplash .sa-line::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:#d4af37;border:2px solid #fff3bd;transform:translateY(-50%) rotate(45deg) scale(0);animation:saDia .5s 3.8s forwards}
+      #saSplash .sa-line::before{right:-22px}#saSplash .sa-line::after{left:-22px}
+      @keyframes saDia{to{transform:translateY(-50%) rotate(45deg) scale(1)}}
+      html.sa-lock,html.sa-lock body{overflow:hidden!important}
+    </style>
   </head>
   <body>
+
+    <div id="saSplash" role="dialog" aria-label="السعودية خط أحمر">
+      <div class="sa-bg"></div>
+      <div class="sa-dust" id="saDust"></div>
+      <button class="sa-skip" type="button" id="saSkip">تخطي</button>
+      <div class="sa-stage">
+        <div class="sa-emb">
+          <svg class="sa-orn" viewBox="-400 -400 800 800" aria-hidden="true" id="saOrn" fill="none" stroke="#d4af37" stroke-width="1.3"></svg>
+          <div class="sa-glow"></div>
+          <svg class="sa-embsvg" viewBox="0 10 400 410" aria-hidden="true">
+            <defs>
+              <linearGradient id="saGold" gradientUnits="userSpaceOnUse" x1="-800" y1="0" x2="-100" y2="400">
+                <stop offset="0" stop-color="#b98a1e"/><stop offset=".3" stop-color="#e2bb4c"/><stop offset=".42" stop-color="#fff1b8"/><stop offset=".5" stop-color="#f0cf6a"/><stop offset=".72" stop-color="#c79a2c"/><stop offset="1" stop-color="#8a6410"/>
+                <animate attributeName="x1" from="-800" to="-100" begin="2.1s" dur="1.5s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".3 .1 .2 1"/>
+                <animate attributeName="x2" from="-100" to="600" begin="2.1s" dur="1.5s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".3 .1 .2 1"/>
+              </linearGradient>
+            </defs>
+            <g id="saTrunkG" class="sa-trunk"></g>
+            <g id="saCrown"></g>
+            <g id="saSwords"></g>
+            <g class="sa-flash"><circle cx="200" cy="284" r="9" fill="#fff6c8"/><g stroke="#fff6c8" stroke-width="2" stroke-linecap="round" id="saRays"></g></g>
+          </svg>
+        </div>
+        <h1 class="sa-title"><span class="sa-w1">السعودية</span><span class="sa-w2">خط أحمر</span></h1>
+        <div class="sa-line"><i></i></div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var root = document.getElementById("saSplash"); if (!root) return;
+        var NS = "http://www.w3.org/2000/svg", done = false, DURATION = 5200; /* مدة العرض بالمللي ثانية */
+        var GOLD = "url(#saGold)", DARK = "#6b4a08";
+        document.documentElement.classList.add("sa-lock");
+        function el(n, a, p) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
+        function f(n) { return n.toFixed(1); }
+        function q(P, t) { var u = 1 - t; return [u * u * P[0][0] + 2 * u * t * P[1][0] + t * t * P[2][0], u * u * P[0][1] + 2 * u * t * P[1][1] + t * t * P[2][1]]; }
+        function dir(P, t) { var u = 1 - t, x = 2 * u * (P[1][0] - P[0][0]) + 2 * t * (P[2][0] - P[1][0]), y = 2 * u * (P[1][1] - P[0][1]) + 2 * t * (P[2][1] - P[1][1]), l = Math.hypot(x, y) || 1; return [x / l, y / l]; }
+
+        /* ===== السيف ===== */
+        function sword(parent) {
+          var P = [[128, 352], [190, 306], [326, 172]], g = el("g", { "class": "sa-sw" }, parent), L = [], R = [], i, N = 30;
+          for (i = 0; i <= N; i++) {
+            var t = i / N, p = q(P, t), n = dir(P, t), w = i === N ? 0.2 : (1 - Math.pow(t, 1.5)) * 8.5 + 0.7;
+            L.push([p[0] - n[1] * w, p[1] + n[0] * w]); R.push([p[0] + n[1] * w, p[1] - n[0] * w]);
+          }
+          var pts = L.concat(R.reverse());
+          el("path", { d: "M" + pts.map(function (a) { return f(a[0]) + " " + f(a[1]); }).join(" L") + " Z", fill: GOLD, stroke: DARK, "stroke-width": ".9", "stroke-linejoin": "round" }, g);
+          var fp = []; for (i = 3; i <= 23; i++) { var pp = q(P, i / N); fp.push(f(pp[0]) + " " + f(pp[1])); }
+          el("path", { d: "M" + fp.join(" L"), fill: "none", stroke: "#7a560a", "stroke-width": "1.3", "stroke-linecap": "round", opacity: ".55" }, g);
+          var A = P[0], t0 = dir(P, 0), nx = -t0[1], ny = t0[0], gx = nx * 19, gy = ny * 19;
+          var e = [A[0] - t0[0] * 50, A[1] - t0[1] * 50];
+          el("line", { x1: f(A[0]), y1: f(A[1]), x2: f(e[0]), y2: f(e[1]), stroke: DARK, "stroke-width": "11", "stroke-linecap": "round" }, g);
+          el("line", { x1: f(A[0]), y1: f(A[1]), x2: f(e[0]), y2: f(e[1]), stroke: GOLD, "stroke-width": "8.6", "stroke-linecap": "round" }, g);
+          el("line", { x1: f(A[0]), y1: f(A[1]), x2: f(e[0]), y2: f(e[1]), stroke: DARK, "stroke-width": "8.6", "stroke-dasharray": "1.4 4.4", opacity: ".55" }, g);
+          el("line", { x1: f(A[0] - gx), y1: f(A[1] - gy), x2: f(A[0] + gx), y2: f(A[1] + gy), stroke: DARK, "stroke-width": "9.5", "stroke-linecap": "round" }, g);
+          el("line", { x1: f(A[0] - gx), y1: f(A[1] - gy), x2: f(A[0] + gx), y2: f(A[1] + gy), stroke: GOLD, "stroke-width": "7", "stroke-linecap": "round" }, g);
+          [-1, 1].forEach(function (s) { el("circle", { cx: f(A[0] + gx * s), cy: f(A[1] + gy * s), r: "5", fill: GOLD, stroke: DARK, "stroke-width": ".9" }, g); });
+          el("circle", { cx: f(e[0] - t0[0] * 5), cy: f(e[1] - t0[1] * 5), r: "8", fill: GOLD, stroke: DARK, "stroke-width": ".9" }, g);
+          el("circle", { cx: f(e[0] - t0[0] * 5), cy: f(e[1] - t0[1] * 5), r: "3", fill: "none", stroke: DARK, "stroke-width": "1", opacity: ".6" }, g);
+        }
+        var sw = document.getElementById("saSwords");
+        sword(el("g", {}, sw));
+        sword(el("g", { transform: "translate(400 0) scale(-1 1)" }, sw));
+
+        /* ===== جذع النخلة ===== */
+        var tr = document.getElementById("saTrunkG");
+        el("path", { d: "M187 298 C192 240 194 190 194 128 L206 128 C206 190 208 240 213 298 Z", fill: GOLD, stroke: DARK, "stroke-width": ".9", "stroke-linejoin": "round" }, tr);
+        for (var y = 140, k = 0; y < 292; y += 11, k++) {
+          var hw = 6 + (y - 128) / 170 * 6.5;
+          el("path", { d: "M" + f(200 - hw) + " " + f(y) + " L200 " + f(y + 11) + " L" + f(200 + hw) + " " + f(y), fill: "none", stroke: DARK, "stroke-width": "1", opacity: ".55", "stroke-linejoin": "round" }, tr);
+        }
+        el("ellipse", { cx: "200", cy: "130", rx: "11", ry: "9", fill: GOLD, stroke: DARK, "stroke-width": ".9" }, tr);
+
+        /* ===== السعف ===== */
+        var crown = document.getElementById("saCrown"), cx = 200, cy = 128;
+        var FR = [[-86, 96], [-62, 102], [-38, 98], [-15, 86], [0, 74], [15, 86], [38, 98], [62, 102], [86, 96]];
+        FR.forEach(function (a, idx) {
+          var th = a[0] * Math.PI / 180, Ln = a[1] * 1.22, sx = Math.sin(th), co = Math.cos(th), ab = Math.abs(sx);
+          var P = [[cx, cy], [cx + sx * Ln * 0.55, cy - co * Ln * 0.55 - Ln * 0.18 * (0.4 + ab)], [cx + sx * Ln, cy - co * Ln * 0.95 + Ln * 0.42 * Math.pow(ab, 1.4)]];
+          var g = el("g", { "class": "sa-fr", style: "--d:" + (1.85 + Math.abs(idx - 4) * 0.12).toFixed(2) + "s" }, crown), d = "", i, M = 17;
+          for (i = 1; i <= M; i++) {
+            var t = 0.1 + 0.9 * i / M, p = q(P, t), n = dir(P, t), len = 7 + 17 * Math.sin(Math.PI * Math.min(1, t * 1.05)), an = 0.82 + 0.1 * t;
+            [-1, 1].forEach(function (s) {
+              var c = Math.cos(an * s), si = Math.sin(an * s), vx = n[0] * c - n[1] * si, vy = n[0] * si + n[1] * c;
+              d += "M" + f(p[0]) + " " + f(p[1]) + " L" + f(p[0] + vx * len) + " " + f(p[1] + vy * len + len * 0.18) + " ";
+            });
+          }
+          el("path", { d: d, fill: "none", stroke: GOLD, "stroke-width": "2.3", "stroke-linecap": "round" }, g);
+          el("path", { d: "M" + P[0][0] + " " + P[0][1] + " Q" + f(P[1][0]) + " " + f(P[1][1]) + " " + f(P[2][0]) + " " + f(P[2][1]), fill: "none", stroke: DARK, "stroke-width": "4.2", "stroke-linecap": "round" }, g);
+          el("path", { d: "M" + P[0][0] + " " + P[0][1] + " Q" + f(P[1][0]) + " " + f(P[1][1]) + " " + f(P[2][0]) + " " + f(P[2][1]), fill: "none", stroke: GOLD, "stroke-width": "2.8", "stroke-linecap": "round" }, g);
+        });
+        [[191, 142], [200, 146], [209, 142], [196, 150], [204, 150]].forEach(function (c, i) {
+          el("circle", { cx: c[0], cy: c[1], r: "3.6", fill: GOLD, stroke: DARK, "stroke-width": ".8", "class": "sa-fr", style: "--d:" + (2.3 + i * 0.05) + "s" }, crown);
+        });
+
+        /* شرارة التقاء السيفين */
+        var rays = document.getElementById("saRays");
+        for (var r = 0; r < 10; r++) { var a = r * Math.PI / 5; el("line", { x1: f(200 + Math.cos(a) * 14), y1: f(284 + Math.sin(a) * 14), x2: f(200 + Math.cos(a) * 30), y2: f(284 + Math.sin(a) * 30) }, rays); }
+
+        /* ===== زخرفة النجمة الثمانية (رُبع الحزب) ===== */
+        var orn = document.getElementById("saOrn");
+        function poly(R, rot, n) { var d = ""; for (var i = 0; i < n; i++) { var a = rot + i * 2 * Math.PI / n; d += (i ? " L" : "M") + f(Math.cos(a) * R) + " " + f(Math.sin(a) * R); } return d + " Z"; }
+        el("circle", { cx: 0, cy: 0, r: 380, pathLength: 1, "class": "dr" }, orn);
+        el("circle", { cx: 0, cy: 0, r: 364, pathLength: 1, "class": "dr", "stroke-dasharray": "0.004 0.006", opacity: ".7" }, orn);
+        [[330, 0], [330, Math.PI / 4], [250, Math.PI / 8], [250, Math.PI / 8 + Math.PI / 4]].forEach(function (a) { el("path", { d: poly(a[0], a[1], 4), pathLength: 1, "class": "dr" }, orn); });
+        el("circle", { cx: 0, cy: 0, r: 300, pathLength: 1, "class": "dr", opacity: ".7" }, orn);
+        for (var m = 0; m < 16; m++) { var an2 = m * Math.PI / 8; el("circle", { cx: f(Math.cos(an2) * 380), cy: f(Math.sin(an2) * 380), r: "4", fill: "#d4af37", stroke: "none", opacity: ".8" }, orn); }
+
+        /* ===== غبار ذهبي ===== */
+        var dust = document.getElementById("saDust");
+        for (var j = 0; j < 36; j++) {
+          var it = document.createElement("i");
+          it.style.cssText = "left:" + (Math.random() * 100).toFixed(1) + "%;--s:" + (2 + Math.random() * 5).toFixed(1) + "px;--t:" + (3.5 + Math.random() * 3).toFixed(1) + "s;--dl:" + (Math.random() * 3).toFixed(1) + "s;--x:" + ((Math.random() - 0.5) * 120).toFixed(0) + "px";
+          dust.appendChild(it);
+        }
+
+        function finish() {
+          if (done) return; done = true;
+          root.classList.add("out");
+          document.documentElement.classList.remove("sa-lock");
+          setTimeout(function () { if (root.parentNode) root.parentNode.removeChild(root); }, 1000);
+        }
+        document.getElementById("saSkip").addEventListener("click", finish);
+        setTimeout(finish, DURATION);
+      })();
+    </script>
     <canvas id="skyLayer"></canvas>
     <img class="side-diamond top-right" src="assets/diamond.png" alt="" />
     <img class="side-diamond bottom-left" src="assets/diamond.png" alt="" />
