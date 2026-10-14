@@ -105,6 +105,20 @@ app.get("/api/settings", (req, res) => { res.set("Cache-Control", "no-cache"); r
 app.get("/api/reviews", (req, res) => res.json(db.getActiveReviews().map(({ id, name, text, stars, gender }) => ({ id, name, text, stars, gender }))));
 app.get("/api/products", (req, res) => res.json(db.getActiveProducts().map(publicProduct)));
 
+// الأكثر طلباً: ترتيب معرّفات المنتجات حسب الكمية المطلوبة في الطلبات (غير المرفوضة). نرجّع المعرّفات فقط
+let popCache = { at: 0, ids: [] };
+app.get("/api/popular", (req, res) => {
+  if (Date.now() - popCache.at > 60_000) {
+    const tally = new Map();
+    for (const o of db.listOrders()) {
+      if (o.status === "rejected") continue;
+      for (const it of o.items || []) tally.set(it.id, (tally.get(it.id) || 0) + (it.quantity || 1));
+    }
+    popCache = { at: Date.now(), ids: [...tally].sort((a, b) => b[1] - a[1]).map(([id]) => id) };
+  }
+  res.json(popCache.ids);
+});
+
 const INVITE_RE = /^(https?:\/\/)?(www\.)?(discord\.gg|discord(app)?\.com\/invite)\/[\w-]+\/?$/i;
 function newOrderId() {
   const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -186,9 +200,38 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
   res.status(201).json(publicOrder(order));
 });
 
+// يجلب بيانات الحساب الحالية (الاسم/اليوزر/الصورة) من Discord بتوكن البوت، مع كاش قصير عشان ما نضغط على Discord
+const profileCache = new Map(); // uid -> { at, data }
+async function fetchDiscordProfile(uid) {
+  const hit = profileCache.get(uid);
+  if (hit && Date.now() - hit.at < 10_000) return hit.data;
+  let data = null;
+  try {
+    const r = await fetch("https://discord.com/api/v10/users/" + encodeURIComponent(uid), {
+      headers: { Authorization: "Bot " + process.env.DISCORD_TOKEN },
+    });
+    if (r.ok) {
+      const u = await r.json();
+      data = { name: u.global_name || u.username, username: u.username || "", avatar: u.avatar || null };
+    }
+  } catch (e) {}
+  profileCache.set(uid, { at: Date.now(), data });
+  if (profileCache.size > 2000) profileCache.clear();
+  return data;
+}
+
 app.get("/api/me", async (req, res) => {
-  const c = readCustomer(req);
+  res.set("Cache-Control", "no-store");
+  let c = readCustomer(req);
   if (!c) return res.status(401).json({ error: "غير مسجّل" });
+  // تحديث تلقائي: لو تغيّر الاسم/اليوزر/الصورة في Discord نحدّث الكوكي بدون ما يحتاج العميل يسجّل خروج ودخول
+  if (req.query.refresh && process.env.DISCORD_TOKEN) {
+    const fresh = await fetchDiscordProfile(c.uid);
+    if (fresh && (fresh.name !== c.name || fresh.username !== c.username || fresh.avatar !== c.avatar)) {
+      c = { ...c, name: fresh.name, username: fresh.username, avatar: fresh.avatar };
+      setCookie(res, "customer", makeToken(c), Math.max(1000, c.exp - Date.now()));
+    }
+  }
   res.json({ id: c.uid, name: c.name, username: c.username || "", email: c.email || "", avatar: c.avatar, inGuild: await bot.isMember(c.uid), staff: await bot.isStaff(c.uid) });
 });
 
