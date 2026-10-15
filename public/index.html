@@ -118,6 +118,12 @@
       .maint-card h2 { font-size: 32px; font-weight: 900; }
       .maint-card p { margin-top: 10px; color: #ffffffa0; line-height: 1.9; }
       html.is-maint, html.is-maint body { overflow: hidden; }
+      .maint-staff { display: inline-block; margin-top: 18px; font-size: 12px; color: #ffffff70; text-decoration: none; border-bottom: 1px dashed #ffffff30; }
+      .maint-staff:hover { color: var(--ice); }
+      #maintStaffBar { position: fixed; z-index: 95; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 24px); padding: 9px 16px; border-radius: 14px; font-size: 12.5px; font-weight: 700; text-align: center;
+        color: var(--text); background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid color-mix(in srgb, var(--blue2) 55%, transparent); box-shadow: 0 12px 34px #000a; }
+      #maintStaffBar[hidden] { display: none; }
+      #maintStaffBar a { color: var(--ice); margin-inline-start: 6px; }
       @keyframes maintWob { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
       .hero { display: grid; grid-template-columns: 1fr 1.28fr; gap: 40px; align-items: center; padding: 92px 0 110px; }
       .reveal { animation: rise 0.7s both cubic-bezier(0.23, 1, 0.32, 1); }
@@ -562,7 +568,7 @@
     <script>
       /* إعدادات المتجر (من لوحة التحكم): ألوان وشعار ونصوص. القيم الفاضية = الافتراضي الموجود في الصفحة */
       var SITE = { tabDefault: document.title };
-      function applySettings(st) {
+      function applySettings(st, fromCache) {
         if (!st) return;
         var c = st.colors || {}, r = document.documentElement.style;
         var map = { bg: "--bg", panel: "--panel", text: "--text", muted: "--muted", accent: "--blue", accent2: "--blue2", ice: "--ice" };
@@ -576,13 +582,22 @@
           r.setProperty("--line", "color-mix(in srgb, var(--blue) 55%, var(--bg))");
         }
         SITE.st = st;
-        var mt = !!st.maintenance, mo = document.getElementById("maintOverlay");
-        var applyM = function () {
+        var mt = !!st.maintenance;
+        /* وضع الصيانة: يطلع للزوار فقط. الإدارة (رتبة الإدارة/المالك) تتصفح المتجر عادي ويطلع لهم شريط تنبيه صغير */
+        window.applyMaint = function () {
           var o = document.getElementById("maintOverlay"); if (!o) return;
-          o.hidden = !mt; document.documentElement.classList.toggle("is-maint", mt);
-          [".topbar", "main", ".footer"].forEach(function (q) { var e = document.querySelector(q); if (e) { if (mt) e.setAttribute("inert", ""); else e.removeAttribute("inert"); } });
+          var on = !!(SITE.st && SITE.st.maintenance) && !SITE.staff;
+          o.hidden = !on; document.documentElement.classList.toggle("is-maint", on);
+          [".topbar", "main", ".footer"].forEach(function (q) { var e = document.querySelector(q); if (e) { if (on) e.setAttribute("inert", ""); else e.removeAttribute("inert"); } });
+          var bar = document.getElementById("maintStaffBar"); if (bar) bar.hidden = !(SITE.st && SITE.st.maintenance && SITE.staff);
         };
-        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", applyM); else applyM();
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", window.applyMaint); else window.applyMaint();
+        /* مقدمة «السعودية خط أحمر» ما تطلع وقت الصيانة (نعتمد على رد السيرفر مو على النسخة المحفوظة) */
+        if (mt && !fromCache) {
+          SITE.noSplash = true;
+          var sp = document.getElementById("saSplash"); if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
+          document.documentElement.classList.remove("sa-lock");
+        }
         if (window.onSiteSettings) window.onSiteSettings(st);
         var paint = function () {
           var t = st.texts || {};
@@ -603,7 +618,7 @@
         };
         if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint();
       }
-      try { applySettings(JSON.parse(localStorage.getItem("siteSettings") || "null")); } catch (e) {}
+      try { applySettings(JSON.parse(localStorage.getItem("siteSettings") || "null"), true); } catch (e) {}
       fetch("/api/settings").then(function (r) { return r.ok ? r.json() : null; }).then(function (st) {
         if (!st) return;
         applySettings(st);
@@ -682,8 +697,8 @@
       #saSplash .sa-title span{display:inline-block;padding:.7em .3em .45em;margin:-.7em -.3em -.45em;-webkit-background-clip:text;background-clip:text;color:transparent}
       #saSplash .sa-w1{background-image:linear-gradient(180deg,#fff6d2,#e9c556 45%,#a97a14);filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
       #saSplash .sa-title span.sa-w2{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ff2a3a;-webkit-text-fill-color:#ff2a3a;filter:none;text-shadow:0 0 14px rgba(255,30,45,.65),0 3px 8px rgba(0,0,0,.55)}
-      #saSplash .sa-line{position:relative;width:min(820px,88vw);height:6px;margin-top:8px;display:flex;align-items:center}
-      #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#7d0510,#ff1f30 50%,#7d0510);box-shadow:0 0 18px 2px rgba(255,30,45,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
+      #saSplash .sa-line{position:relative;width:min(820px,88vw);height:6px;margin-top:clamp(22px,4.2vh,40px);display:flex;align-items:center}
+      #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#0a5a2c,#22c870 50%,#0a5a2c);box-shadow:0 0 18px 2px rgba(34,200,112,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
       @keyframes saLine{to{transform:scaleX(1)}}
       #saSplash .sa-line::before,#saSplash .sa-line::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:#d4af37;border:2px solid #fff3bd;transform:translateY(-50%) rotate(45deg) scale(0);animation:saDia .5s 3.8s forwards}
       #saSplash .sa-line::before{right:-22px}#saSplash .sa-line::after{left:-22px}
@@ -693,9 +708,19 @@
       #saSplash .sa-najdi.b{bottom:24px;transform:scaleY(-1)}
       @keyframes saNajdi{to{clip-path:inset(0 0 0 0)}}
       html.sa-lock,html.sa-lock body{overflow:hidden!important}
+      @media (max-width:850px){
+        #saSplash .sa-bg{-webkit-backdrop-filter:none;backdrop-filter:none;animation:saFade .5s ease-out both}
+        @keyframes saFade{from{opacity:0}to{opacity:1}}
+        #saSplash .sa-radar,#saSplash .sa-beam,#saSplash .sa-orn,#saSplash .sa-glow,#saSplash .sa-najdi{display:none}
+        #saSplash .sa-dust i:nth-child(n+13){display:none}
+        #saSplash .sa-embsvg{filter:none}
+        #saSplash .sa-pring{animation:saIn 1s 1s forwards}
+        #saSplash .sa-tr{filter:none}
+      }
     </style>
   <link rel="stylesheet" href="premium.css" />
       <link rel="stylesheet" href="nav-plus.css" />
+      <link rel="stylesheet" href="mobile-lite.css" />
   </head>
   <body>
 
@@ -734,6 +759,7 @@
     <script>
       (function () {
         var root = document.getElementById("saSplash"); if (!root) return;
+        if (window.SITE && SITE.noSplash) { if (root.parentNode) root.parentNode.removeChild(root); return; }
         var NS = "http://www.w3.org/2000/svg", done = false, DURATION = 5600; /* مدة العرض بالمللي ثانية */
         var GOLD = "url(#saGold)", DARK = "#6b4a08";
         document.documentElement.classList.add("sa-lock");
@@ -853,8 +879,10 @@
         <div class="maint-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.770-3.770a6 6 0 0 1-7.940 7.940l-6.910 6.910a2.120 2.120 0 0 1-3-3l6.910-6.910a6 6 0 0 1 7.940-7.940z"/></svg></div>
         <h2>صيانة مؤقتة</h2>
         <p>نشتغل على تحسين المتجر، ونرجع لكم قريباً.</p>
+        <a class="maint-staff" href="/auth/customer">دخول الإدارة</a>
       </div>
     </div>
+    <div id="maintStaffBar" hidden><span>🛠 وضع الصيانة مفعّل — الزوار يشوفون صفحة الصيانة وأنت تتصفح كإدارة.</span> <a href="/admin">لوحة الإدارة ← الإعدادات لإيقافه</a></div>
     <canvas id="skyLayer"></canvas>
     <header class="topbar">
       <div class="wrap nav">
@@ -876,7 +904,7 @@
         <div class="nav-actions">
           <button class="nav-icon" onclick="openDiscord()" aria-label="الدعم"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.100 2h3a2 2 0 0 1 2 1.700c.1 1 .4 1.900.7 2.800a2 2 0 0 1-.5 2.100L8 10a16 16 0 0 0 6 6l1.300-1.300a2 2 0 0 1 2.100-.4c.9.300 1.800.6 2.800.7a2 2 0 0 1 1.700 2z"/></svg><span>الدعم</span></button>
           <span id="navUser"></span>
-          <button class="cart-btn" onclick="go('cart')"><span data-s="navCart">السلة</span> <span id="count" class="badge">0</span></button>
+          <button class="cart-btn" onclick="go('cart')" aria-label="السلة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/></svg><span data-s="navCart">السلة</span><span id="count" class="badge">0</span></button>
         </div>
       </div>
     </header>
@@ -905,7 +933,7 @@
           </div>
         </div>
         <div class="hp-marquee" aria-hidden="true"><div class="hp-track">
-          <span>نيترو ديسكورد</span><span>بوستات السيرفر</span><span>مصادر وأدوات</span><span>تسليم سريع</span><span>دعم مباشر</span><span>نيترو ديسكورد</span><span>بوستات السيرفر</span><span>مصادر وأدوات</span><span>تسليم سريع</span><span>دعم مباشر</span>
+          <span>نيترو ديسكورد</span><span>بوستات السيرفر</span><span>سورسات وأدوات</span><span>تسليم سريع</span><span>دعم مباشر</span><span>نيترو ديسكورد</span><span>بوستات السيرفر</span><span>سورسات وأدوات</span><span>تسليم سريع</span><span>دعم مباشر</span>
         </div></div>
         <div class="section">
           <div class="heading">
@@ -1196,6 +1224,7 @@
         } catch (e) {
           if (!silent) me = null;
         }
+        SITE.staff = !!(me && me.staff); if (window.applyMaint) window.applyMaint();
         if (silent && meSig(me) === before) return; // ما تغيّر شي
         const wasOpen = !!document.querySelector("#acctPanel.open");
         renderNavUser();
@@ -1953,8 +1982,9 @@ const rvAvatar = (g) => g === "female"
           w = canvas.width = window.innerWidth;
           h = canvas.height = window.innerHeight;
         }
-        window.addEventListener("resize", resize);
-        resize();
+        let lastW = 0;
+        window.addEventListener("resize", function () { if (window.innerWidth !== lastW) { lastW = window.innerWidth; resize(); stars = makeStars(LITE ? 36 : 110); } });
+        resize(); lastW = window.innerWidth;
 
         function makeStars(n) {
           const arr = [];
@@ -1970,7 +2000,8 @@ const rvAvatar = (g) => g === "female"
           }
           return arr;
         }
-        stars = makeStars(110);
+        const LITE = window.matchMedia("(max-width: 850px)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        stars = makeStars(LITE ? 36 : 110);
 
         function makeMeteor() {
           const startX = Math.random() * w * 0.6 + w * 0.2;
@@ -1986,7 +2017,12 @@ const rvAvatar = (g) => g === "female"
         meteors = [];
         let meteorTimer = 0;
 
-        function tick() {
+        let lastT = 0;
+        function tick(now) {
+          requestAnimationFrame(tick);
+          if (document.hidden) return;
+          if (LITE && now - lastT < 50) return; // ~20fps على الجوال
+          lastT = now;
           ctx.clearRect(0, 0, w, h);
 
           for (const s of stars) {
@@ -2024,9 +2060,8 @@ const rvAvatar = (g) => g === "female"
             if (m.life <= 0 || m.y > h + 50 || m.x > w + 50) meteors.splice(i, 1);
           }
 
-          requestAnimationFrame(tick);
         }
-        tick();
+        requestAnimationFrame(tick);
       })();
     </script>
   <script src="premium.js" defer></script>
