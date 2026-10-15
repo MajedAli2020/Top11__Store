@@ -22,7 +22,7 @@ const SEED_PRODUCTS = [
   BUNDLE,
   ...[[2015, 250], [2016, 65], [2017, 47], [2018, 35], [2019, 30], [2020, 27], [2021, 18], [2022, 15], [2023, 12], [2024, 10], [2025, 5]].map(([y, price]) => ({
     id: "account-" + y, group: "accounts", name: "حساب " + y, category: "حسابات دسكورد",
-    description: "حساب دسكورد مميز من سنة " + y + ".", price, image: "assets/ad_" + y + ".png", note: "", active: true,
+    description: "حساب دسكورد مميز من سنة " + y + ".", price, image: "assets/accounts.png", note: "", active: true,
   })),
 ];
 
@@ -56,7 +56,7 @@ const SECTION_DEFAULTS = [
   { id: "bots", label: "سورسات (بوتات الديسكورد)", sub: "سورسات وبوتات جاهزة" },
 ];
 const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])), sections: SECTION_DEFAULTS };
-const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", showVisitors: !!(x && x.showVisitors), sections: Array.isArray(x && x.sections) ? x.sections : null });
+const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), sections: Array.isArray(x && x.sections) ? x.sections : null });
 
 // إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
 const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
@@ -71,6 +71,7 @@ const STATUSES = ["new", "accepted", "delivered", "rejected"];
 // يضمن إن كل منتج فيه كل الحقول (للبيانات القديمة اللي ما فيها note)
 const normProduct = (p) => ({
   ...p,
+  image: /^assets\/ad_\d{4}\.png$/.test(p.image || "") ? "assets/accounts.png" : p.image, // صور السنوات القديمة الناقصة -> صورة الحسابات الموحّدة
   group: GROUPS.includes(p.group) ? p.group : "main",
   soldOut: p.soldOut === true,
   note: typeof p.note === "string" ? p.note : (PROTECTED.has(p.id) ? NOTE_DEFAULT : ""),
@@ -334,7 +335,7 @@ function moveProduct(id, dir) {
 /* ---------- إعدادات المتجر ---------- */
 const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
-  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), sections: null };
+  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), maintenance: b.maintenance === undefined ? !!cur.maintenance : (b.maintenance === true || b.maintenance === "true"), sections: null };
   const bc = b.colors || {}, bt = b.texts || {};
   for (const k of Object.keys(COLOR_DEFAULTS)) {
     const v = String(bc[k] ?? "").trim().toLowerCase();

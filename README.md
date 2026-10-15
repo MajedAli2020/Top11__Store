@@ -7,7 +7,7 @@
    npm install
    ```
 3. انسخ `.env.example` باسم `.env` واملأ القيم (الخطوة 2).
-4. حط صور المنتجات (`nitro.png`, `boosts.png`, `sources.png`, `ad_2015.png` ... `ad_2025.png`, `diamond.png`) داخل `public/assets/` (اللوقو موجود).
+4. حط صور المنتجات (`nitro.png`, `boosts.png`, `sources.png`, `accounts.png`) داخل `public/assets/` (اللوقو موجود).
 
 ## 2) إعداد البوت في Discord
 1. ادخل https://discord.com/developers/applications ← **New Application**.

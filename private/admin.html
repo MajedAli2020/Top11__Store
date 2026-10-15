@@ -664,6 +664,10 @@ function renderSettings() {
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "صورة الواجهة الرئيسية"), h("div", { class:"logo-row" }, hPrev,
     h("div", {}, hFile, h("div", { style:"font-size:12px;color:var(--muted);margin-top:4px" }, "تظهر بجانب العنوان في أول الصفحة. الأفضل صورة عريضة بنسبة 16:9."),
       h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setHeroNew = ""; setHeroReset = true; hFile.value = ""; hPrev.src = "assets/hero.webp"; toast("ترجع الصورة الافتراضية عند الحفظ"); } }, "استرجاع الصورة الافتراضية")))));
+  const mnt = h("input", { type:"checkbox", id:"maintenance", checked: !!setData.maintenance });
+  parts.unshift(h("div", { class:"set-card", style: setData.maintenance ? "border-color:var(--amber,#e0b36a)" : "" }, h("h3", {}, "وضع الصيانة المؤقتة"),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, mnt, h("span")), "تفعيل وضع الصيانة المؤقتة"),
+    h("div", { style:"font-size:12px;color:var(--muted);margin-top:8px" }, "عند التفعيل يظهر لأي زائر يدخل المتجر بلور مع رسالة «صيانة مؤقتة» ويتعطّل إرسال الطلبات. لوحة الإدارة تبقى تشتغل عادي. اضغط «حفظ التغييرات» ليبدأ أو يتوقف.")));
   const vis = h("input", { type:"checkbox", id:"showVisitors", checked: !!setData.showVisitors });
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "عدّاد الزوار"),
     h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, vis, h("span")), "إظهار عدد الزوار في أسفل المتجر"),
@@ -706,6 +710,7 @@ async function saveSettings(reset) {
     TEXT_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("t_" + k).value; }));
     body.sections = setSections.map((x) => ({ id:x.id, label:x.label, sub:x.sub }));
     body.showVisitors = $("showVisitors").checked;
+    body.maintenance = $("maintenance").checked;
     if (setLogoNew) body.logo = setLogoNew;
     if (setHeroNew) body.heroImage = setHeroNew;
     if (setHeroReset) body.resetHeroImage = true;

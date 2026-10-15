@@ -128,6 +128,7 @@ function newOrderId() {
 }
 
 app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
+  if (db.getSettings().maintenance) return res.status(503).json({ error: "المتجر في صيانة مؤقتة، حاول لاحقاً" });
   const cust = readCustomer(req);
   if (!cust) return res.status(401).json({ error: "سجّل الدخول بحساب Discord أولاً" });
   const b = req.body || {};
