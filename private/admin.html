@@ -227,6 +227,8 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
 .toast.show { transform:none; }
 .empty { border-radius:18px; background:#ffffff05; }
 
+/* الأنيميشن مرة وحدة فقط: التحديث التلقائي/الأزرار ما يعيدون حركة الدخول (كانت تسبب وميض) */
+.seen .stat, .seen .order, .seen .prow, .seen .set-card { animation:none !important; }
 @keyframes pxDrift { to { transform:translate3d(6vmax,4vmax,0) scale(1.2); } }
 @keyframes pxShine { to { background-position:-200% 0; } }
 @keyframes pxPing { 0% { box-shadow:0 0 0 0 #c9a07a99; } 100% { box-shadow:0 0 0 11px transparent; } }
@@ -388,6 +390,15 @@ async function api(url, opts = {}) {
   if (!r.ok) throw new Error(data.error || "خطأ");
   return data;
 }
+// يرسم القائمة؛ أول مرة بحركة (أو بدون لو quiet) والمرات بعدها بدون إعادة حركة
+function paint(c, nodes, quiet) {
+  const first = !c.dataset.painted;
+  c.replaceChildren(...nodes);
+  c.dataset.painted = "1";
+  if (quiet || !first) c.classList.add("seen");
+}
+const same = (key, data) => { const s = JSON.stringify(data); if (same.m[key] === s) return true; same.m[key] = s; return false; };
+same.m = {};
 const fail = (e) => { if (e.message !== "auth") toast(e.message); };
 
 /* ---------- الطلبات ---------- */
@@ -396,12 +407,12 @@ function renderStats() {
   const todays = orders.filter((o) => new Date(o.date).toDateString() === today);
   const sum = (arr) => arr.filter((o) => o.status !== "rejected").reduce((s, o) => s + o.total, 0);
   const cell = (n, l) => h("div", { class:"stat" }, h("b", {}, n), h("span", {}, l));
-  $("stats").replaceChildren(
+  paint($("stats"), [
     cell(orders.filter((o) => o.status === "new").length, "طلبات جديدة"),
     cell(orders.filter((o) => o.status === "accepted").length, "قيد التنفيذ"),
     cell(todays.length, "طلبات اليوم"),
     cell(money(sum(todays)), "مبيعات اليوم")
-  );
+  ]);
 }
 function renderChips() {
   $("chips").replaceChildren(...FILTERS.map(([k, l]) => h("button", { class:"chip" + (filter === k ? " on" : ""), onclick:() => { filter = k; renderChips(); renderOrders(); } }, l)));
@@ -429,17 +440,17 @@ function orderCard(o) {
 function renderOrders() {
   const q = $("search").value.trim().toLowerCase();
   const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
-  $("ordersList").replaceChildren(...(list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
+  paint($("ordersList"), (list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
 }
 async function loadVisitors() {
   try {
-    const v = await api("/api/admin/stats"), n = (x) => Number(x).toLocaleString("ar-SA");
+    const v = await api("/api/admin/stats"); if (same("vstats", v)) return; const n = (x) => Number(x).toLocaleString("ar-SA");
     const cell = (a, l) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l));
-    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.weekVisitors), "زوار آخر 7 أيام"), cell(n(v.visitors), "إجمالي الزوار"), cell(n(v.visits), "إجمالي الزيارات"));
+    paint($("vstats"), [cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.weekVisitors), "زوار آخر 7 أيام"), cell(n(v.visitors), "إجمالي الزوار"), cell(n(v.visits), "إجمالي الزيارات")]);
   } catch (e) { /* الطلبات أهم، نتجاهل خطأ الإحصائيات */ }
 }
 async function loadOrders() {
-  try { orders = await api("/api/admin/orders"); renderStats(); renderOrders(); } catch (e) { fail(e); }
+  try { const d = await api("/api/admin/orders"); if (!same("orders", d)) { orders = d; renderStats(); renderOrders(); } } catch (e) { fail(e); }
   loadVisitors();
 }
 async function setStatus(id, status, btn) {
@@ -496,7 +507,7 @@ function renderProducts() {
     if (!list.length) parts.push(h("div", { class:"empty small" }, "لا يوجد منتجات في هذا القسم."));
     list.forEach((p, i) => parts.push(prodRow(p, i, list.length)));
   }
-  $("prodList").replaceChildren(...parts);
+  paint($("prodList"), parts, true);
 }
 function fillGroupSelect() {
   const sel = $("fGroup"), cur = sel.value;
@@ -504,7 +515,7 @@ function fillGroupSelect() {
   if (cur) sel.value = cur;
 }
 async function loadSections() { try { const st = await fetch("/api/settings").then((r) => r.json()); if (Array.isArray(st.sections)) SECTIONS = st.sections; fillGroupSelect(); } catch (e) { /* نكمل بالأسماء الافتراضية */ } }
-async function loadProducts() { await loadSections(); try { products = await api("/api/admin/products"); renderProducts(); } catch (e) { fail(e); } }
+async function loadProducts() { await loadSections(); try { const d = await api("/api/admin/products"); if (!same("products", d)) { products = d; renderProducts(); } } catch (e) { fail(e); } }
 
 /* ---------- نافذة الإضافة / التعديل ---------- */
 const WEBP = document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp");
@@ -603,9 +614,9 @@ function revRow(r) {
       } }, "حذف")));
 }
 function renderReviews() {
-  $("revList").replaceChildren(...(reviews.length ? reviews.map(revRow) : [h("div", { class:"empty small" }, "لا يوجد تقييمات.")]));
+  paint($("revList"), (reviews.length ? reviews.map(revRow) : [h("div", { class:"empty small" }, "لا يوجد تقييمات.")]), true);
 }
-async function loadReviews() { try { reviews = await api("/api/admin/reviews"); renderReviews(); } catch (e) { fail(e); } }
+async function loadReviews() { try { const d = await api("/api/admin/reviews"); if (!same("reviews", d)) { reviews = d; renderReviews(); } } catch (e) { fail(e); } }
 function openRevDialog(r) {
   editingRev = r || null;
   $("rdlgTitle").textContent = r ? "تعديل التقييم" : "إضافة تقييم";
@@ -694,7 +705,7 @@ function renderSettings() {
       return h("div", { class:big ? "wide" : "" }, h("label", { for:"t_" + k }, l), inp);
     }))));
   }
-  $("setBody").replaceChildren(...parts);
+  paint($("setBody"), parts, true);
 }
 async function loadSettings() {
   try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); renderSettings(); } catch (e) { fail(e); }
@@ -734,7 +745,7 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
   $("productsTab").classList.toggle("hidden", t.dataset.tab !== "products");
   $("reviewsTab").classList.toggle("hidden", t.dataset.tab !== "reviews");
   $("settingsTab").classList.toggle("hidden", t.dataset.tab !== "settings");
-  if (t.dataset.tab === "settings") loadSettings();
+  if (t.dataset.tab === "settings" && !setData) loadSettings();
   if (t.dataset.tab === "products") loadProducts();
   if (t.dataset.tab === "reviews") loadReviews();
 }));
@@ -747,7 +758,7 @@ $("search").addEventListener("input", renderOrders);
   { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); }
   $("appView").classList.remove("hidden");
   renderChips(); loadOrders(); loadSections();
-  timer = setInterval(loadOrders, 15000);
+  timer = setInterval(() => { if (!document.hidden) loadOrders(); }, 15000);
 })();
 </script>
 <script id="pxAdminJs">

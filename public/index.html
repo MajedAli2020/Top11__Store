@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>توب ستور | تجربة رقمية</title>
     <link rel="stylesheet" href="hero-plus.css" />
+    <link rel="preload" as="image" href="assets/prince.jpg" />
     <link rel="icon" type="image/png" href="assets/logo.png" id="favicon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -642,8 +643,8 @@
       #saSplash .sa-emb{position:relative;width:min(400px,36vw,48vh);aspect-ratio:400/410}
       @media (max-width:700px){#saSplash .sa-row{flex-direction:column;gap:14px}#saSplash .sa-emb{width:min(70vw,30vh)}}
       /* ===== الصورة ===== */
-      #saSplash .sa-port{position:relative;display:none;width:min(300px,28vw,40vh);aspect-ratio:1}
-      #saSplash .sa-port.ok{display:block}
+      #saSplash .sa-port{position:relative;display:block;width:min(300px,28vw,40vh);aspect-ratio:1}
+      #saSplash .sa-port.fail{display:none}
       @media (max-width:700px){#saSplash .sa-port{width:min(56vw,26vh)}}
       #saSplash .sa-pring{position:absolute;inset:-9%;border-radius:50%;border:2px dashed rgba(212,175,55,.85);opacity:0;animation:saIn 1s 1s forwards,saSpinR 40s linear infinite}
       @keyframes saSpinR{to{transform:rotate(-360deg)}}
@@ -749,7 +750,7 @@
             <g class="sa-flash"><circle cx="200" cy="284" r="9" fill="#fff6c8"/><g stroke="#fff6c8" stroke-width="2" stroke-linecap="round" id="saRays"></g></g>
           </svg>
         </div>
-        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" /></div></div>
+        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" src="assets/prince.jpg" decoding="async" fetchpriority="high" /></div></div>
         </div>
         <div class="sa-tw"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>
         <h1 class="sa-title"><span class="sa-w1">السعـــــودية</span> <span class="sa-w2">خـــــط أحـــــمر</span></h1></div>
@@ -849,10 +850,9 @@
 
         /* ===== الصورة: ضع ملف الصورة في public/assets/ باسم prince.jpg (أو png / webp) ===== */
         (function () {
-          var names = ["assets/prince.jpg", "assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
-          img.onload = function () { port.classList.add("ok"); };
-          img.onerror = function () { if (i < names.length) img.src = names[i++]; };
-          img.src = names[i++];
+          var names = ["assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
+          img.onerror = function () { if (i < names.length) img.src = names[i++]; else port.classList.add("fail"); };
+          if (img.complete && img.naturalWidth === 0 && img.getAttribute("src")) img.onerror();
         })();
 
         /* ===== تشكيل طائرات (صقور السعودية) بدخان أخضر وأبيض ===== */
