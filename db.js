@@ -46,6 +46,7 @@ const TEXT_FIELDS = {
   navHome: ["الرئيسية", 24], navProducts: ["المنتجات", 24], navHow: ["كيف تطلب؟", 24], navTrack: ["تتبع طلبي", 24], navCart: ["السلة", 24],
   catAllLabel: ["الكل", 30], catAllSub: ["كل المنتجات", 50],
   visitorsLabel: ["عدد الزوار", 30],
+  homeProductsTitle: ["المنتجات", 40], homeProductsAll: ["عرض الكل", 24],
   reviewsTitle: ["تقييمات العملاء", 60], footerLeft: ["توب ستور — منتجات رقمية بتجربة مختلفة", 120], footerRight: ["Top STORE / 2026", 60],
 };
 // أقسام المنتجات: المعرّفات ثابتة (المنتجات مرتبطة فيها)، والاسم والوصف والترتيب تتعدل
@@ -57,7 +58,8 @@ const SECTION_DEFAULTS = [
 ];
 const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])), sections: SECTION_DEFAULTS };
 const clampDim = (v) => (v === undefined || v === null || v === "" || !Number.isFinite(Number(v)) ? 45 : Math.min(90, Math.max(0, Math.round(Number(v)))));
-const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", bgImage: typeof (x && x.bgImage) === "string" ? x.bgImage : "", bgDim: clampDim(x && x.bgDim), shapes: !(x && x.shapes === false), showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), sections: Array.isArray(x && x.sections) ? x.sections : null });
+const clampHome = (v) => (Number.isInteger(Number(v)) && Number(v) >= 3 && Number(v) <= 6 ? Number(v) : 3);
+const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", bgImage: typeof (x && x.bgImage) === "string" ? x.bgImage : "", bgDim: clampDim(x && x.bgDim), shapes: !(x && x.shapes === false), showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), homeProducts: !(x && x.homeProducts === false), homeCount: clampHome(x && x.homeCount), homeImages: !!(x && x.homeImages), sections: Array.isArray(x && x.sections) ? x.sections : null });
 
 // إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
 const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
@@ -75,6 +77,7 @@ const normProduct = (p) => ({
   image: /^assets\/ad_\d{4}\.png$/.test(p.image || "") ? "assets/accounts.png" : p.image, // صور السنوات القديمة الناقصة -> صورة الحسابات الموحّدة
   group: GROUPS.includes(p.group) ? p.group : "main",
   soldOut: p.soldOut === true,
+  featured: p.featured === true,
   discount: Math.min(95, Math.max(0, Math.round(Number(p.discount) || 0))),
   discountEnds: typeof p.discountEnds === "string" ? p.discountEnds : "",
   note: typeof p.note === "string" ? p.note : (PROTECTED.has(p.id) ? NOTE_DEFAULT : ""),
@@ -290,6 +293,7 @@ function readFields(b, partial) {
   }
   if (b.active !== undefined) o.active = b.active === true || b.active === "true";
   if (b.soldOut !== undefined) o.soldOut = b.soldOut === true || b.soldOut === "true";
+  if (b.featured !== undefined) o.featured = b.featured === true || b.featured === "true";
   return o;
 }
 
@@ -311,6 +315,7 @@ async function createProduct(b) {
     method: f.method !== undefined ? f.method : METHOD_DEFAULT,
     active: f.active !== false,
     soldOut: f.soldOut === true,
+    featured: f.featured === true,
     discount: f.discount || 0,
     discountEnds: f.discountEnds || "",
   };
@@ -359,7 +364,12 @@ function moveProduct(id, dir) {
 /* ---------- إعدادات المتجر ---------- */
 const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
-  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", bgImage: cur.bgImage || "", bgDim: cur.bgDim, shapes: b.shapes === undefined ? cur.shapes !== false : (b.shapes === true || b.shapes === "true"), showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), maintenance: b.maintenance === undefined ? !!cur.maintenance : (b.maintenance === true || b.maintenance === "true"), sections: null };
+  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", bgImage: cur.bgImage || "", bgDim: cur.bgDim, shapes: b.shapes === undefined ? cur.shapes !== false : (b.shapes === true || b.shapes === "true"), showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), maintenance: b.maintenance === undefined ? !!cur.maintenance : (b.maintenance === true || b.maintenance === "true"), homeProducts: b.homeProducts === undefined ? cur.homeProducts !== false : (b.homeProducts === true || b.homeProducts === "true"), homeCount: clampHome(cur.homeCount), homeImages: b.homeImages === undefined ? !!cur.homeImages : (b.homeImages === true || b.homeImages === "true"), sections: null };
+  if (b.homeCount !== undefined && b.homeCount !== "") {
+    const n = Number(b.homeCount);
+    if (!Number.isInteger(n) || n < 3 || n > 6) fail("عدد منتجات الرئيسية بين 3 و 6");
+    next.homeCount = n;
+  }
   const bc = b.colors || {}, bt = b.texts || {};
   for (const k of Object.keys(COLOR_DEFAULTS)) {
     const v = String(bc[k] ?? "").trim().toLowerCase();

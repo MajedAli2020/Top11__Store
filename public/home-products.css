@@ -1,0 +1,75 @@
+/* ============ قسم المنتجات في الرئيسية ============
+   بطاقات شفافة (تتبع ألوان المتجر من لوحة الإدارة). لإلغائه: احذف سطر home-products.css من index.html */
+
+.hp-feat { padding: 10px 0 20px; }
+.hp-feat[hidden] { display: none; }
+.hp-feat-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+.hp-feat-head h2 { margin: 0; font-size: clamp(22px, 3vw, 28px); font-weight: 900; }
+.hp-feat-all {
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text);
+  padding: 8px 18px; border-radius: 999px;
+  background: color-mix(in srgb, var(--blue2) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blue2) 40%, transparent);
+  transition: background .25s, border-color .25s, transform .25s;
+}
+.hp-feat-all:hover { background: color-mix(in srgb, var(--blue2) 22%, transparent); border-color: var(--blue2); transform: translateY(-1px); }
+
+.hp-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+
+.hp-card {
+  position: relative; display: flex; flex-direction: column; gap: 14px; padding: 14px 14px 18px;
+  border-radius: 22px; cursor: pointer; outline: none;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--blue) 24%, transparent), color-mix(in srgb, var(--panel) 42%, transparent));
+  border: 1px solid color-mix(in srgb, var(--blue2) 36%, transparent);
+  box-shadow: 0 12px 38px color-mix(in srgb, var(--bg) 55%, transparent), inset 0 1px 0 #ffffff14;
+  transition: transform .35s, border-color .3s, box-shadow .35s;
+  animation: hpIn .6s both;
+}
+.hp-card:nth-child(2) { animation-delay: .06s; } .hp-card:nth-child(3) { animation-delay: .12s; }
+.hp-card:nth-child(4) { animation-delay: .18s; } .hp-card:nth-child(5) { animation-delay: .24s; } .hp-card:nth-child(6) { animation-delay: .3s; }
+.hp-card:hover, .hp-card:focus-visible { transform: translateY(-4px); border-color: color-mix(in srgb, var(--blue2) 70%, transparent); box-shadow: 0 22px 60px color-mix(in srgb, var(--blue2) 22%, transparent), inset 0 1px 0 #ffffff1f; }
+@keyframes hpIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* الصف العلوي: التصنيف (يمين) + شارة الخصم (يسار) */
+.hp-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.hp-chip {
+  max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 999px; color: var(--ice);
+  border: 1px solid color-mix(in srgb, var(--blue2) 40%, transparent);
+  background: color-mix(in srgb, var(--blue2) 12%, transparent);
+}
+.hp-disc {
+  font-size: 11px; font-weight: 900; line-height: 1; padding: 6px 11px; border-radius: 999px; color: #fff; white-space: nowrap;
+  background: linear-gradient(135deg, #ff5a6e, #d6204a); box-shadow: 0 6px 18px #d6204a66;
+}
+
+/* مربع الأيقونة / الصورة */
+.hp-ico {
+  height: 104px; border-radius: 16px; display: grid; place-items: center; overflow: hidden; color: var(--ice);
+  background: color-mix(in srgb, var(--blue2) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blue2) 22%, transparent);
+}
+.hp-ico svg { width: 34px; height: 34px; }
+.hp-ico img { width: 100%; height: 100%; object-fit: cover; }
+
+.hp-card h3 { margin: 0; font-size: 15px; font-weight: 800; line-height: 1.5; }
+.hp-price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hp-now { font-size: 26px; font-weight: 900; line-height: 1; color: var(--ice); }
+.hp-now small, .hp-old small { font-size: 11px; font-weight: 700; opacity: .8; }
+.hp-old { font-size: 14px; font-weight: 700; color: color-mix(in srgb, var(--text) 50%, transparent); text-decoration: line-through; text-decoration-color: #ff5a6e; text-decoration-thickness: 2px; }
+
+.hp-card.is-sold { opacity: .6; }
+
+/* البلور الخفيف (للأجهزة القوية فقط) */
+@media (min-width: 851px) and (hover: hover) {
+  .hp-card { -webkit-backdrop-filter: blur(7px) saturate(1.25); backdrop-filter: blur(7px) saturate(1.25); }
+}
+@media (max-width: 850px) {
+  .hp-feat-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .hp-ico { height: 88px; }
+  .hp-now { font-size: 22px; }
+}
+@media (max-width: 400px) {
+  .hp-feat-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .hp-card { animation: none; transition: none; } }

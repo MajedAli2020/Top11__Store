@@ -80,7 +80,7 @@
   .grp-head { display:flex; align-items:baseline; gap:10px; margin:24px 0 10px; }
   .grp-head h3 { font-size:16px; color:var(--ice); }
   .grp-head .count { color:var(--muted); font-size:13px; }
-  .prow { display:grid; grid-template-columns:56px 1fr auto auto auto auto; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:8px; }
+  .prow { display:grid; grid-template-columns:56px 1fr auto auto auto auto auto; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:8px; }
   .prow.off { opacity:.55; }
   .tgl { display:flex; flex-direction:column; align-items:center; gap:4px; } .tgl small { font-size:11px; color:var(--muted); }
   .prow .thumb { width:56px; height:56px; object-fit:contain; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
@@ -353,6 +353,7 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
     </div>
     <div class="dlg-foot">
       <label class="grow" style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fActive" checked /><span></span></span> ظاهر في المتجر</label>
+      <label style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fFeat" /><span></span></span> يظهر في الرئيسية</label>
       <label style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fSold" /><span></span></span> نفدت الكمية</label>
       <button type="button" class="btn" id="dlgCancel">إلغاء</button>
       <button type="submit" class="btn primary" id="dlgSubmit">حفظ</button>
@@ -438,7 +439,7 @@ async function loadVisitors() {
   try {
     const v = await api("/api/admin/stats"), n = (x) => Number(x).toLocaleString("ar-SA");
     const cell = (a, l) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l));
-    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.weekVisitors), "زوار آخر 7 أيام"), cell(n(v.visitors), "إجمالي الزوار"), cell(n(v.visits), "إجمالي الزيارات"));
+    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.visits), "إجمالي الزيارات"));
   } catch (e) { /* الطلبات أهم، نتجاهل خطأ الإحصائيات */ }
 }
 async function loadOrders() {
@@ -475,6 +476,11 @@ function prodRow(p, i, n) {
     try { Object.assign(p, await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"PATCH", body:{ soldOut:on } })); renderProducts(); toast(on ? "تم وضعه «نفدت الكمية» ولا يمكن طلبه" : "رجع متوفر للطلب"); }
     catch (err) { e.target.checked = !on; fail(err); }
   } });
+  const feat = h("input", { type:"checkbox", checked:p.featured === true, "aria-label":"يظهر في الرئيسية", onchange: async (e) => {
+    const on = e.target.checked;
+    try { Object.assign(p, await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"PATCH", body:{ featured:on } })); renderProducts(); toast(on ? "صار يظهر في الرئيسية" : "انشال من الرئيسية"); }
+    catch (err) { e.target.checked = !on; fail(err); }
+  } });
   const move = (dir, label) => h("button", { class:"btn ghost sm", "aria-label":label, disabled: dir === "up" ? i === 0 : i === n - 1, onclick: async () => {
     try { products = await api("/api/admin/products/" + encodeURIComponent(p.id) + "/move", { method:"POST", body:{ dir } }); renderProducts(); } catch (err) { fail(err); }
   } }, dir === "up" ? "▲" : "▼");
@@ -488,6 +494,7 @@ function prodRow(p, i, n) {
     h("div", {}, h("div", { class:"p-name" }, p.name), h("div", { class:"p-sub" }, p.category + (p.note ? " · " + p.note : "") + (p.active ? "" : " · مخفي") + (p.soldOut ? " · نفدت الكمية" : ""))),
     h("div", { class:"p-price" }, (p.discount > 0 && !(p.discountEnds && Date.now() >= Date.parse(p.discountEnds))) ? [h("div", { style:"text-decoration:line-through;opacity:.55;font-size:12px" }, money(p.price)), h("div", {}, money(Math.round(p.price * (1 - p.discount / 100) * 100) / 100)), h("div", { style:"font-size:11px;color:#ff8da1" }, "خصم " + p.discount + "%")] : money(p.price)),
     h("div", { class:"tgl" }, h("label", { class:"switch", title:"ظاهر في المتجر" }, vis, h("span")), h("small", {}, "ظاهر")),
+    h("div", { class:"tgl" }, h("label", { class:"switch", title:"يظهر في قسم المنتجات في الصفحة الرئيسية" }, feat, h("span")), h("small", {}, "الرئيسية")),
     h("div", { class:"tgl" }, h("label", { class:"switch", title:"نفدت الكمية (ما يقدر يطلبه أحد)" }, sold, h("span")), h("small", {}, "نفدت الكمية")),
     h("div", { class:"p-actions" }, move("up", "تحريك لفوق"), move("down", "تحريك لتحت"), h("button", { class:"btn sm", onclick:() => openDialog(p) }, "تعديل"), del));
 }
@@ -557,6 +564,7 @@ function openDialog(p) {
   $("fMethod").value = p ? p.method || "" : "";
   $("fActive").checked = p ? p.active : true;
   $("fSold").checked = p ? p.soldOut === true : false;
+  $("fFeat").checked = p ? p.featured === true : false;
   $("fFile").value = "";
   $("fPreview").hidden = !p; if (p) $("fPreview").src = p.image;
   $("fImgHint").textContent = p ? "اتركها فاضية إذا ما تبي تغيّر الصورة." : "الصورة مطلوبة — PNG أو JPG أو WEBP، وتنضغط تلقائياً قبل الرفع.";
@@ -579,7 +587,7 @@ $("dlgForm").addEventListener("submit", async (e) => {
   if ($("fPrice").value === "" || Number($("fPrice").value) < 0) return toast("اكتب سعر صحيح");
   if (!editing && !newImage) return toast("اختر صورة للمنتج");
   const body = { name:$("fName").value, price:$("fPrice").value, group:$("fGroup").value, category:$("fCat").value,
-    note:$("fNote").value, discount:$("fDisc").value || 0, discountEnds:$("fDiscEnd").value ? new Date($("fDiscEnd").value).toISOString() : "", description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked };
+    note:$("fNote").value, discount:$("fDisc").value || 0, discountEnds:$("fDiscEnd").value ? new Date($("fDiscEnd").value).toISOString() : "", description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked, featured:$("fFeat").checked };
   if (newImage) body.image = newImage;
   const btn = $("dlgSubmit"); btn.disabled = true;
   try {
@@ -646,6 +654,7 @@ const TEXT_GROUPS = [
   ["الهوية", [["storeName","اسم المتجر"],["navSub","النص الصغير تحت الاسم"],["tabSuffix","عنوان التبويب (بعد اسم المتجر)"]]],
   ["الواجهة الرئيسية", [["heroEyebrow","الشارة فوق العنوان"],["heroTitle1","العنوان - السطر 1"],["heroTitle2","العنوان - السطر 2 (ملوّن)"],["heroTitle3","العنوان - السطر 3"],["heroLead","الوصف تحت العنوان",1],["btnProducts","زر المنتجات"],["btnCart","زر السلة"]]],
   ["أسماء القوائم", [["navHome","القائمة: الرئيسية"],["navProducts","القائمة: المنتجات"],["navHow","القائمة: كيف تطلب؟"],["navTrack","القائمة: تتبع طلبي"],["navCart","زر السلة"],["catAllLabel","تبويب «الكل» في المنتجات"],["catAllSub","وصف «الكل» في القائمة المنسدلة"]]],
+  ["المنتجات في الرئيسية", [["homeProductsTitle","عنوان القسم"],["homeProductsAll","نص زر «عرض الكل»"]]],
   ["الفوتر", [["visitorsLabel","كلمة «عدد الزوار»"]]],
   ["أقسام الصفحة", [["homeHeading","عنوان قسم المميزات"],["ctaTitle","عنوان «جاهز تبدأ؟»"],["ctaText","نص «جاهز تبدأ؟»",1],["ctaButton","زر «جاهز تبدأ؟»"],["reviewsTitle","عنوان التقييمات"],["footerLeft","نص الفوتر (يمين)"],["footerRight","نص الفوتر (يسار)"]]],
 ];
@@ -699,6 +708,14 @@ function renderSettings() {
   parts.unshift(h("div", { class:"set-card", style: setData.maintenance ? "border-color:var(--amber,#e0b36a)" : "" }, h("h3", {}, "وضع الصيانة المؤقتة"),
     h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, mnt, h("span")), "تفعيل وضع الصيانة المؤقتة"),
     h("div", { style:"font-size:12px;color:var(--muted);margin-top:8px" }, "عند التفعيل يظهر لأي زائر يدخل المتجر بلور مع رسالة «صيانة مؤقتة» ويتعطّل إرسال الطلبات، وتتوقف مقدمة «السعودية خط أحمر». أنت وأصحاب رتبة الإدارة تتصفحون المتجر والطلبات عادي (سجّل دخول بديسكورد من زر «دخول الإدارة» أسفل رسالة الصيانة، أو افتح /admin مباشرة). اضغط «حفظ التغييرات» ليبدأ أو يتوقف.")));
+  const hpOn = h("input", { type:"checkbox", id:"homeProducts", checked: setData.homeProducts !== false });
+  const hpImg = h("input", { type:"checkbox", id:"homeImages", checked: !!setData.homeImages });
+  const hpCnt = h("select", { id:"homeCount", style:"width:min(220px,100%)" }, [3, 4, 5, 6].map((n) => h("option", { value:String(n), selected: (setData.homeCount || 3) === n }, n + " منتجات")));
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "قسم المنتجات في الرئيسية"),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, hpOn, h("span")), "إظهار قسم المنتجات في الصفحة الرئيسية"),
+    h("div", { style:"margin-top:14px" }, h("label", { for:"homeCount" }, "عدد المنتجات المعروضة"), hpCnt),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin-top:14px" }, h("span", { class:"switch" }, hpImg, h("span")), "عرض صورة المنتج بدل الأيقونة"),
+    h("div", { style:"font-size:12px;color:var(--muted);margin-top:8px;line-height:1.9" }, "اختر المنتجات اللي تظهر من تبويب «المنتجات والأسعار»: مفتاح «الرئيسية» على كل منتج، أو من نافذة «تعديل». لو ما علّمت أي منتج تظهر أول المنتجات تلقائياً. الخصم (النسبة وتاريخ نهايته) تضبطه من نافذة «تعديل» للمنتج، ويظهر على البطاقة مع السعر القديم مشطوب. عنوان القسم ونص زر «عرض الكل» تغيّرهم من البطاقة الموجودة تحت (المنتجات في الرئيسية).")));
   const vis = h("input", { type:"checkbox", id:"showVisitors", checked: !!setData.showVisitors });
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "عدّاد الزوار"),
     h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, vis, h("span")), "إظهار عدد الزوار في أسفل المتجر"),
@@ -741,6 +758,9 @@ async function saveSettings(reset) {
     TEXT_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("t_" + k).value; }));
     body.sections = setSections.map((x) => ({ id:x.id, label:x.label, sub:x.sub }));
     body.showVisitors = $("showVisitors").checked;
+    body.homeProducts = $("homeProducts").checked;
+    body.homeCount = $("homeCount").value;
+    body.homeImages = $("homeImages").checked;
     body.maintenance = $("maintenance").checked;
     if (setLogoNew) body.logo = setLogoNew;
     if (setHeroNew) body.heroImage = setHeroNew;
