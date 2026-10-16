@@ -54,7 +54,7 @@ async function isMember(userId) {
   return ok;
 }
 
-const money = (n) => `${n} ر.س`;
+const money = (n) => `${Math.round(Number(n) * 100) / 100} ر.س`;
 
 const DM_TEXT = {
   new: ["📥 استلمنا طلبك", "طلبك الآن **قيد المراجعة**. وصل إيصال التحويل للإدارة وراح نتأكد من التحويل ونكلمك."],

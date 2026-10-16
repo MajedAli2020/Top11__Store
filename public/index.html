@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>توب ستور | تجربة رقمية</title>
     <link rel="stylesheet" href="hero-plus.css" />
-    <link rel="preload" as="image" href="assets/prince.jpg" />
     <link rel="icon" type="image/png" href="assets/logo.png" id="favicon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -599,6 +598,7 @@
           var sp = document.getElementById("saSplash"); if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
           document.documentElement.classList.remove("sa-lock");
         }
+        if (window.applyBackdrop) window.applyBackdrop(st);
         if (window.onSiteSettings) window.onSiteSettings(st);
         var paint = function () {
           var t = st.texts || {};
@@ -643,8 +643,8 @@
       #saSplash .sa-emb{position:relative;width:min(400px,36vw,48vh);aspect-ratio:400/410}
       @media (max-width:700px){#saSplash .sa-row{flex-direction:column;gap:14px}#saSplash .sa-emb{width:min(70vw,30vh)}}
       /* ===== الصورة ===== */
-      #saSplash .sa-port{position:relative;display:block;width:min(300px,28vw,40vh);aspect-ratio:1}
-      #saSplash .sa-port.fail{display:none}
+      #saSplash .sa-port{position:relative;display:none;width:min(300px,28vw,40vh);aspect-ratio:1}
+      #saSplash .sa-port.ok{display:block}
       @media (max-width:700px){#saSplash .sa-port{width:min(56vw,26vh)}}
       #saSplash .sa-pring{position:absolute;inset:-9%;border-radius:50%;border:2px dashed rgba(212,175,55,.85);opacity:0;animation:saIn 1s 1s forwards,saSpinR 40s linear infinite}
       @keyframes saSpinR{to{transform:rotate(-360deg)}}
@@ -722,6 +722,7 @@
   <link rel="stylesheet" href="premium.css" />
       <link rel="stylesheet" href="nav-plus.css" />
       <link rel="stylesheet" href="mobile-lite.css" />
+      <link rel="stylesheet" href="theme-purple.css" />
   </head>
   <body>
 
@@ -750,7 +751,7 @@
             <g class="sa-flash"><circle cx="200" cy="284" r="9" fill="#fff6c8"/><g stroke="#fff6c8" stroke-width="2" stroke-linecap="round" id="saRays"></g></g>
           </svg>
         </div>
-        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" src="assets/prince.jpg" decoding="async" fetchpriority="high" /></div></div>
+        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" /></div></div>
         </div>
         <div class="sa-tw"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>
         <h1 class="sa-title"><span class="sa-w1">السعـــــودية</span> <span class="sa-w2">خـــــط أحـــــمر</span></h1></div>
@@ -850,9 +851,10 @@
 
         /* ===== الصورة: ضع ملف الصورة في public/assets/ باسم prince.jpg (أو png / webp) ===== */
         (function () {
-          var names = ["assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
-          img.onerror = function () { if (i < names.length) img.src = names[i++]; else port.classList.add("fail"); };
-          if (img.complete && img.naturalWidth === 0 && img.getAttribute("src")) img.onerror();
+          var names = ["assets/prince.jpg", "assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
+          img.onload = function () { port.classList.add("ok"); };
+          img.onerror = function () { if (i < names.length) img.src = names[i++]; };
+          img.src = names[i++];
         })();
 
         /* ===== تشكيل طائرات (صقور السعودية) بدخان أخضر وأبيض ===== */
@@ -1200,7 +1202,7 @@
           allProducts
             .filter((p) => cart[p.id])
             .map((p) => ({ ...p, quantity: cart[p.id] })),
-        total = () => items().reduce((s, p) => s + p.price * p.quantity, 0);
+        total = () => Math.round(items().reduce((s, p) => s + p.price * p.quantity, 0) * 100) / 100;
       const esc = (s) =>
         String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -1446,9 +1448,11 @@
         if (cart[id] <= 0) delete cart[id];
         persist();
       }
+      function fmtP(n) { return String(+Number(n).toFixed(2)); }
       function renderProductCard(p, i, banner) {
         return `
-              <article class="product reveal">
+              <article class="product reveal${p.discount ? " has-disc" : ""}">
+                ${p.discount ? `<span class="disc-badge">خصم ${Number(p.discount)}%</span>` : ""}
                 <div class="product-top">
                   <span class="tag">${esc(p.category)}</span>
                   <span class="muted mono">${String(i + 1).padStart(2, "0")}</span>
@@ -1464,8 +1468,9 @@
                   <p>${esc(p.description)}</p>
                   <div class="product-foot">
                     <div class="price-wrap">
-                      <div class="price">
-                        ${Number(p.price)}<small> ر.س</small>
+                      ${p.discount && p.oldPrice ? `<div class="price-old">${fmtP(p.oldPrice)}<small> ر.س</small></div>` : ""}
+                      <div class="price${p.discount ? " is-disc" : ""}">
+                        ${fmtP(p.price)}<small> ر.س</small>
                       </div>
                       ${p.note ? '<small class="price-note">' + esc(p.note) + "</small>" : ""}
                     </div>
@@ -1516,7 +1521,10 @@
         if (p.soldOut) { addb.disabled = true; addb.style.opacity = ".5"; addb.style.cursor = "not-allowed"; }
         else addb.onclick = () => { add(p.id); closeExplore(); };
         btns.append(addb, close);
-        foot.append(btns, el("div", "xp-price", Number(p.price) + " ر.س"));
+        const xpr = el("div", "xp-price");
+        if (p.discount) xpr.append(el("span", "xp-disc", "خصم " + p.discount + "%"), el("s", "xp-old", fmtP(p.oldPrice) + " ر.س"));
+        xpr.append(document.createTextNode(fmtP(p.price) + " ر.س"));
+        foot.append(btns, xpr);
         box.append(foot);
         document.getElementById("xpOverlay").classList.add("open");
       }
@@ -1649,7 +1657,7 @@ const rvAvatar = (g) => g === "female"
         const rank = (p) => { const i = popularIds.indexOf(p.id); return i < 0 ? 999 : i; };
         const list = allProducts.filter((p) => !p.soldOut && !cart[p.id]).sort((a, b) => rank(a) - rank(b));
         if (!list.length) { box.style.display = "none"; recSig = ""; return; }
-        const sig = list.map((p) => p.id + ":" + p.price + ":" + p.name + ":" + p.image).join("|") + "#" + popularIds.slice(0, 3).join(",");
+        const sig = list.map((p) => p.id + ":" + p.price + ":" + (p.discount || 0) + ":" + p.name + ":" + p.image).join("|") + "#" + popularIds.slice(0, 3).join(",");
         box.style.display = "";
         if (sig === recSig) return;
         recSig = sig;
@@ -1661,10 +1669,13 @@ const rvAvatar = (g) => g === "female"
           const c = el("div", "rec-card");
           if (hidden) c.setAttribute("aria-hidden", "true");
           const im = el("img"); im.src = p.image; im.alt = p.name; im.loading = "lazy"; c.append(im);
+          if (p.discount) c.append(el("span", "rec-disc", "خصم " + p.discount + "%"));
           const info = el("div", "rec-info");
           info.append(el("span", "rec-badge" + (top.has(p.id) ? "" : " soft"), top.has(p.id) ? "🔥 الأكثر طلباً" : "✨ قد يعجبك"));
           info.append(el("b", "", p.name));
-          info.append(el("strong", "", money(p.price)));
+          const rps = el("strong", "", money(p.price));
+          if (p.discount && p.oldPrice) rps.append(el("span", "rec-old", money(p.oldPrice)));
+          info.append(rps);
           c.append(info);
           const b = el("button", "btn-add", "＋");
           b.type = "button"; b.tabIndex = hidden ? -1 : 0; b.title = "أضف للسلة"; b.setAttribute("aria-label", "أضف " + p.name);
@@ -2065,6 +2076,7 @@ const rvAvatar = (g) => g === "female"
       })();
     </script>
   <script src="premium.js" defer></script>
+  <script src="shapes.js" defer></script>
   <script>
 (function(){
   var bg=document.querySelector('.hp-bg'); if(!bg) return;

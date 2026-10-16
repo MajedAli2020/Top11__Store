@@ -69,7 +69,10 @@ function limit(max, windowMs) {
 setInterval(() => hits.clear(), 60 * 60 * 1000).unref();
 
 /* ---------- API المتجر (عام) ---------- */
-const publicProduct = ({ id, group, name, category, description, price, image, note, details, delivery, method, soldOut }) => ({ soldOut: soldOut === true, id, group, name, category, description, price, image, note: note || "", details: details || "", delivery: delivery || "", method: method || "" });
+const publicProduct = (p) => {
+  const d = db.activeDiscount(p), final = db.effectivePrice(p);
+  return { soldOut: p.soldOut === true, id: p.id, group: p.group, name: p.name, category: p.category, description: p.description, price: final, oldPrice: d ? p.price : null, discount: d, discountEnds: d ? (p.discountEnds || "") : "", image: p.image, note: p.note || "", details: p.details || "", delivery: p.delivery || "", method: p.method || "" };
+};
 const publicOrder = (o) => ({
   id: o.id, date: o.createdAt, status: o.status, transferor: o.transferor,
   serverLink: o.serverLink, nitroUser: o.nitroUser, nitroId: o.nitroId || "", items: o.items, total: o.total,
@@ -151,7 +154,8 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
   }
   const items = [...merged].map(([id, quantity]) => {
     const p = db.getProduct(id); // السعر يُحسب من السيرفر دائماً
-    return { id, name: p.name, price: p.price, quantity };
+    const d = db.activeDiscount(p);
+    return { id, name: p.name, price: db.effectivePrice(p), ...(d ? { oldPrice: p.price, discount: d } : {}), quantity };
   });
 
   // نيترو / بوستات: لازم إقرار العميل على التنبيه (تأكد من البيانات والإدارة غير مسؤولة عن الخطأ)
@@ -185,7 +189,7 @@ app.post("/api/orders", limit(10, 10 * 60 * 1000), async (req, res) => {
   const id = newOrderId();
   const order = {
     id, createdAt: now, status: "new", transferor, serverLink, nitroUser, nitroId, items,
-    total: items.reduce((s, i) => s + i.price * i.quantity, 0),
+    total: Math.round(items.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100,
     history: [{ status: "new", by: "customer", at: now }],
     agreedAt: needsAck ? now : null,
     customer: { id: cust.uid, name: cust.name, avatar: cust.avatar || null },
@@ -325,13 +329,6 @@ app.get("/api/admin/me", requireStaff, (req, res) =>
   res.json({ id: req.staff.uid, name: req.staff.name, avatar: req.staff.avatar, owner: bot.isOwner(req.staff.uid) }));
 
 app.get("/api/admin/stats", requireStaff, (req, res) => res.json(db.getStats()));
-app.post("/api/admin/stats/reset", requireStaff, wrap(async (req, res) => {
-  const what = req.body && req.body.what;
-  if (what === "visits") db.resetVisits();
-  else if (what === "revenue") db.resetRevenue();
-  else return res.status(400).json({ error: "نوع غير صالح" });
-  res.json(db.getStats());
-}));
 
 app.get("/api/admin/orders", requireStaff, (req, res) =>
   res.json(db.listOrders().map(adminOrder)));

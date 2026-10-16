@@ -227,11 +227,6 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
 .toast.show { transform:none; }
 .empty { border-radius:18px; background:#ffffff05; }
 
-/* الأنيميشن مرة وحدة فقط: التحديث التلقائي/الأزرار ما يعيدون حركة الدخول (كانت تسبب وميض) */
-#vstats { grid-template-columns:repeat(3,1fr); }
-.stat-rst { margin-top:10px; }
-@media (max-width:700px) { #vstats { grid-template-columns:1fr; } }
-.seen .stat, .seen .order, .seen .prow, .seen .set-card { animation:none !important; }
 @keyframes pxDrift { to { transform:translate3d(6vmax,4vmax,0) scale(1.2); } }
 @keyframes pxShine { to { background-position:-200% 0; } }
 @keyframes pxPing { 0% { box-shadow:0 0 0 0 #c9a07a99; } 100% { box-shadow:0 0 0 11px transparent; } }
@@ -339,6 +334,9 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
     </div>
     <div><label for="fCat">التصنيف (الشارة فوق البطاقة)</label><input type="text" id="fCat" maxlength="40" placeholder="مثال: خدمات" /></div>
     <div><label for="fNote">ملاحظة تحت السعر (اختياري)</label><input type="text" id="fNote" maxlength="60" placeholder="مثال: السعر غير ثابت" /></div>
+    <div><label for="fDisc">نسبة الخصم % (0 = بدون خصم)</label><input type="number" id="fDisc" min="0" max="95" step="1" placeholder="مثال: 20" /></div>
+    <div><label for="fDiscEnd">ينتهي الخصم في (اختياري)</label><input type="datetime-local" id="fDiscEnd" /></div>
+    <div class="full" id="fDiscPrev" style="font-size:13px;color:var(--muted);margin-top:-4px"></div>
     <div class="full"><label for="fDesc">الوصف المختصر (يظهر على البطاقة)</label><textarea id="fDesc" maxlength="300"></textarea></div>
     <div class="full"><label for="fDetails">الشرح (يظهر في نافذة «استكشاف»)</label><textarea id="fDetails" maxlength="1500" rows="5" placeholder="اكتب الشرح. أي سطر يبدأ بـ - يطلع نقطة مرقّمة مع شارة VIP. مثال: - سورس الدعم الفني   (أو - [جديد] نص لتغيير الشارة)"></textarea></div>
     <div><label for="fDelivery">مدة التسليم</label><input type="text" id="fDelivery" maxlength="200" placeholder="مثال: خلال 10 دقائق" /></div>
@@ -393,15 +391,6 @@ async function api(url, opts = {}) {
   if (!r.ok) throw new Error(data.error || "خطأ");
   return data;
 }
-// يرسم القائمة؛ أول مرة بحركة (أو بدون لو quiet) والمرات بعدها بدون إعادة حركة
-function paint(c, nodes, quiet) {
-  const first = !c.dataset.painted;
-  c.replaceChildren(...nodes);
-  c.dataset.painted = "1";
-  if (quiet || !first) c.classList.add("seen");
-}
-const same = (key, data) => { const s = JSON.stringify(data); if (same.m[key] === s) return true; same.m[key] = s; return false; };
-same.m = {};
 const fail = (e) => { if (e.message !== "auth") toast(e.message); };
 
 /* ---------- الطلبات ---------- */
@@ -410,12 +399,12 @@ function renderStats() {
   const todays = orders.filter((o) => new Date(o.date).toDateString() === today);
   const sum = (arr) => arr.filter((o) => o.status !== "rejected").reduce((s, o) => s + o.total, 0);
   const cell = (n, l) => h("div", { class:"stat" }, h("b", {}, n), h("span", {}, l));
-  paint($("stats"), [
+  $("stats").replaceChildren(
     cell(orders.filter((o) => o.status === "new").length, "طلبات جديدة"),
     cell(orders.filter((o) => o.status === "accepted").length, "قيد التنفيذ"),
     cell(todays.length, "طلبات اليوم"),
     cell(money(sum(todays)), "مبيعات اليوم")
-  ]);
+  );
 }
 function renderChips() {
   $("chips").replaceChildren(...FILTERS.map(([k, l]) => h("button", { class:"chip" + (filter === k ? " on" : ""), onclick:() => { filter = k; renderChips(); renderOrders(); } }, l)));
@@ -443,26 +432,17 @@ function orderCard(o) {
 function renderOrders() {
   const q = $("search").value.trim().toLowerCase();
   const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
-  paint($("ordersList"), (list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
+  $("ordersList").replaceChildren(...(list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
 }
-async function loadVisitors(force) {
+async function loadVisitors() {
   try {
-    const v = await api("/api/admin/stats"); if (!force && same("vstats", v)) return; const n = (x) => Number(x).toLocaleString("ar-SA");
+    const v = await api("/api/admin/stats"), n = (x) => Number(x).toLocaleString("ar-SA");
     const cell = (a, l) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l));
-    const rst = (what, label, msg) => h("button", { class:"btn ghost sm stat-rst", type:"button", onclick: async () => {
-      if (!confirm(msg)) return;
-      try { const r = await api("/api/admin/stats/reset", { method:"POST", body:{ what } }); same.m.vstats = JSON.stringify(r); loadVisitors(true); toast("تم التصفير"); } catch (e) { fail(e); }
-    } }, label);
-    const cell2 = (a, l, btn) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l), btn);
-    paint($("vstats"), [
-      cell2(n(v.todayVisitors), "زوار اليوم"),
-      cell2(n(v.visits), "إجمالي الزيارات", rst("visits", "تصفير", "تصفير الزيارات (زوار اليوم وإجمالي الزيارات)؟ ما ينفع التراجع.")),
-      cell2(money(v.revenue || 0), "إجمالي الأرباح (الطلبات المسلّمة)", rst("revenue", "تصفير", "تصفير إجمالي الأرباح؟ الطلبات نفسها تبقى، بس العدّاد يبدأ من الصفر."))
-    ]);
+    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.weekVisitors), "زوار آخر 7 أيام"), cell(n(v.visitors), "إجمالي الزوار"), cell(n(v.visits), "إجمالي الزيارات"));
   } catch (e) { /* الطلبات أهم، نتجاهل خطأ الإحصائيات */ }
 }
 async function loadOrders() {
-  try { const d = await api("/api/admin/orders"); if (!same("orders", d)) { orders = d; renderStats(); renderOrders(); } } catch (e) { fail(e); }
+  try { orders = await api("/api/admin/orders"); renderStats(); renderOrders(); } catch (e) { fail(e); }
   loadVisitors();
 }
 async function setStatus(id, status, btn) {
@@ -506,7 +486,7 @@ function prodRow(p, i, n) {
   return h("div", { class:"prow" + (p.active ? "" : " off") },
     h("img", { class:"thumb", src:p.image, alt:"" }),
     h("div", {}, h("div", { class:"p-name" }, p.name), h("div", { class:"p-sub" }, p.category + (p.note ? " · " + p.note : "") + (p.active ? "" : " · مخفي") + (p.soldOut ? " · نفدت الكمية" : ""))),
-    h("div", { class:"p-price" }, money(p.price)),
+    h("div", { class:"p-price" }, (p.discount > 0 && !(p.discountEnds && Date.now() >= Date.parse(p.discountEnds))) ? [h("div", { style:"text-decoration:line-through;opacity:.55;font-size:12px" }, money(p.price)), h("div", {}, money(Math.round(p.price * (1 - p.discount / 100) * 100) / 100)), h("div", { style:"font-size:11px;color:#ff8da1" }, "خصم " + p.discount + "%")] : money(p.price)),
     h("div", { class:"tgl" }, h("label", { class:"switch", title:"ظاهر في المتجر" }, vis, h("span")), h("small", {}, "ظاهر")),
     h("div", { class:"tgl" }, h("label", { class:"switch", title:"نفدت الكمية (ما يقدر يطلبه أحد)" }, sold, h("span")), h("small", {}, "نفدت الكمية")),
     h("div", { class:"p-actions" }, move("up", "تحريك لفوق"), move("down", "تحريك لتحت"), h("button", { class:"btn sm", onclick:() => openDialog(p) }, "تعديل"), del));
@@ -519,7 +499,7 @@ function renderProducts() {
     if (!list.length) parts.push(h("div", { class:"empty small" }, "لا يوجد منتجات في هذا القسم."));
     list.forEach((p, i) => parts.push(prodRow(p, i, list.length)));
   }
-  paint($("prodList"), parts, true);
+  $("prodList").replaceChildren(...parts);
 }
 function fillGroupSelect() {
   const sel = $("fGroup"), cur = sel.value;
@@ -527,7 +507,7 @@ function fillGroupSelect() {
   if (cur) sel.value = cur;
 }
 async function loadSections() { try { const st = await fetch("/api/settings").then((r) => r.json()); if (Array.isArray(st.sections)) SECTIONS = st.sections; fillGroupSelect(); } catch (e) { /* نكمل بالأسماء الافتراضية */ } }
-async function loadProducts() { await loadSections(); try { const d = await api("/api/admin/products"); if (!same("products", d)) { products = d; renderProducts(); } } catch (e) { fail(e); } }
+async function loadProducts() { await loadSections(); try { products = await api("/api/admin/products"); renderProducts(); } catch (e) { fail(e); } }
 
 /* ---------- نافذة الإضافة / التعديل ---------- */
 const WEBP = document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp");
@@ -553,6 +533,13 @@ function compressImage(file, maxDim = 640, maxLen = 200000) {
     img.src = url;
   });
 }
+function toLocalInput(iso) { const d = new Date(iso); if (isNaN(d)) return ""; const z = (n) => String(n).padStart(2, "0"); return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes()); }
+function updDiscPrev() {
+  const pr = Number($("fPrice").value), d = Number($("fDisc").value), box = $("fDiscPrev");
+  if (!(d > 0) || !(pr >= 0) || $("fPrice").value === "") { box.textContent = ""; return; }
+  box.textContent = "السعر بعد الخصم: " + (Math.round(pr * (1 - Math.min(d, 95) / 100) * 100) / 100) + " ر.س (بدل " + pr + " ر.س)";
+}
+["fPrice", "fDisc"].forEach((id) => $(id).addEventListener("input", updDiscPrev));
 function openDialog(p) {
   editing = p || null; newImage = "";
   $("dlgTitle").textContent = p ? "تعديل: " + p.name : "إضافة منتج جديد";
@@ -561,6 +548,9 @@ function openDialog(p) {
   $("fGroup").value = p ? p.group : "main";
   $("fCat").value = p ? p.category : "";
   $("fNote").value = p ? p.note || "" : "";
+  $("fDisc").value = p && p.discount ? p.discount : "";
+  $("fDiscEnd").value = p && p.discountEnds ? toLocalInput(p.discountEnds) : "";
+  updDiscPrev();
   $("fDesc").value = p ? p.description || "" : "";
   $("fDetails").value = p ? p.details || "" : "";
   $("fDelivery").value = p ? p.delivery || "" : "";
@@ -589,7 +579,7 @@ $("dlgForm").addEventListener("submit", async (e) => {
   if ($("fPrice").value === "" || Number($("fPrice").value) < 0) return toast("اكتب سعر صحيح");
   if (!editing && !newImage) return toast("اختر صورة للمنتج");
   const body = { name:$("fName").value, price:$("fPrice").value, group:$("fGroup").value, category:$("fCat").value,
-    note:$("fNote").value, description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked };
+    note:$("fNote").value, discount:$("fDisc").value || 0, discountEnds:$("fDiscEnd").value ? new Date($("fDiscEnd").value).toISOString() : "", description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked };
   if (newImage) body.image = newImage;
   const btn = $("dlgSubmit"); btn.disabled = true;
   try {
@@ -626,9 +616,9 @@ function revRow(r) {
       } }, "حذف")));
 }
 function renderReviews() {
-  paint($("revList"), (reviews.length ? reviews.map(revRow) : [h("div", { class:"empty small" }, "لا يوجد تقييمات.")]), true);
+  $("revList").replaceChildren(...(reviews.length ? reviews.map(revRow) : [h("div", { class:"empty small" }, "لا يوجد تقييمات.")]));
 }
-async function loadReviews() { try { const d = await api("/api/admin/reviews"); if (!same("reviews", d)) { reviews = d; renderReviews(); } } catch (e) { fail(e); } }
+async function loadReviews() { try { reviews = await api("/api/admin/reviews"); renderReviews(); } catch (e) { fail(e); } }
 function openRevDialog(r) {
   editingRev = r || null;
   $("rdlgTitle").textContent = r ? "تعديل التقييم" : "إضافة تقييم";
@@ -659,7 +649,7 @@ const TEXT_GROUPS = [
   ["الفوتر", [["visitorsLabel","كلمة «عدد الزوار»"]]],
   ["أقسام الصفحة", [["homeHeading","عنوان قسم المميزات"],["ctaTitle","عنوان «جاهز تبدأ؟»"],["ctaText","نص «جاهز تبدأ؟»",1],["ctaButton","زر «جاهز تبدأ؟»"],["reviewsTitle","عنوان التقييمات"],["footerLeft","نص الفوتر (يمين)"],["footerRight","نص الفوتر (يسار)"]]],
 ];
-let setData = null, setDefs = null, setLogoNew = "", setLogoReset = false, setSections = [], setHeroNew = "", setHeroReset = false;
+let setBgNew = "", setBgReset = false, setData = null, setDefs = null, setLogoNew = "", setLogoReset = false, setSections = [], setHeroNew = "", setHeroReset = false;
 function colorField(k, label, val) {
   const t = h("input", { type:"text", id:"c_" + k, value:val, maxlength:"7", "aria-label":label });
   const c = h("input", { type:"color", value:val, "aria-label":label + " (اختيار)" });
@@ -687,6 +677,24 @@ function renderSettings() {
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "صورة الواجهة الرئيسية"), h("div", { class:"logo-row" }, hPrev,
     h("div", {}, hFile, h("div", { style:"font-size:12px;color:var(--muted);margin-top:4px" }, "تظهر بجانب العنوان في أول الصفحة. الأفضل صورة عريضة بنسبة 16:9."),
       h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setHeroNew = ""; setHeroReset = true; hFile.value = ""; hPrev.src = "assets/hero.webp"; toast("ترجع الصورة الافتراضية عند الحفظ"); } }, "استرجاع الصورة الافتراضية")))));
+  const bPrev = h("img", { id:"bgPrev", alt:"", src: setBgReset ? "" : (setBgNew || setData.bgImage || ""), style:"width:min(320px,100%);height:auto;aspect-ratio:16/9;border-radius:14px;border:1px solid var(--line);object-fit:cover;background:#0003" + ((setBgReset || !(setBgNew || setData.bgImage)) ? ";display:none" : "") });
+  const bFile = h("input", { type:"file", id:"bgFile", accept:"image/png,image/jpeg,image/webp" });
+  bFile.addEventListener("change", async (e) => {
+    const f = e.target.files[0]; setBgNew = ""; if (!f) return;
+    try { setBgNew = await compressImage(f, 1600, 420000); setBgReset = false; bPrev.src = setBgNew; bPrev.style.display = ""; }
+    catch (err) { toast(err.message); e.target.value = ""; }
+  });
+  const dimR = h("input", { type:"range", id:"bgDim", min:"0", max:"90", step:"1", value: String(setData.bgDim ?? 45), style:"width:min(320px,100%)" });
+  const dimV = h("span", { style:"margin-inline-start:8px;color:var(--text)" }, (setData.bgDim ?? 45) + "%");
+  dimR.addEventListener("input", () => { dimV.textContent = dimR.value + "%"; });
+  const shp = h("input", { type:"checkbox", id:"shapes", checked: setData.shapes !== false });
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "خلفية الموقع والأشكال"),
+    h("div", { class:"logo-row" }, bPrev,
+      h("div", {}, bFile,
+        h("div", { style:"font-size:12px;color:var(--muted);margin-top:4px" }, "ارفع أي صورة تبيها خلفية للموقع كله (PNG أو JPG أو WEBP، تنضغط تلقائياً). الأفضل صورة عريضة. لو ما رفعت شي تظهر الخلفية البنفسجية الافتراضية."),
+        h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setBgNew = ""; setBgReset = true; bFile.value = ""; bPrev.removeAttribute("src"); bPrev.style.display = "none"; toast("ترجع الخلفية الافتراضية عند الحفظ"); } }, "حذف الخلفية (رجوع للبنفسجي)"))),
+    h("div", { style:"margin-top:14px" }, h("label", { for:"bgDim" }, "قوة تعتيم الخلفية (كل ما زادت صار النص أوضح)"), h("div", {}, dimR, dimV)),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin-top:14px" }, h("span", { class:"switch" }, shp, h("span")), "إظهار أشكال النجوم والشبكة المتحركة في الخلفية")));
   const mnt = h("input", { type:"checkbox", id:"maintenance", checked: !!setData.maintenance });
   parts.unshift(h("div", { class:"set-card", style: setData.maintenance ? "border-color:var(--amber,#e0b36a)" : "" }, h("h3", {}, "وضع الصيانة المؤقتة"),
     h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, mnt, h("span")), "تفعيل وضع الصيانة المؤقتة"),
@@ -717,10 +725,10 @@ function renderSettings() {
       return h("div", { class:big ? "wide" : "" }, h("label", { for:"t_" + k }, l), inp);
     }))));
   }
-  paint($("setBody"), parts, true);
+  $("setBody").replaceChildren(...parts);
 }
 async function loadSettings() {
-  try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); renderSettings(); } catch (e) { fail(e); }
+  try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setBgNew = ""; setBgReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); renderSettings(); } catch (e) { fail(e); }
 }
 async function saveSettings(reset) {
   const body = { colors:{}, texts:{} };
@@ -736,13 +744,17 @@ async function saveSettings(reset) {
     body.maintenance = $("maintenance").checked;
     if (setLogoNew) body.logo = setLogoNew;
     if (setHeroNew) body.heroImage = setHeroNew;
+    if (setBgNew) body.bgImage = setBgNew;
+    if (setBgReset) body.resetBgImage = true;
+    body.bgDim = $("bgDim").value;
+    body.shapes = $("shapes").checked;
     if (setHeroReset) body.resetHeroImage = true;
     if (setLogoReset) body.resetLogo = true;
-  } else { body.resetLogo = true; body.resetHeroImage = true; }
+  } else { body.resetLogo = true; body.resetHeroImage = true; body.resetBgImage = true; body.shapes = true; }
   const btns = [$("setSave"), $("setReset")]; btns.forEach((b) => (b.disabled = true));
   try {
     const r = await api("/api/admin/settings", { method:"PUT", body });
-    setData = r.settings; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); SECTIONS = r.settings.sections; fillGroupSelect(); renderSettings();
+    setData = r.settings; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setBgNew = ""; setBgReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); SECTIONS = r.settings.sections; fillGroupSelect(); renderSettings();
     toast(reset ? "رجعت الإعدادات الافتراضية" : "تم الحفظ وظهر في المتجر");
   } catch (e) { fail(e); }
   btns.forEach((b) => (b.disabled = false));
@@ -757,7 +769,7 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
   $("productsTab").classList.toggle("hidden", t.dataset.tab !== "products");
   $("reviewsTab").classList.toggle("hidden", t.dataset.tab !== "reviews");
   $("settingsTab").classList.toggle("hidden", t.dataset.tab !== "settings");
-  if (t.dataset.tab === "settings" && !setData) loadSettings();
+  if (t.dataset.tab === "settings") loadSettings();
   if (t.dataset.tab === "products") loadProducts();
   if (t.dataset.tab === "reviews") loadReviews();
 }));
@@ -770,7 +782,7 @@ $("search").addEventListener("input", renderOrders);
   { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); }
   $("appView").classList.remove("hidden");
   renderChips(); loadOrders(); loadSections();
-  timer = setInterval(() => { if (!document.hidden) loadOrders(); }, 15000);
+  timer = setInterval(loadOrders, 15000);
 })();
 </script>
 <script id="pxAdminJs">

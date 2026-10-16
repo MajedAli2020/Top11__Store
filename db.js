@@ -56,10 +56,11 @@ const SECTION_DEFAULTS = [
   { id: "bots", label: "سورسات (بوتات الديسكورد)", sub: "سورسات وبوتات جاهزة" },
 ];
 const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Object.entries(TEXT_FIELDS).map(([k, [v]]) => [k, v])), sections: SECTION_DEFAULTS };
-const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), sections: Array.isArray(x && x.sections) ? x.sections : null });
+const clampDim = (v) => (v === undefined || v === null || v === "" || !Number.isFinite(Number(v)) ? 45 : Math.min(90, Math.max(0, Math.round(Number(v)))));
+const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", bgImage: typeof (x && x.bgImage) === "string" ? x.bgImage : "", bgDim: clampDim(x && x.bgDim), shapes: !(x && x.shapes === false), showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), sections: Array.isArray(x && x.sections) ? x.sections : null });
 
 // إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
-const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) }, revenueResetAt: (x && typeof x.revenueResetAt === "string") ? x.revenueResetAt : "" });
+const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
 const dayKey = (t = Date.now()) => new Date(t + 3 * 3600 * 1000).toISOString().slice(0, 10); // توقيت السعودية
 
 const GROUPS = ["main", "subs", "accounts", "bots"];
@@ -74,6 +75,8 @@ const normProduct = (p) => ({
   image: /^assets\/ad_\d{4}\.png$/.test(p.image || "") ? "assets/accounts.png" : p.image, // صور السنوات القديمة الناقصة -> صورة الحسابات الموحّدة
   group: GROUPS.includes(p.group) ? p.group : "main",
   soldOut: p.soldOut === true,
+  discount: Math.min(95, Math.max(0, Math.round(Number(p.discount) || 0))),
+  discountEnds: typeof p.discountEnds === "string" ? p.discountEnds : "",
   note: typeof p.note === "string" ? p.note : (PROTECTED.has(p.id) ? NOTE_DEFAULT : ""),
   details: typeof p.details === "string" ? p.details : "",
   delivery: typeof p.delivery === "string" ? p.delivery : DELIVERY_DEFAULT,
@@ -224,6 +227,15 @@ function removeImage(url) {
 }
 
 /* ---------- المنتجات ---------- */
+// الخصم الفعّال الآن (نسبة مئوية). ينتهي تلقائياً بعد تاريخ النهاية إن وُجد
+const activeDiscount = (p) => {
+  const d = Number(p && p.discount) || 0;
+  if (d <= 0) return 0;
+  if (p.discountEnds && Date.now() >= Date.parse(p.discountEnds)) return 0;
+  return Math.min(95, d);
+};
+// السعر الذي يدفعه العميل فعلياً (السيرفر هو اللي يحسبه دائماً)
+const effectivePrice = (p) => Math.round(Number(p.price) * (1 - activeDiscount(p) / 100) * 100) / 100;
 const getProducts = () => state.products;
 const getActiveProducts = () => state.products.filter((p) => p.active);
 const getProduct = (id) => state.products.find((p) => p.id === id);
@@ -266,6 +278,16 @@ function readFields(b, partial) {
     if (!GROUPS.includes(b.group)) fail("القسم غير صالح");
     o.group = b.group;
   }
+  if (b.discount !== undefined) {
+    const n = b.discount === "" || b.discount == null ? 0 : Number(b.discount);
+    if (!Number.isFinite(n) || n < 0 || n > 95) fail("نسبة الخصم لازم تكون بين 0 و 95");
+    o.discount = Math.round(n);
+  }
+  if (b.discountEnds !== undefined) {
+    const v = String(b.discountEnds || "").trim();
+    if (v && Number.isNaN(Date.parse(v))) fail("تاريخ نهاية الخصم غير صالح");
+    o.discountEnds = v ? new Date(v).toISOString() : "";
+  }
   if (b.active !== undefined) o.active = b.active === true || b.active === "true";
   if (b.soldOut !== undefined) o.soldOut = b.soldOut === true || b.soldOut === "true";
   return o;
@@ -289,6 +311,8 @@ async function createProduct(b) {
     method: f.method !== undefined ? f.method : METHOD_DEFAULT,
     active: f.active !== false,
     soldOut: f.soldOut === true,
+    discount: f.discount || 0,
+    discountEnds: f.discountEnds || "",
   };
   state.products.push(p);
   save();
@@ -335,7 +359,7 @@ function moveProduct(id, dir) {
 /* ---------- إعدادات المتجر ---------- */
 const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
-  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), maintenance: b.maintenance === undefined ? !!cur.maintenance : (b.maintenance === true || b.maintenance === "true"), sections: null };
+  const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", bgImage: cur.bgImage || "", bgDim: cur.bgDim, shapes: b.shapes === undefined ? cur.shapes !== false : (b.shapes === true || b.shapes === "true"), showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), maintenance: b.maintenance === undefined ? !!cur.maintenance : (b.maintenance === true || b.maintenance === "true"), sections: null };
   const bc = b.colors || {}, bt = b.texts || {};
   for (const k of Object.keys(COLOR_DEFAULTS)) {
     const v = String(bc[k] ?? "").trim().toLowerCase();
@@ -370,6 +394,16 @@ async function updateSettings(b) {
   const oldHero = cur.heroImage;
   if (b.resetHeroImage === true) next.heroImage = "";
   if (b.heroImage) next.heroImage = "/img/" + (await storeImage(b.heroImage));
+  const oldBg = cur.bgImage;
+  if (b.resetBgImage === true) next.bgImage = "";
+  if (b.bgImage) next.bgImage = "/img/" + (await storeImage(b.bgImage));
+  if (b.bgDim !== undefined && b.bgDim !== "") {
+    const n = Number(b.bgDim);
+    if (!Number.isFinite(n) || n < 0 || n > 90) fail("قوة التعتيم بين 0 و 90");
+    next.bgDim = Math.round(n);
+  }
+  if (b.resetBgImage === true) next.bgDim = 45;
+  if (oldBg && oldBg !== next.bgImage) removeImage(oldBg);
   if (oldLogo && oldLogo !== next.logo) removeImage(oldLogo);
   if (oldHero && oldHero !== next.heroImage) removeImage(oldHero);
   state.settings = next;
@@ -402,22 +436,8 @@ function getStats() {
   const st = state.stats, t = st.days[dayKey()] || { v: 0, u: 0 };
   let week = 0;
   for (let i = 0; i < 7; i++) week += (st.days[dayKey(Date.now() - i * 86400000)] || { u: 0 }).u;
-  return { visitors: st.visitors, visits: st.visits, todayVisitors: t.u, todayVisits: t.v, weekVisitors: week, revenue: getRevenue() };
+  return { visitors: st.visitors, visits: st.visits, todayVisitors: t.u, todayVisits: t.v, weekVisitors: week };
 }
-// إجمالي الأرباح = مجموع الطلبات «تم التسليم» اللي تسلّمت بعد آخر تصفير (طلب انرفض/انفتح من جديد ما ينحسب)
-function getRevenue() {
-  const since = state.stats.revenueResetAt || "";
-  let sum = 0;
-  for (const o of state.orders) {
-    if (o.status !== "delivered") continue;
-    const h = [...(o.history || [])].reverse().find((x) => x.status === "delivered");
-    if (since && h && h.at < since) continue;
-    sum += Number(o.total) || 0;
-  }
-  return Math.round(sum * 100) / 100;
-}
-function resetVisits() { const st = state.stats; st.visits = 0; st.days = {}; flush(); save(); }
-function resetRevenue() { state.stats.revenueResetAt = new Date().toISOString(); flush(); save(); }
 
 /* ---------- تقييمات العملاء ---------- */
 const getReviews = () => state.reviews;
@@ -501,7 +521,7 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
-  getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, flush, resetVisits, resetRevenue,
+  activeDiscount, effectivePrice, getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, flush,
   getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };

@@ -1,0 +1,47 @@
+/* ============ Top Store — Translucent Cards Theme ============
+   بطاقات شفافة خفيف + شارة الخصم. تعتمد على متغيرات الألوان (--bg/--blue/--blue2/--ice)
+   فأي لون تغيّره من لوحة الإدارة ينعكس هنا. لإلغائها احذف سطر theme-purple.css و shapes.js من index.html. */
+
+/* ---------- البطاقات: شفافة على الخفيف ---------- */
+.product, .rec-card, .step, .rv-view, .showcase {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--blue) 24%, transparent), color-mix(in srgb, var(--panel) 42%, transparent));
+  border: 1px solid color-mix(in srgb, var(--blue2) 36%, transparent);
+  box-shadow: 0 12px 38px color-mix(in srgb, var(--bg) 55%, transparent), inset 0 1px 0 #ffffff14;
+}
+.product:hover, .step:hover { border-color: color-mix(in srgb, var(--blue2) 70%, transparent); box-shadow: 0 22px 60px color-mix(in srgb, var(--blue2) 22%, transparent), inset 0 1px 0 #ffffff1f; }
+.product-image { background: color-mix(in srgb, var(--blue2) 10%, transparent); border: 1px solid color-mix(in srgb, var(--blue2) 22%, transparent); }
+.rec-card img { background: color-mix(in srgb, var(--blue2) 10%, transparent); }
+.rv-card { background: color-mix(in srgb, var(--blue) 16%, transparent); }
+.rv-view { border-color: color-mix(in srgb, var(--blue2) 28%, transparent); }
+.tag { border-color: color-mix(in srgb, var(--blue2) 40%, transparent); background: color-mix(in srgb, var(--blue2) 12%, transparent); color: var(--ice); }
+.rec-badge { background: color-mix(in srgb, var(--ice) 88%, white); color: var(--bg); }
+
+/* البلور الخفيف (بس للأجهزة القوية، الجوال بدون بلور للسرعة) */
+@media (min-width: 851px) and (hover: hover) {
+  .product, .rec-card, .step, .rv-card { -webkit-backdrop-filter: blur(7px) saturate(1.25); backdrop-filter: blur(7px) saturate(1.25); }
+}
+
+/* ---------- الخصومات ---------- */
+.disc-badge {
+  position: absolute; top: 14px; left: 14px; z-index: 3;
+  background: linear-gradient(135deg, #ff5a6e, #d6204a); color: #fff;
+  font-size: 12px; font-weight: 900; line-height: 1; padding: 6px 11px; border-radius: 999px;
+  box-shadow: 0 6px 18px #d6204a66; letter-spacing: .2px;
+}
+.product-top .muted.mono { visibility: visible; }
+.product.has-disc .product-top .muted.mono { opacity: 0; } /* الرقم 01 يختفي عشان ما يتداخل مع الشارة */
+.price-old { color: color-mix(in srgb, var(--text) 50%, transparent); font-size: 14px; font-weight: 700; text-decoration: line-through; text-decoration-color: #ff5a6e; text-decoration-thickness: 2px; }
+.price-old small { font-size: 11px; }
+.price.is-disc { color: var(--ice); }
+.rec-old { color: color-mix(in srgb, var(--text) 50%, transparent); font-size: 12px; text-decoration: line-through; text-decoration-color: #ff5a6e; margin-inline-start: 6px; font-weight: 600; }
+.rec-disc { position: absolute; top: 18px; left: 18px; background: linear-gradient(135deg, #ff5a6e, #d6204a); color: #fff; font-size: 11px; font-weight: 900; padding: 3px 9px; border-radius: 999px; }
+.xp-old { color: color-mix(in srgb, var(--text) 50%, transparent); font-size: 14px; text-decoration: line-through; text-decoration-color: #ff5a6e; margin-inline-end: 8px; }
+.xp-disc { display: inline-block; background: linear-gradient(135deg, #ff5a6e, #d6204a); color: #fff; font-size: 11px; font-weight: 900; padding: 3px 9px; border-radius: 999px; margin-inline-end: 8px; }
+
+/* ---------- خلفية الموقع (صورة يرفعها المالك) + الأشكال ---------- */
+#siteBg { position: fixed; inset: 0; z-index: 0; pointer-events: none; display: none; overflow: hidden; }
+#siteBg.on { display: block; }
+#siteBg .img { position: absolute; inset: 0; background-size: cover; background-position: center; background-repeat: no-repeat; }
+#siteBg .dim { position: absolute; inset: 0; background: var(--bg); opacity: .45; }
+#siteShapes { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+#siteShapes[hidden] { display: none; }
