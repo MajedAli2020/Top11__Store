@@ -1,0 +1,25 @@
+/* ===== تخفيف الجوال: يوقف المؤثرات الثقيلة اللي تهنّق الجوالات (البلور الكبير + الحركات المستمرة) ===== */
+@media (max-width: 850px), (hover: none) {
+  /* خلفية Aurora: بدل 3 دوائر ضخمة بلور 95px متحركة -> تدرّج ثابت خفيف */
+  .px-aurora i { filter: none !important; animation: none !important; opacity: 1 !important; }
+  .px-aurora i:nth-child(1) { background: radial-gradient(closest-side, color-mix(in srgb, var(--blue) 30%, transparent), transparent) !important; }
+  .px-aurora i:nth-child(2) { background: radial-gradient(closest-side, color-mix(in srgb, var(--blue2) 22%, transparent), transparent) !important; }
+  .px-aurora i:nth-child(3) { display: none; }
+  /* بلور الخلفية الخلفي (backdrop-filter) أثقل شي على الجوال */
+  .topbar, .toast, .tag, .hp-chip, .xp-overlay, .navlinks, .maint-card, #maintOverlay { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .topbar { background: color-mix(in srgb, var(--bg) 96%, transparent) !important; }
+  #maintOverlay { background: color-mix(in srgb, var(--bg) 88%, transparent); }
+  /* الهيرو */
+  .hp-spot, .hp-grain, .hp-ring { display: none !important; }
+  .hp-grid { animation: none !important; }
+  .hp-bg .p:nth-child(n+7) { display: none; }
+  .hero-art::before { filter: none !important; animation: none !important; opacity: .45; }
+  .hero-art img, .hero h1 em, .hp-frame::after, .hp-chip { animation: none !important; }
+  .hp-chip { transform: none !important; }
+  .hp-stage { transform: none !important; }
+  .hero-art { perspective: none !important; }
+  .hp-frame { box-shadow: 0 24px 60px #000a !important; }
+  /* بلور الظل الكبير + طبقات GPU كثيرة */
+  .product { will-change: auto !important; }
+  .eyebrow .dot { animation: none !important; }
+}

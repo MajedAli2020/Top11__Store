@@ -59,7 +59,7 @@ const SETTINGS_DEFAULTS = { colors: COLOR_DEFAULTS, texts: Object.fromEntries(Ob
 const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), sections: Array.isArray(x && x.sections) ? x.sections : null });
 
 // إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
-const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
+const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) }, revenueResetAt: (x && typeof x.revenueResetAt === "string") ? x.revenueResetAt : "" });
 const dayKey = (t = Date.now()) => new Date(t + 3 * 3600 * 1000).toISOString().slice(0, 10); // توقيت السعودية
 
 const GROUPS = ["main", "subs", "accounts", "bots"];
@@ -402,8 +402,22 @@ function getStats() {
   const st = state.stats, t = st.days[dayKey()] || { v: 0, u: 0 };
   let week = 0;
   for (let i = 0; i < 7; i++) week += (st.days[dayKey(Date.now() - i * 86400000)] || { u: 0 }).u;
-  return { visitors: st.visitors, visits: st.visits, todayVisitors: t.u, todayVisits: t.v, weekVisitors: week };
+  return { visitors: st.visitors, visits: st.visits, todayVisitors: t.u, todayVisits: t.v, weekVisitors: week, revenue: getRevenue() };
 }
+// إجمالي الأرباح = مجموع الطلبات «تم التسليم» اللي تسلّمت بعد آخر تصفير (طلب انرفض/انفتح من جديد ما ينحسب)
+function getRevenue() {
+  const since = state.stats.revenueResetAt || "";
+  let sum = 0;
+  for (const o of state.orders) {
+    if (o.status !== "delivered") continue;
+    const h = [...(o.history || [])].reverse().find((x) => x.status === "delivered");
+    if (since && h && h.at < since) continue;
+    sum += Number(o.total) || 0;
+  }
+  return Math.round(sum * 100) / 100;
+}
+function resetVisits() { const st = state.stats; st.visits = 0; st.days = {}; flush(); save(); }
+function resetRevenue() { state.stats.revenueResetAt = new Date().toISOString(); flush(); save(); }
 
 /* ---------- تقييمات العملاء ---------- */
 const getReviews = () => state.reviews;
@@ -487,7 +501,7 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
-  getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, flush,
+  getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, flush, resetVisits, resetRevenue,
   getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };

@@ -1,0 +1,125 @@
+/* ============ Top Store — Premium Layer ============
+   طبقة تصميم فاخرة فوق الواجهة الحالية. لإلغائها احذف سطري premium.css و premium.js من index.html.
+   تعتمد على متغيرات الألوان الأصلية (--blue/--blue2/--ice) فتتغير معها لو غيّرت الثيم. */
+:root { --ease: cubic-bezier(.23, 1, .32, 1); }
+::selection { background: color-mix(in srgb, var(--blue2) 45%, transparent); color: #fff; }
+html { scrollbar-width: thin; scrollbar-color: var(--blue) transparent; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(var(--blue2), var(--blue)); border-radius: 10px; border: 2px solid var(--bg); }
+
+/* شريط تقدّم التمرير */
+#pxProgress { position: fixed; top: 0; right: 0; left: 0; height: 3px; z-index: 100; transform-origin: right; transform: scaleX(0);
+  background: linear-gradient(90deg, var(--blue), var(--ice), var(--blue2)); box-shadow: 0 0 14px var(--blue2); pointer-events: none; }
+
+/* خلفية حيّة (Aurora) + توهج يتبع الماوس */
+.px-aurora { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.px-aurora i { position: absolute; border-radius: 50%; filter: blur(95px); opacity: .32; animation: pxDrift 24s ease-in-out infinite alternate; }
+.px-aurora i:nth-child(1) { width: 46vmax; height: 46vmax; background: var(--blue); top: -14vmax; right: -10vmax; }
+.px-aurora i:nth-child(2) { width: 38vmax; height: 38vmax; background: var(--blue2); bottom: -16vmax; left: -8vmax; animation-duration: 30s; animation-delay: -8s; opacity: .22; }
+.px-aurora i:nth-child(3) { width: 26vmax; height: 26vmax; background: var(--ice); top: 38%; left: 36%; animation-duration: 36s; animation-delay: -15s; opacity: .10; }
+.px-cursor { position: fixed; left: 0; top: 0; width: 540px; height: 540px; margin: -270px 0 0 -270px; border-radius: 50%; pointer-events: none; z-index: 0;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--blue2) 15%, transparent), transparent); opacity: 0; transition: opacity .5s; will-change: transform; }
+main.wrap, .topbar { position: relative; z-index: 1; }
+.topbar { z-index: 30; }
+
+/* الهيدر */
+.topbar { background: color-mix(in srgb, var(--bg) 70%, transparent) !important; backdrop-filter: blur(22px) saturate(1.7); -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  border-bottom: 1px solid transparent !important; border-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ice) 38%, transparent), transparent) 1; transition: box-shadow .4s; }
+.topbar.px-scrolled { box-shadow: 0 14px 44px #000a; }
+.nav { transition: height .4s var(--ease); }
+.topbar.px-scrolled .nav { height: 64px; }
+.brand img { outline: 2px solid color-mix(in srgb, var(--ice) 35%, transparent); outline-offset: 3px; transition: transform .8s var(--ease), box-shadow .4s; }
+.brand:hover img { transform: rotate(360deg) scale(1.08); box-shadow: 0 0 44px color-mix(in srgb, var(--blue2) 65%, transparent); }
+.navlinks button { transition: color .25s, background .25s, transform .3s var(--ease); }
+.navlinks button:hover { transform: translateY(-1px); }
+.cart-btn { border-radius: 14px; }
+.badge.px-bump { animation: pxBump .55s var(--ease); }
+
+/* الهيرو */
+.hero h1 { font-size: clamp(42px, 5.8vw, 78px); line-height: 1.12; }
+.hero h1 em { font-style: normal; background: linear-gradient(100deg, var(--blue2), var(--ice), #fff, var(--ice), var(--blue2)); background-size: 260% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: pxShine 7s linear infinite; }
+.hero-art { position: relative; }
+.hero-art::before { content: ""; position: absolute; inset: 6% 4%; z-index: -1; filter: blur(55px); animation: pxPulse 6s ease-in-out infinite;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--blue2) 60%, transparent), transparent); }
+.hero-art img { border-radius: 28px; box-shadow: 0 44px 100px #000b, 0 0 0 1px #ffffff1c; animation: pxFloat 8s ease-in-out infinite; }
+.eyebrow .dot { animation: pxPing 2.2s infinite; }
+.lead { line-height: 1.9; }
+
+/* الأزرار */
+.btn { position: relative; overflow: hidden; isolation: isolate; border-radius: 14px;
+  transition: transform .4s var(--ease), box-shadow .4s, background .3s, border-color .3s; }
+.btn:hover { transform: translate(var(--tx, 0px), calc(var(--ty, 0px) - 2px)); }
+.btn:active { transform: scale(.97); }
+.btn.primary::after { content: ""; position: absolute; inset: 0; z-index: -1; transform: translateX(130%); transition: transform .9s var(--ease);
+  background: linear-gradient(110deg, transparent 30%, #ffffff55 50%, transparent 70%); }
+.btn.primary:hover::after { transform: translateX(-130%); }
+.hero .btn.primary::after { animation: pxSweep 4s var(--ease) infinite; }
+.btn.primary:hover { box-shadow: 0 18px 50px color-mix(in srgb, var(--blue2) 55%, transparent); }
+.px-ripple { position: absolute; border-radius: 50%; background: #ffffff55; transform: scale(0); animation: pxRipple .7s ease-out forwards; pointer-events: none; }
+
+/* العناوين */
+.heading h2, .page-title { background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--ice) 78%, #fff)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.page-title::after { content: ""; display: block; width: 70px; height: 4px; border-radius: 4px; margin-top: 14px; transform-origin: right; animation: pxBar .9s var(--ease) both;
+  background: linear-gradient(90deg, var(--blue2), transparent); }
+.heading small, .mono { letter-spacing: 3px; }
+
+/* البطاقات: توهج يتبع الماوس + حدود متدرجة + ميلان ثلاثي الأبعاد */
+.product, .step, .surface { position: relative; isolation: isolate; }
+.product::before, .step::before, .surface::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; opacity: 0; transition: opacity .45s; pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--blue2) 24%, transparent), transparent 62%); }
+.product::after, .step::after { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; opacity: 0; transition: opacity .45s; pointer-events: none;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), var(--ice), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.product:hover::before, .step:hover::before, .surface:hover::before, .product:hover::after, .step:hover::after { opacity: 1; }
+.product { overflow: hidden; border-radius: 26px; border-color: #ffffff14; transition: transform .55s var(--ease), box-shadow .5s, border-color .4s; will-change: transform; }
+.product:hover { transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-9px);
+  box-shadow: 0 34px 80px #000b, 0 0 70px -24px var(--blue2); }
+.product-image { transition: transform .6s var(--ease), filter .6s; }
+.product:hover .product-image { transform: scale(1.09) translateY(-4px); }
+.tag { backdrop-filter: blur(8px); background: #ffffff08; }
+.price { background: linear-gradient(135deg, #fff, var(--ice)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.price small { -webkit-text-fill-color: #ffffff66; }
+.add { position: relative; overflow: hidden; transition: transform .35s var(--ease), background .3s, box-shadow .3s; }
+.add:hover { background: linear-gradient(135deg, var(--blue2), var(--blue)); color: #fff; box-shadow: 0 10px 28px -8px var(--blue2); }
+.grid > .product { animation: pxCardIn .85s var(--ease) backwards; }
+.grid > .product:nth-child(2) { animation-delay: .07s; } .grid > .product:nth-child(3) { animation-delay: .14s; }
+.grid > .product:nth-child(4) { animation-delay: .21s; } .grid > .product:nth-child(5) { animation-delay: .28s; }
+.grid > .product:nth-child(6) { animation-delay: .35s; } .grid > .product:nth-child(n+7) { animation-delay: .42s; }
+
+/* الخطوات */
+.step { overflow: hidden; border-radius: 24px; transition: transform .5s var(--ease), background .3s, box-shadow .5s; }
+.step:hover { transform: translateY(-8px); box-shadow: 0 28px 60px #0009; }
+.step-icon { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 19px; font-weight: 800; color: var(--ice);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--blue2) 38%, transparent), color-mix(in srgb, var(--blue) 12%, transparent));
+  border: 1px solid color-mix(in srgb, var(--ice) 35%, transparent); box-shadow: 0 12px 32px -12px var(--blue2); transition: transform .55s var(--ease); }
+.step:hover .step-icon { transform: rotate(-9deg) scale(1.14); }
+
+/* ظهور عند التمرير */
+.px-hide { opacity: 0; transform: translateY(36px) scale(.98); }
+.px-show { opacity: 1; transform: none; transition: opacity .9s var(--ease), transform .9s var(--ease); transition-delay: var(--d, 0s); }
+
+/* حقول الإدخال والتذييل */
+input, textarea, select { transition: border-color .3s, box-shadow .3s, background .3s; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--blue2) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue2) 22%, transparent); }
+.toast { backdrop-filter: blur(16px); }
+.footer { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, #ffffff2c, transparent) 1; }
+.page { animation: pxPage .75s var(--ease); }
+
+@keyframes pxDrift { to { transform: translate3d(7vmax, 5vmax, 0) scale(1.2); } }
+@keyframes pxShine { to { background-position: -260% 0; } }
+@keyframes pxFloat { 50% { transform: translateY(-14px); } }
+@keyframes pxPulse { 50% { opacity: .55; transform: scale(1.08); } }
+@keyframes pxPing { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--blue2) 70%, transparent); } 100% { box-shadow: 0 0 0 12px transparent; } }
+@keyframes pxSweep { 0%, 55% { transform: translateX(130%); } 100% { transform: translateX(-130%); } }
+@keyframes pxRipple { to { transform: scale(4); opacity: 0; } }
+@keyframes pxBar { from { transform: scaleX(0); } }
+@keyframes pxBump { 40% { transform: scale(1.6); } }
+@keyframes pxCardIn { from { opacity: 0; transform: translateY(46px) scale(.96); } }
+@keyframes pxPage { from { opacity: 0; transform: translateY(26px); } }
+
+@media (hover: none) { .px-cursor { display: none; } .product:hover { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+  .px-aurora i, .hero h1 em, .hero-art img, .hero-art::before, .eyebrow .dot, .hero .btn.primary::after, .grid > .product, .page-title::after { animation: none !important; }
+  .px-hide { opacity: 1; transform: none; }
+}

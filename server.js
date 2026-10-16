@@ -325,6 +325,13 @@ app.get("/api/admin/me", requireStaff, (req, res) =>
   res.json({ id: req.staff.uid, name: req.staff.name, avatar: req.staff.avatar, owner: bot.isOwner(req.staff.uid) }));
 
 app.get("/api/admin/stats", requireStaff, (req, res) => res.json(db.getStats()));
+app.post("/api/admin/stats/reset", requireStaff, wrap(async (req, res) => {
+  const what = req.body && req.body.what;
+  if (what === "visits") db.resetVisits();
+  else if (what === "revenue") db.resetRevenue();
+  else return res.status(400).json({ error: "نوع غير صالح" });
+  res.json(db.getStats());
+}));
 
 app.get("/api/admin/orders", requireStaff, (req, res) =>
   res.json(db.listOrders().map(adminOrder)));

@@ -5,6 +5,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>توب ستور | تجربة رقمية</title>
+    <link rel="stylesheet" href="hero-plus.css" />
+    <link rel="preload" as="image" href="assets/prince.jpg" />
     <link rel="icon" type="image/png" href="assets/logo.png" id="favicon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -108,6 +110,22 @@
       #orderTicket .st-rejected { color: var(--red); }
       .page { display: none; min-height: calc(100vh - 76px); animation: pageIn 0.55s cubic-bezier(0.23, 1, 0.32, 1); }
       .page.active { display: block; }
+      #maintOverlay { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: 20px;
+        background: color-mix(in srgb, var(--bg) 45%, transparent); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); }
+      #maintOverlay[hidden] { display: none; }
+      .maint-card { text-align: center; padding: 38px 34px; max-width: 420px; border-radius: 28px; border: 1px solid #ffffff22; background: color-mix(in srgb, var(--panel) 80%, transparent); box-shadow: 0 30px 90px #000a; animation: rise .6s both cubic-bezier(0.23, 1, 0.32, 1); }
+      .maint-ico { width: 72px; height: 72px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 22px; color: var(--bg); background: linear-gradient(135deg, var(--ice), var(--blue2)); box-shadow: 0 14px 40px color-mix(in srgb, var(--blue2) 45%, transparent); }
+      .maint-ico svg { width: 36px; height: 36px; animation: maintWob 2.4s ease-in-out infinite; transform-origin: 50% 50%; }
+      .maint-card h2 { font-size: 32px; font-weight: 900; }
+      .maint-card p { margin-top: 10px; color: #ffffffa0; line-height: 1.9; }
+      html.is-maint, html.is-maint body { overflow: hidden; }
+      .maint-staff { display: inline-block; margin-top: 18px; font-size: 12px; color: #ffffff70; text-decoration: none; border-bottom: 1px dashed #ffffff30; }
+      .maint-staff:hover { color: var(--ice); }
+      #maintStaffBar { position: fixed; z-index: 95; bottom: 14px; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 24px); padding: 9px 16px; border-radius: 14px; font-size: 12.5px; font-weight: 700; text-align: center;
+        color: var(--text); background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid color-mix(in srgb, var(--blue2) 55%, transparent); box-shadow: 0 12px 34px #000a; }
+      #maintStaffBar[hidden] { display: none; }
+      #maintStaffBar a { color: var(--ice); margin-inline-start: 6px; }
+      @keyframes maintWob { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(12deg); } }
       .hero { display: grid; grid-template-columns: 1fr 1.28fr; gap: 40px; align-items: center; padding: 92px 0 110px; }
       .reveal { animation: rise 0.7s both cubic-bezier(0.23, 1, 0.32, 1); }
       .delay1 { animation-delay: 0.1s; }
@@ -232,6 +250,21 @@
       .line-info { flex: 1; }
       .line-info strong { display: block; }
       .line-info small { color: #ffffff70; }
+      #cartLines { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      #cartLines .empty { grid-column: 1 / -1; }
+      #cartLines .line { display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 14px 15px; border: 1px solid #ffffff16; border-radius: 18px; background: #ffffff07; transition: border-color 0.25s, background 0.25s, transform 0.3s; }
+      #cartLines .line:hover { border-color: color-mix(in srgb, var(--ice) 35%, transparent); background: #ffffff0b; transform: translateY(-2px); }
+      #cartLines .line:last-child { border: 1px solid #ffffff16; }
+      .line-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      .line-top .line-info strong { font-size: 15px; line-height: 1.5; }
+      .line-top .line-info small { display: block; margin-top: 2px; font-size: 12px; }
+      .line-del { flex: none; width: 26px; height: 26px; border: 0; border-radius: 8px; font-size: 11px; color: #ffffff77; background: #ffffff0d; transition: background 0.2s, color 0.2s; }
+      .line-del:hover { background: color-mix(in srgb, var(--red) 22%, transparent); color: var(--red); }
+      .line-bot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px dashed #ffffff1c; }
+      .line-total { color: var(--ice); font-size: 16px; font-weight: 900; }
+      #cartLines .qty { gap: 8px; padding: 3px; border-radius: 12px; background: #ffffff0a; }
+      #cartLines .qty button { width: 28px; height: 28px; }
+      @media (max-width: 470px) { #cartLines { grid-template-columns: 1fr; } }
       .qty { display: flex; align-items: center; gap: 9px; }
       .qty button { width: 30px; height: 30px; border: 0; border-radius: 9px; background: #ffffff14; color: white; }
       .summary { position: sticky; top: 100px; height: max-content; }
@@ -336,6 +369,20 @@
       .rec-badge.soft { background: #000000a0; color: var(--ice); border: 1px solid #ffffff30; }
       .rec-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
       .rec-foot .btn-add { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 800; cursor: pointer; background: var(--ice); color: #1d1711; font-family: inherit; }
+      .rec-wrap { display: flex; flex-direction: column; gap: 14px; }
+      .rec-track { animation-name: recMoveR; }
+      .rec-track.rev { animation-direction: reverse; }
+      @keyframes recMoveR { from { transform: translateX(0); } to { transform: translateX(50%); } }
+      .rec-card { width: 300px; flex-direction: row; align-items: center; gap: 12px; padding: 10px; border-radius: 18px; transition: border-color 0.25s, transform 0.3s; }
+      .rec-card:hover { border-color: color-mix(in srgb, var(--ice) 40%, transparent); transform: translateY(-2px); }
+      .rec-card img { width: 78px; height: 78px; flex: none; border-radius: 13px; }
+      .rec-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+      .rec-info b { max-width: 100%; font-size: 14px; }
+      .rec-info strong { color: var(--ice); font-size: 15px; }
+      .rec-badge { position: static; font-size: 10px; padding: 2px 8px; }
+      .rec-card .btn-add { flex: none; width: 36px; height: 36px; padding: 0; border-radius: 12px; font-size: 18px; line-height: 1; display: grid; place-items: center; transition: transform 0.25s; }
+      .rec-card .btn-add:hover { transform: scale(1.12) rotate(90deg); }
+      @media (max-width: 470px) { .rec-card { width: 262px; } .rec-card img { width: 66px; height: 66px; } }
       @media (prefers-reduced-motion: reduce) { .rec-wrap { overflow-x: auto; } .rec-track { animation: none; } }
       @media (prefers-reduced-motion: reduce) {
         *, *:before, *:after {
@@ -490,6 +537,17 @@
       .warn-box .btn { margin-top: 8px; }
       .login-box h3 { font-size: 22px; }
       .login-box p { color: #ffffff80; margin: 8px 0 18px; line-height: 1.9; }
+      #myOrders.track-box { max-width: none; }
+      .mo-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+      .mo-head h3 { margin: 0 !important; }
+      .mo-clear { padding: 8px 14px; font-size: 13px; color: var(--red); border-color: color-mix(in srgb, var(--red) 40%, transparent); }
+      .mo-clear:hover { background: color-mix(in srgb, var(--red) 14%, transparent); border-color: var(--red); }
+      .mo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+      .mo-grid .my-order { grid-template-columns: 1fr; gap: 8px; margin: 0; padding: 14px; text-align: right; align-content: start; }
+      .mo-grid .my-order .mo-items { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.6em; }
+      .mo-grid .my-order .mo-id { font-size: 12px; overflow-wrap: anywhere; text-align: left; }
+      @media (max-width: 1000px) { .mo-grid { grid-template-columns: repeat(3, 1fr); } }
+      @media (max-width: 560px) { .mo-grid { grid-template-columns: repeat(2, 1fr); } }
       .my-orders { margin-top: 26px; }
       .my-orders h3 { margin-bottom: 10px; }
       .my-order {
@@ -507,22 +565,11 @@
       /* Site-wide meteor / starfield background */
       #skyLayer { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
       main.wrap { position: relative; z-index: 1; }
-      /* Floating side diamonds */
-      .side-diamond { position: fixed; width: 92px; z-index: 2; pointer-events: none; filter: drop-shadow(0 0 22px #c1906688); opacity: 0.85; }
-      .side-diamond.top-right { top: 90px; right: -18px; animation: floatDiamond1 7s ease-in-out infinite; }
-      .side-diamond.bottom-left { bottom: 40px; left: -18px; animation: floatDiamond2 8.5s ease-in-out infinite; }
-      @keyframes floatDiamond1 { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-22px) rotate(6deg); } }
-      @keyframes floatDiamond2 { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(22px) rotate(-6deg); } }
-      @media (max-width: 700px) {
-        .side-diamond { width: 56px; }
-        .side-diamond.top-right { top: 70px; right: -12px; }
-        .side-diamond.bottom-left { bottom: 20px; left: -12px; }
-      }
     </style>
     <script>
       /* إعدادات المتجر (من لوحة التحكم): ألوان وشعار ونصوص. القيم الفاضية = الافتراضي الموجود في الصفحة */
       var SITE = { tabDefault: document.title };
-      function applySettings(st) {
+      function applySettings(st, fromCache) {
         if (!st) return;
         var c = st.colors || {}, r = document.documentElement.style;
         var map = { bg: "--bg", panel: "--panel", text: "--text", muted: "--muted", accent: "--blue", accent2: "--blue2", ice: "--ice" };
@@ -536,6 +583,22 @@
           r.setProperty("--line", "color-mix(in srgb, var(--blue) 55%, var(--bg))");
         }
         SITE.st = st;
+        var mt = !!st.maintenance;
+        /* وضع الصيانة: يطلع للزوار فقط. الإدارة (رتبة الإدارة/المالك) تتصفح المتجر عادي ويطلع لهم شريط تنبيه صغير */
+        window.applyMaint = function () {
+          var o = document.getElementById("maintOverlay"); if (!o) return;
+          var on = !!(SITE.st && SITE.st.maintenance) && !SITE.staff;
+          o.hidden = !on; document.documentElement.classList.toggle("is-maint", on);
+          [".topbar", "main", ".footer"].forEach(function (q) { var e = document.querySelector(q); if (e) { if (on) e.setAttribute("inert", ""); else e.removeAttribute("inert"); } });
+          var bar = document.getElementById("maintStaffBar"); if (bar) bar.hidden = !(SITE.st && SITE.st.maintenance && SITE.staff);
+        };
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", window.applyMaint); else window.applyMaint();
+        /* مقدمة «السعودية خط أحمر» ما تطلع وقت الصيانة (نعتمد على رد السيرفر مو على النسخة المحفوظة) */
+        if (mt && !fromCache) {
+          SITE.noSplash = true;
+          var sp = document.getElementById("saSplash"); if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
+          document.documentElement.classList.remove("sa-lock");
+        }
         if (window.onSiteSettings) window.onSiteSettings(st);
         var paint = function () {
           var t = st.texts || {};
@@ -556,7 +619,7 @@
         };
         if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint();
       }
-      try { applySettings(JSON.parse(localStorage.getItem("siteSettings") || "null")); } catch (e) {}
+      try { applySettings(JSON.parse(localStorage.getItem("siteSettings") || "null"), true); } catch (e) {}
       fetch("/api/settings").then(function (r) { return r.ok ? r.json() : null; }).then(function (st) {
         if (!st) return;
         applySettings(st);
@@ -580,8 +643,8 @@
       #saSplash .sa-emb{position:relative;width:min(400px,36vw,48vh);aspect-ratio:400/410}
       @media (max-width:700px){#saSplash .sa-row{flex-direction:column;gap:14px}#saSplash .sa-emb{width:min(70vw,30vh)}}
       /* ===== الصورة ===== */
-      #saSplash .sa-port{position:relative;display:none;width:min(300px,28vw,40vh);aspect-ratio:1}
-      #saSplash .sa-port.ok{display:block}
+      #saSplash .sa-port{position:relative;display:block;width:min(300px,28vw,40vh);aspect-ratio:1}
+      #saSplash .sa-port.fail{display:none}
       @media (max-width:700px){#saSplash .sa-port{width:min(56vw,26vh)}}
       #saSplash .sa-pring{position:absolute;inset:-9%;border-radius:50%;border:2px dashed rgba(212,175,55,.85);opacity:0;animation:saIn 1s 1s forwards,saSpinR 40s linear infinite}
       @keyframes saSpinR{to{transform:rotate(-360deg)}}
@@ -635,8 +698,8 @@
       #saSplash .sa-title span{display:inline-block;padding:.7em .3em .45em;margin:-.7em -.3em -.45em;-webkit-background-clip:text;background-clip:text;color:transparent}
       #saSplash .sa-w1{background-image:linear-gradient(180deg,#fff6d2,#e9c556 45%,#a97a14);filter:drop-shadow(0 3px 10px rgba(0,0,0,.5))}
       #saSplash .sa-title span.sa-w2{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#ff2a3a;-webkit-text-fill-color:#ff2a3a;filter:none;text-shadow:0 0 14px rgba(255,30,45,.65),0 3px 8px rgba(0,0,0,.55)}
-      #saSplash .sa-line{position:relative;width:min(820px,88vw);height:6px;margin-top:8px;display:flex;align-items:center}
-      #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#7d0510,#ff1f30 50%,#7d0510);box-shadow:0 0 18px 2px rgba(255,30,45,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
+      #saSplash .sa-line{position:relative;width:min(820px,88vw);height:6px;margin-top:clamp(22px,4.2vh,40px);display:flex;align-items:center}
+      #saSplash .sa-line i{display:block;width:100%;height:100%;border-radius:6px;background:linear-gradient(90deg,#0a5a2c,#22c870 50%,#0a5a2c);box-shadow:0 0 18px 2px rgba(34,200,112,.7);transform:scaleX(0);transform-origin:right;animation:saLine .9s 3.05s cubic-bezier(.7,0,.2,1) forwards}
       @keyframes saLine{to{transform:scaleX(1)}}
       #saSplash .sa-line::before,#saSplash .sa-line::after{content:"";position:absolute;top:50%;width:14px;height:14px;background:#d4af37;border:2px solid #fff3bd;transform:translateY(-50%) rotate(45deg) scale(0);animation:saDia .5s 3.8s forwards}
       #saSplash .sa-line::before{right:-22px}#saSplash .sa-line::after{left:-22px}
@@ -646,8 +709,19 @@
       #saSplash .sa-najdi.b{bottom:24px;transform:scaleY(-1)}
       @keyframes saNajdi{to{clip-path:inset(0 0 0 0)}}
       html.sa-lock,html.sa-lock body{overflow:hidden!important}
+      @media (max-width:850px){
+        #saSplash .sa-bg{-webkit-backdrop-filter:none;backdrop-filter:none;animation:saFade .5s ease-out both}
+        @keyframes saFade{from{opacity:0}to{opacity:1}}
+        #saSplash .sa-radar,#saSplash .sa-beam,#saSplash .sa-orn,#saSplash .sa-glow,#saSplash .sa-najdi{display:none}
+        #saSplash .sa-dust i:nth-child(n+13){display:none}
+        #saSplash .sa-embsvg{filter:none}
+        #saSplash .sa-pring{animation:saIn 1s 1s forwards}
+        #saSplash .sa-tr{filter:none}
+      }
     </style>
   <link rel="stylesheet" href="premium.css" />
+      <link rel="stylesheet" href="nav-plus.css" />
+      <link rel="stylesheet" href="mobile-lite.css" />
   </head>
   <body>
 
@@ -676,7 +750,7 @@
             <g class="sa-flash"><circle cx="200" cy="284" r="9" fill="#fff6c8"/><g stroke="#fff6c8" stroke-width="2" stroke-linecap="round" id="saRays"></g></g>
           </svg>
         </div>
-        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" /></div></div>
+        <div class="sa-port" id="saPort"><div class="sa-pring2"></div><div class="sa-pring"></div><div class="sa-pimg"><img id="saPImg" alt="" src="assets/prince.jpg" decoding="async" fetchpriority="high" /></div></div>
         </div>
         <div class="sa-tw"><b class="tl"></b><b class="tr"></b><b class="bl"></b><b class="br"></b>
         <h1 class="sa-title"><span class="sa-w1">السعـــــودية</span> <span class="sa-w2">خـــــط أحـــــمر</span></h1></div>
@@ -686,6 +760,7 @@
     <script>
       (function () {
         var root = document.getElementById("saSplash"); if (!root) return;
+        if (window.SITE && SITE.noSplash) { if (root.parentNode) root.parentNode.removeChild(root); return; }
         var NS = "http://www.w3.org/2000/svg", done = false, DURATION = 5600; /* مدة العرض بالمللي ثانية */
         var GOLD = "url(#saGold)", DARK = "#6b4a08";
         document.documentElement.classList.add("sa-lock");
@@ -775,10 +850,9 @@
 
         /* ===== الصورة: ضع ملف الصورة في public/assets/ باسم prince.jpg (أو png / webp) ===== */
         (function () {
-          var names = ["assets/prince.jpg", "assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
-          img.onload = function () { port.classList.add("ok"); };
-          img.onerror = function () { if (i < names.length) img.src = names[i++]; };
-          img.src = names[i++];
+          var names = ["assets/prince.png", "assets/prince.webp", "assets/prince.jpeg"], i = 0, img = document.getElementById("saPImg"), port = document.getElementById("saPort");
+          img.onerror = function () { if (i < names.length) img.src = names[i++]; else port.classList.add("fail"); };
+          if (img.complete && img.naturalWidth === 0 && img.getAttribute("src")) img.onerror();
         })();
 
         /* ===== تشكيل طائرات (صقور السعودية) بدخان أخضر وأبيض ===== */
@@ -800,16 +874,24 @@
         setTimeout(finish, DURATION);
       })();
     </script>
+    <div id="maintOverlay" hidden role="alertdialog" aria-live="assertive" aria-label="صيانة مؤقتة">
+      <div class="maint-card">
+        <div class="maint-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.770-3.770a6 6 0 0 1-7.940 7.940l-6.910 6.910a2.120 2.120 0 0 1-3-3l6.910-6.910a6 6 0 0 1 7.940-7.940z"/></svg></div>
+        <h2>صيانة مؤقتة</h2>
+        <p>نشتغل على تحسين المتجر، ونرجع لكم قريباً.</p>
+        <a class="maint-staff" href="/auth/customer">دخول الإدارة</a>
+      </div>
+    </div>
+    <div id="maintStaffBar" hidden><span>🛠 وضع الصيانة مفعّل — الزوار يشوفون صفحة الصيانة وأنت تتصفح كإدارة.</span> <a href="/admin">لوحة الإدارة ← الإعدادات لإيقافه</a></div>
     <canvas id="skyLayer"></canvas>
-    <img class="side-diamond top-right" src="assets/diamond.png" alt="" />
-    <img class="side-diamond bottom-left" src="assets/diamond.png" alt="" />
     <header class="topbar">
       <div class="wrap nav">
         <a class="brand" href="#" onclick="go('home');return false">
           <img src="assets/logo.png" alt="" data-logo />
           <span><b id="brandName">توب <span>ستور</span></b><small data-s="navSub">Discord Services</small></span>
         </a>
-        <nav class="navlinks">
+        <button class="nav-burger" id="navBurger" aria-label="القائمة" aria-expanded="false"><i></i><i></i><i></i></button>
+        <nav class="navlinks" id="navLinks">
           <button data-nav="home" class="active" onclick="go('home')" data-s="navHome">الرئيسية</button>
           <div class="nav-dd" id="navDd">
             <button data-nav="products" onclick="toggleDd(event)"><span data-s="navProducts">المنتجات</span> ▾</button>
@@ -817,16 +899,19 @@
           </div>
           <button data-nav="how" onclick="go('how')" data-s="navHow">كيف تطلب؟</button>
           <button data-nav="tracking" onclick="go('tracking')" data-s="navTrack">تتبع طلبي</button>
+          <button data-nav="faq" onclick="go('faq')"><span class="lg">الأسئلة الشائعة</span><span class="sm">الأسئلة</span></button>
         </nav>
         <div class="nav-actions">
+          <button class="nav-icon" onclick="openDiscord()" aria-label="الدعم"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.100 2h3a2 2 0 0 1 2 1.700c.1 1 .4 1.900.7 2.800a2 2 0 0 1-.5 2.100L8 10a16 16 0 0 0 6 6l1.300-1.300a2 2 0 0 1 2.100-.4c.9.300 1.800.6 2.800.7a2 2 0 0 1 1.700 2z"/></svg><span>الدعم</span></button>
           <span id="navUser"></span>
-          <button class="cart-btn" onclick="go('cart')"><span data-s="navCart">السلة</span> <span id="count" class="badge">0</span></button>
+          <button class="cart-btn" onclick="go('cart')" aria-label="السلة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/></svg><span data-s="navCart">السلة</span><span id="count" class="badge">0</span></button>
         </div>
       </div>
     </header>
     <main class="wrap">
       <section id="home" class="page active">
         <div class="hero">
+          <div class="hp-bg" aria-hidden="true"><div class="hp-spot"></div><div class="hp-stars"></div><div class="hp-grid"></div><div class="hp-grain"></div></div>
           <div class="reveal hero-text">
             <span class="eyebrow"><i class="dot"></i><span data-s="heroEyebrow">تسليم سريع • موثوق • آمن</span></span>
             <h1><span data-s="heroTitle1">خلّ تجربتك</span><br /><em data-s="heroTitle2">أفضل مع متجر</em><br /><span data-s="heroTitle3">توب.</span></h1>
@@ -835,11 +920,21 @@
               <button class="btn primary" onclick="go('products')" data-s="btnProducts">تصفح المنتجات ←</button>
               <button class="btn" onclick="go('cart')" data-s="btnCart">افتح السلة</button>
             </div>
+            <div class="hp-trust"><span><i>✓</i> تسليم مباشر في Discord</span><span><i>✓</i> تتبّع طلبك لحظة بلحظة</span><span><i>✓</i> دعم مباشر</span></div>
           </div>
           <div class="hero-art reveal delay1">
-            <img id="heroImg" src="assets/hero.webp" alt="" width="960" height="540" fetchpriority="high" />
+            <div class="hp-stage" id="hpStage">
+              <div class="hp-ring"></div>
+              <div class="hp-frame"><img id="heroImg" src="assets/hero.webp" alt="" width="960" height="540" fetchpriority="high" /></div>
+              <div class="hp-chip c1"><b>⚡</b>تسليم سريع</div>
+              <div class="hp-chip c2"><b>🔒</b>دفع آمن وموثّق</div>
+              <div class="hp-chip c3"><b>✦</b>منتجات مختارة</div>
+            </div>
           </div>
         </div>
+        <div class="hp-marquee" aria-hidden="true"><div class="hp-track">
+          <span>نيترو ديسكورد</span><span>بوستات السيرفر</span><span>سورسات وأدوات</span><span>تسليم سريع</span><span>دعم مباشر</span><span>نيترو ديسكورد</span><span>بوستات السيرفر</span><span>سورسات وأدوات</span><span>تسليم سريع</span><span>دعم مباشر</span>
+        </div></div>
         <div class="section">
           <div class="heading">
             <div>
@@ -929,10 +1024,10 @@
           <div id="checkoutForm" class="surface" style="margin-top: 16px; max-width: 760px">
             <div class="bank">
               <div class="bank-card">
-                <small>اسم المستفيد</small><strong>ماجد السبيعي</strong>
+                <small>اسم المستفيد</small><strong>ماجد</strong>
               </div>
               <div class="bank-card">
-                <small>رقم الآيبان</small><strong class="mono">SA77 8000 0858 6080 1705 2676</strong>
+                <small>رقم الآيبان</small><strong class="mono">SA1878000000001299330903</strong>
               </div>
             </div>
             <div class="field">
@@ -1035,6 +1130,24 @@
           <div id="myOrders" class="track-box my-orders"></div>
         </div>
       </section>
+      <section id="faq" class="page">
+        <div class="inner-page">
+          <small class="mono" style="color: var(--blue2)">04 / FAQ</small>
+          <h1 class="page-title" style="margin-top: 10px">الأسئلة الشائعة</h1>
+          <p class="page-subtitle">أجوبة سريعة لأكثر ما يسألنا عنه العملاء.</p>
+          <div class="faq-list">
+<details class="faq-item"><summary>كيف أطلب؟</summary><p>اختر منتجك وأضفه للسلة، ثم انتقل للدفع وحوّل المبلغ بالتحويل البنكي على الآيبان الظاهر في صفحة الدفع، أرفق إيصال التحويل وأكّد الطلب. بعدها يظهر لك رقم طلب خاص فيك.</p></details>
+<details class="faq-item"><summary>هل لازم أربط حسابي بديسكورد؟</summary><p>إي، لازم تربط حسابك بديسكورد (زر «ربط ديسكورد» فوق) قبل ما تكمل الطلب، عشان نربط طلبك بحسابك ونرسل لك تحديثاته (القبول والتسليم) في الرسائل الخاصة.</p></details>
+<details class="faq-item"><summary>إذا طلبت، وين أروح؟</summary><p>اتبع هذي الخطوات: ١) احتفظ برقم طلبك. ٢) ادخل سيرفرنا في ديسكورد (لازم تكون داخله عشان توصلك رسائل البوت وتقدر تفتح تذكرة). ٣) تابع حالة طلبك من صفحة «تتبع طلبي». بعد ما تراجع الإدارة الإيصال، يتم تسليم طلبك على حسابك في ديسكورد.</p></details>
+<details class="faq-item"><summary>كيف أتابع حالة طلبي؟</summary><p>من صفحة «تتبع طلبي»: تشوف طلباتك وحالتها (قيد المعالجة، تم القبول، تم التسليم)، أو اكتب رقم الطلب في خانة البحث. كل تغيير في الحالة يوصلك أيضاً برسالة خاصة من البوت.</p></details>
+<details class="faq-item"><summary>كم يستغرق التسليم؟</summary><p>يبدأ التسليم بعد ما تراجع الإدارة إيصال التحويل وتقبل الطلب. لو حسيت إن طلبك تأخر، افتح تذكرة في السيرفر وإحنا نتابع معك.</p></details>
+<details class="faq-item"><summary>ما وصلتني رسائل البوت، وش أسوي؟</summary><p>تأكد إنك داخل سيرفر ديسكورد حقنا، وإن الرسائل الخاصة مفتوحة من إعدادات الخصوصية في السيرفر. وتقدر تتابع حالة الطلب دائماً من صفحة «تتبع طلبي».</p></details>
+<details class="faq-item"><summary>طلبي انرفض، وش السبب؟</summary><p>الرفض يكون غالباً بسبب مشكلة في الإيصال أو مبلغ التحويل. افتح تذكرة في السيرفر وتواصل مع الإدارة وتحلّها معك.</p></details>
+<details class="faq-item"><summary>وش أسوي لو واجهتني مشكلة؟</summary><p>اضغط «الدعم» فوق أو «افتح تذكرة» بالأسفل، وتواصل معنا مباشرة في ديسكورد.</p></details>
+          </div>
+          <div class="faq-cta"><div><b>ما لقيت جوابك؟</b><small>افتح تذكرة وفريقنا يرد عليك في ديسكورد.</small></div><button class="btn primary" onclick="openDiscord()">افتح تذكرة ←</button></div>
+        </div>
+      </section>
       <section id="support" class="support">
         <div>
           <h2 data-s="ctaTitle">جاهز تبدأ؟</h2>
@@ -1111,6 +1224,7 @@
         } catch (e) {
           if (!silent) me = null;
         }
+        SITE.staff = !!(me && me.staff); if (window.applyMaint) window.applyMaint();
         if (silent && meSig(me) === before) return; // ما تغيّر شي
         const wasOpen = !!document.querySelector("#acctPanel.open");
         renderNavUser();
@@ -1127,7 +1241,7 @@
         const n = document.getElementById("navUser");
         n.textContent = "";
         if (!me) {
-          const a = el("a", "btn", "دخول");
+          const a = el("a", "btn", "ربط ديسكورد");
           a.href = "/auth/customer";
           n.append(a);
           return;
@@ -1230,6 +1344,8 @@
         }
         f.style.display = "";
       }
+      const hiddenKey = () => "top-hidden-orders-" + (me ? me.id : "");
+      const loadHidden = () => { try { return JSON.parse(localStorage.getItem(hiddenKey()) || "[]"); } catch (e) { return []; } };
       async function renderMyOrders() {
         const box = document.getElementById("myOrders");
         box.textContent = "";
@@ -1237,9 +1353,23 @@
         try {
           const r = await fetch("/api/my/orders");
           if (!r.ok) return;
-          const list = await r.json();
+          const hid = new Set(loadHidden());
+          const all = await r.json();
+          const list = all.filter((o) => !hid.has(o.id));
           if (!list.length) return;
-          box.append(el("h3", "", "طلباتي"));
+          const head = el("div", "mo-head");
+          head.append(el("h3", "", "طلباتي (" + list.length + ")"));
+          const clr = el("button", "btn mo-clear", "🗑 مسح الطلبات");
+          clr.type = "button";
+          clr.onclick = () => {
+            if (!confirm("تمسح كل الطلبات من هذي القائمة؟\n\nما تنحذف من عندنا، بس تختفي من قائمتك. وتقدر تتبّع أي طلب برقمه.")) return;
+            try { localStorage.setItem(hiddenKey(), JSON.stringify(all.map((o) => o.id))); } catch (e) {}
+            renderMyOrders();
+            toast("تم مسح الطلبات من القائمة");
+          };
+          head.append(clr);
+          box.append(head);
+          const grid = el("div", "mo-grid");
           list.forEach((o) => {
             const b = el("button", "my-order");
             b.append(
@@ -1248,8 +1378,9 @@
               el("span", "mo-st st-" + o.status, STATUS_LABEL[o.status] || o.status),
             );
             b.onclick = () => { renderConfirmation(o); go("confirmation"); };
-            box.append(b);
+            grid.append(b);
           });
+          box.append(grid);
         } catch (e) {}
       }
 
@@ -1523,26 +1654,37 @@ const rvAvatar = (g) => g === "female"
         if (sig === recSig) return;
         recSig = sig;
         track.textContent = "";
+        const wrap = track.parentElement;
+        wrap.querySelectorAll(".rec-track.rev").forEach((t) => t.remove());
         const top = new Set(popularIds.slice(0, 3));
-        let base = list;
-        while (base.length < 6) base = base.concat(list); // نكرر القائمة لو قليلة عشان الشريط يمتلي
         const mk = (p, hidden) => {
           const c = el("div", "rec-card");
           if (hidden) c.setAttribute("aria-hidden", "true");
-          c.append(el("span", "rec-badge" + (top.has(p.id) ? "" : " soft"), top.has(p.id) ? "🔥 الأكثر طلباً" : "✨ قد يعجبك"));
           const im = el("img"); im.src = p.image; im.alt = p.name; im.loading = "lazy"; c.append(im);
-          c.append(el("b", "", p.name));
-          const f = el("div", "rec-foot");
-          f.append(el("strong", "", money(p.price)));
-          const b = el("button", "btn-add", "أضف +");
-          b.type = "button"; b.tabIndex = hidden ? -1 : 0;
+          const info = el("div", "rec-info");
+          info.append(el("span", "rec-badge" + (top.has(p.id) ? "" : " soft"), top.has(p.id) ? "🔥 الأكثر طلباً" : "✨ قد يعجبك"));
+          info.append(el("b", "", p.name));
+          info.append(el("strong", "", money(p.price)));
+          c.append(info);
+          const b = el("button", "btn-add", "＋");
+          b.type = "button"; b.tabIndex = hidden ? -1 : 0; b.title = "أضف للسلة"; b.setAttribute("aria-label", "أضف " + p.name);
           b.onclick = () => add(p.id);
-          f.append(b); c.append(f);
+          c.append(b);
           return c;
         };
-        base.forEach((p) => track.append(mk(p, false)));
-        base.forEach((p) => track.append(mk(p, true))); // النسخة الثانية للّفّ المتواصل
-        track.style.animationDuration = Math.max(30, base.length * 6) + "s";
+        // صفّان: المنتجات توزّع بالتناوب، والصف الثاني يمشي بعكس الاتجاه
+        const rows = [[], []];
+        list.forEach((p, i) => rows[i % 2].push(p));
+        if (!rows[1].length) rows[1] = rows[0].slice().reverse();
+        rows.forEach((r, i) => {
+          let base = r;
+          while (base.length < 5) base = base.concat(r); // نكرر لو قليلة عشان الشريط يمتلي
+          const t = i === 0 ? track : el("div", "rec-track rev");
+          base.forEach((p) => t.append(mk(p, false)));
+          base.forEach((p) => t.append(mk(p, true))); // النسخة الثانية للّفّ المتواصل
+          t.style.animationDuration = Math.max(30, base.length * 7) + "s";
+          if (i === 1) wrap.append(t);
+        });
       }
       function renderCart() {
         renderRec();
@@ -1560,16 +1702,21 @@ const rvAvatar = (g) => g === "female"
           .map(
             (p) => `
               <div class="line">
-                <div class="line-info">
-                  <strong>${esc(p.name)}</strong>
-                  <small>${money(p.price)} × ${p.quantity}</small>
+                <div class="line-top">
+                  <div class="line-info">
+                    <strong>${esc(p.name)}</strong>
+                    <small>${money(p.price)} للقطعة</small>
+                  </div>
+                  <button class="line-del" onclick="change('${esc(p.id)}', -999)" aria-label="حذف من السلة" title="حذف">✕</button>
                 </div>
-                <div class="qty">
-                  <button onclick="change('${esc(p.id)}', -1)">−</button>
-                  <b>${p.quantity}</b>
-                  <button onclick="change('${esc(p.id)}', 1)">＋</button>
+                <div class="line-bot">
+                  <div class="qty">
+                    <button onclick="change('${esc(p.id)}', -1)">−</button>
+                    <b>${p.quantity}</b>
+                    <button onclick="change('${esc(p.id)}', 1)">＋</button>
+                  </div>
+                  <strong class="line-total">${money(p.price * p.quantity)}</strong>
                 </div>
-                <strong>${money(p.price * p.quantity)}</strong>
               </div>
             `,
           )
@@ -1835,8 +1982,9 @@ const rvAvatar = (g) => g === "female"
           w = canvas.width = window.innerWidth;
           h = canvas.height = window.innerHeight;
         }
-        window.addEventListener("resize", resize);
-        resize();
+        let lastW = 0;
+        window.addEventListener("resize", function () { if (window.innerWidth !== lastW) { lastW = window.innerWidth; resize(); stars = makeStars(LITE ? 36 : 110); } });
+        resize(); lastW = window.innerWidth;
 
         function makeStars(n) {
           const arr = [];
@@ -1852,7 +2000,8 @@ const rvAvatar = (g) => g === "female"
           }
           return arr;
         }
-        stars = makeStars(110);
+        const LITE = window.matchMedia("(max-width: 850px)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        stars = makeStars(LITE ? 36 : 110);
 
         function makeMeteor() {
           const startX = Math.random() * w * 0.6 + w * 0.2;
@@ -1868,7 +2017,12 @@ const rvAvatar = (g) => g === "female"
         meteors = [];
         let meteorTimer = 0;
 
-        function tick() {
+        let lastT = 0;
+        function tick(now) {
+          requestAnimationFrame(tick);
+          if (document.hidden) return;
+          if (LITE && now - lastT < 50) return; // ~20fps على الجوال
+          lastT = now;
           ctx.clearRect(0, 0, w, h);
 
           for (const s of stars) {
@@ -1906,11 +2060,34 @@ const rvAvatar = (g) => g === "female"
             if (m.life <= 0 || m.y > h + 50 || m.x > w + 50) meteors.splice(i, 1);
           }
 
-          requestAnimationFrame(tick);
         }
-        tick();
+        requestAnimationFrame(tick);
       })();
     </script>
   <script src="premium.js" defer></script>
-  </body>
+  <script>
+(function(){
+  var bg=document.querySelector('.hp-bg'); if(!bg) return;
+  for(var i=0;i<18;i++){var p=document.createElement('i');p.className='p';p.style.left=(Math.random()*100)+'%';p.style.animationDuration=(7+Math.random()*9)+'s';p.style.animationDelay=(-Math.random()*12)+'s';p.style.transform='scale('+(.5+Math.random()*1.2)+')';bg.appendChild(p);}
+  var st=document.getElementById('hpStage');
+  if(st&&matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
+    document.querySelector('.hero').addEventListener('pointermove',function(e){var r=st.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;st.style.transform='rotateY('+(x*-9)+'deg) rotateX('+(y*7)+'deg)';});
+    document.querySelector('.hero').addEventListener('pointerleave',function(){st.style.transform='';});
+  }
+})();
+</script>
+<script>
+(function(){
+  var b=document.getElementById('navBurger'),m=document.getElementById('navLinks'); if(!b||!m) return;
+  function set(o){m.classList.toggle('open',o);b.classList.toggle('open',o);b.setAttribute('aria-expanded',o);}
+  b.addEventListener('click',function(e){e.stopPropagation();set(!m.classList.contains('open'));});
+  document.addEventListener('click',function(e){
+    if(!m.classList.contains('open')) return;
+    var t=e.target.closest('button'); var isToggle=t&&t.parentElement&&t.parentElement.classList.contains('nav-dd');
+    if(!m.contains(e.target)||(t&&m.contains(t)&&!isToggle)) set(false);
+  });
+  addEventListener('resize',function(){if(innerWidth>850) set(false);});
+})();
+</script>
+</body>
 </html>
