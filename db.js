@@ -62,7 +62,7 @@ const clampHome = (v) => (Number.isInteger(Number(v)) && Number(v) >= 3 && Numbe
 const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", bgImage: typeof (x && x.bgImage) === "string" ? x.bgImage : "", bgDim: clampDim(x && x.bgDim), shapes: !(x && x.shapes === false), showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), homeProducts: !(x && x.homeProducts === false), homeCount: clampHome(x && x.homeCount), homeImages: !!(x && x.homeImages), sections: Array.isArray(x && x.sections) ? x.sections : null });
 
 // إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
-const normStats = (x) => ({ visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
+const normStats = (x) => ({ salesResetAt: typeof (x && x.salesResetAt) === "string" ? x.salesResetAt : "", visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
 const dayKey = (t = Date.now()) => new Date(t + 3 * 3600 * 1000).toISOString().slice(0, 10); // توقيت السعودية
 
 const GROUPS = ["main", "subs", "accounts", "bots"];
@@ -72,12 +72,17 @@ const PROTECTED = new Set(["nitro", "boosts"]);
 const STATUSES = ["new", "accepted", "delivered", "rejected"];
 
 // يضمن إن كل منتج فيه كل الحقول (للبيانات القديمة اللي ما فيها note)
+const HOME_ICONS = ["auto","discord","rocket","code","user","bell","spark","image"];
 const normProduct = (p) => ({
   ...p,
   image: /^assets\/ad_\d{4}\.png$/.test(p.image || "") ? "assets/accounts.png" : p.image, // صور السنوات القديمة الناقصة -> صورة الحسابات الموحّدة
   group: GROUPS.includes(p.group) ? p.group : "main",
   soldOut: p.soldOut === true,
   featured: p.featured === true,
+  homeName: typeof p.homeName === "string" ? p.homeName : "",
+  homeChip: typeof p.homeChip === "string" ? p.homeChip : "",
+  homeIcon: HOME_ICONS.includes(p.homeIcon) ? p.homeIcon : "auto",
+  homeImage: typeof p.homeImage === "string" ? p.homeImage : "",
   discount: Math.min(95, Math.max(0, Math.round(Number(p.discount) || 0))),
   discountEnds: typeof p.discountEnds === "string" ? p.discountEnds : "",
   note: typeof p.note === "string" ? p.note : (PROTECTED.has(p.id) ? NOTE_DEFAULT : ""),
@@ -294,6 +299,17 @@ function readFields(b, partial) {
   if (b.active !== undefined) o.active = b.active === true || b.active === "true";
   if (b.soldOut !== undefined) o.soldOut = b.soldOut === true || b.soldOut === "true";
   if (b.featured !== undefined) o.featured = b.featured === true || b.featured === "true";
+  for (const [k, max, label] of [["homeName", 80, "اسم بطاقة الرئيسية"], ["homeChip", 30, "تصنيف بطاقة الرئيسية"]]) {
+    if (b[k] !== undefined) {
+      const v = String(b[k]).trim();
+      if (v.length > max) fail(label + " طويل (حد أقصى " + max + " حرف)");
+      o[k] = v;
+    }
+  }
+  if (b.homeIcon !== undefined) {
+    if (!HOME_ICONS.includes(b.homeIcon)) fail("أيقونة البطاقة غير صالحة");
+    o.homeIcon = b.homeIcon;
+  }
   return o;
 }
 
@@ -316,6 +332,10 @@ async function createProduct(b) {
     active: f.active !== false,
     soldOut: f.soldOut === true,
     featured: f.featured === true,
+    homeName: f.homeName || "",
+    homeChip: f.homeChip || "",
+    homeIcon: f.homeIcon || "auto",
+    homeImage: b.homeImage ? "/img/" + (await storeImage(b.homeImage)) : "",
     discount: f.discount || 0,
     discountEnds: f.discountEnds || "",
   };
@@ -329,8 +349,12 @@ async function updateProduct(id, b) {
   if (!p) return null;
   const f = readFields(b, true);
   const imgId = b.image ? await storeImage(b.image) : null;
-  const oldImage = p.image;
+  const homeId = b.homeImage ? await storeImage(b.homeImage) : null;
+  const oldImage = p.image, oldHome = p.homeImage;
   Object.assign(p, f);
+  if (b.resetHomeImage === true) p.homeImage = "";
+  if (homeId) p.homeImage = "/img/" + homeId;
+  if (oldHome && oldHome !== p.homeImage) removeImage(oldHome);
   if (f.category === "") p.category = DEFAULT_CAT[p.group];
   if (imgId) { p.image = "/img/" + imgId; removeImage(oldImage); }
   save();
@@ -343,6 +367,7 @@ function deleteProduct(id) {
   if (PROTECTED.has(id)) fail("هذا منتج أساسي ما ينحذف، تقدر تخفيه من المتجر.");
   state.products = state.products.filter((x) => x.id !== id);
   removeImage(p.image);
+  if (p.homeImage) removeImage(p.homeImage);
   save();
   return true;
 }
@@ -446,8 +471,12 @@ function getStats() {
   const st = state.stats, t = st.days[dayKey()] || { v: 0, u: 0 };
   let week = 0;
   for (let i = 0; i < 7; i++) week += (st.days[dayKey(Date.now() - i * 86400000)] || { u: 0 }).u;
-  return { visitors: st.visitors, visits: st.visits, todayVisitors: t.u, todayVisits: t.v, weekVisitors: week };
+  const since = st.salesResetAt ? Date.parse(st.salesResetAt) : 0;
+  const salesTotal = Math.round(state.orders.filter((o) => o.status !== "rejected" && Date.parse(o.createdAt) > since).reduce((s, o) => s + (Number(o.total) || 0), 0) * 100) / 100;
+  return { visitors: st.visitors, visits: st.visits, todayVisitors: t.u, todayVisits: t.v, weekVisitors: week, salesTotal, salesSince: st.salesResetAt || "" };
 }
+// تصفير إجمالي المبيعات: ما يحذف الطلبات، بس يبدأ الحساب من الآن
+function resetSales() { state.stats.salesResetAt = new Date().toISOString(); save(); return getStats(); }
 
 /* ---------- تقييمات العملاء ---------- */
 const getReviews = () => state.reviews;
@@ -531,7 +560,7 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
-  activeDiscount, effectivePrice, getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, flush,
+  activeDiscount, effectivePrice, getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, resetSales, flush,
   getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };

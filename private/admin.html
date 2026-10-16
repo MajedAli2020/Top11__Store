@@ -341,6 +341,16 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
     <div class="full"><label for="fDetails">الشرح (يظهر في نافذة «استكشاف»)</label><textarea id="fDetails" maxlength="1500" rows="5" placeholder="اكتب الشرح. أي سطر يبدأ بـ - يطلع نقطة مرقّمة مع شارة VIP. مثال: - سورس الدعم الفني   (أو - [جديد] نص لتغيير الشارة)"></textarea></div>
     <div><label for="fDelivery">مدة التسليم</label><input type="text" id="fDelivery" maxlength="200" placeholder="مثال: خلال 10 دقائق" /></div>
     <div><label for="fMethod">طريقة الاستلام</label><input type="text" id="fMethod" maxlength="300" placeholder="مثال: عبر التكت في Discord" /></div>
+    <div class="full" style="border:1px dashed var(--line);border-radius:12px;padding:12px">
+      <b style="color:var(--text)">بطاقة الرئيسية (اختياري)</b>
+      <div style="font-size:12px;color:var(--muted);margin:4px 0 10px">لو تركتها فاضية تاخذ اسم المنتج وتصنيفه الأصلي.</div>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label for="fHomeName">الاسم في الرئيسية</label><input type="text" id="fHomeName" maxlength="80" /></div>
+        <div><label for="fHomeChip">التصنيف الصغير فوق البطاقة</label><input type="text" id="fHomeChip" maxlength="30" /></div>
+        <div><label for="fHomeIcon">الأيقونة / الصورة</label><select id="fHomeIcon"><option value="auto">تلقائي</option><option value="discord">ديسكورد</option><option value="rocket">صاروخ</option><option value="code">كود</option><option value="user">حساب</option><option value="bell">جرس</option><option value="spark">نجمة</option><option value="image">صورة (ارفع صورة أو تاخذ صورة المنتج)</option></select></div>
+        <div><label for="fHomeFile">صورة البطاقة</label><input type="file" id="fHomeFile" accept="image/png,image/jpeg,image/webp" /><button type="button" class="btn ghost sm" id="fHomeReset" style="margin-top:6px">حذف صورة البطاقة</button></div>
+      </div>
+    </div>
     <div class="full">
       <label for="fFile">صورة المنتج</label>
       <div class="imgpick">
@@ -435,11 +445,18 @@ function renderOrders() {
   const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
   $("ordersList").replaceChildren(...(list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
 }
+function salesCell(v) {
+  const btn = h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick: async () => {
+    if (!confirm("تصفير إجمالي المبيعات؟\n\nما راح تنحذف الطلبات، بس يبدأ الحساب من الصفر من الحين.")) return;
+    try { await api("/api/admin/stats/reset-sales", { method:"POST", body:{} }); toast("تم تصفير إجمالي المبيعات"); loadVisitors(); } catch (e) { fail(e); }
+  } }, "تصفير");
+  return h("div", { class:"stat" }, h("b", {}, money(v.salesTotal || 0)), h("span", {}, "إجمالي المبيعات" + (v.salesSince ? " (منذ " + new Date(v.salesSince).toLocaleDateString("ar-SA") + ")" : "")), btn);
+}
 async function loadVisitors() {
   try {
     const v = await api("/api/admin/stats"), n = (x) => Number(x).toLocaleString("ar-SA");
     const cell = (a, l) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l));
-    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.visits), "إجمالي الزيارات"));
+    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.visits), "إجمالي الزيارات"), salesCell(v));
   } catch (e) { /* الطلبات أهم، نتجاهل خطأ الإحصائيات */ }
 }
 async function loadOrders() {
@@ -565,12 +582,22 @@ function openDialog(p) {
   $("fActive").checked = p ? p.active : true;
   $("fSold").checked = p ? p.soldOut === true : false;
   $("fFeat").checked = p ? p.featured === true : false;
+  $("fHomeName").value = p ? p.homeName || "" : ""; $("fHomeChip").value = p ? p.homeChip || "" : "";
+  $("fHomeIcon").value = p ? p.homeIcon || "auto" : "auto"; $("fHomeFile").value = ""; newHomeImage = ""; resetHomeImage = false;
   $("fFile").value = "";
   $("fPreview").hidden = !p; if (p) $("fPreview").src = p.image;
   $("fImgHint").textContent = p ? "اتركها فاضية إذا ما تبي تغيّر الصورة." : "الصورة مطلوبة — PNG أو JPG أو WEBP، وتنضغط تلقائياً قبل الرفع.";
   $("dlg").showModal();
   $("fName").focus();
 }
+let newHomeImage = "", resetHomeImage = false;
+$("fHomeFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; newHomeImage = "";
+  if (!f) return;
+  try { newHomeImage = await compressImage(f); resetHomeImage = false; if ($("fHomeIcon").value !== "image") $("fHomeIcon").value = "image"; toast("تم اختيار صورة البطاقة"); }
+  catch (err) { toast(err.message); e.target.value = ""; }
+});
+$("fHomeReset").addEventListener("click", () => { newHomeImage = ""; resetHomeImage = true; $("fHomeFile").value = ""; toast("تنحذف صورة البطاقة عند الحفظ"); });
 $("addBtn").addEventListener("click", () => openDialog(null));
 $("dlgCancel").addEventListener("click", () => $("dlg").close());
 $("dlg").addEventListener("click", (e) => { if (e.target === $("dlg")) $("dlg").close(); });
@@ -587,7 +614,9 @@ $("dlgForm").addEventListener("submit", async (e) => {
   if ($("fPrice").value === "" || Number($("fPrice").value) < 0) return toast("اكتب سعر صحيح");
   if (!editing && !newImage) return toast("اختر صورة للمنتج");
   const body = { name:$("fName").value, price:$("fPrice").value, group:$("fGroup").value, category:$("fCat").value,
-    note:$("fNote").value, discount:$("fDisc").value || 0, discountEnds:$("fDiscEnd").value ? new Date($("fDiscEnd").value).toISOString() : "", description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked, featured:$("fFeat").checked };
+    note:$("fNote").value, discount:$("fDisc").value || 0, discountEnds:$("fDiscEnd").value ? new Date($("fDiscEnd").value).toISOString() : "", description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked, featured:$("fFeat").checked, homeName:$("fHomeName").value, homeChip:$("fHomeChip").value, homeIcon:$("fHomeIcon").value };
+  if (newHomeImage) body.homeImage = newHomeImage;
+  if (resetHomeImage) body.resetHomeImage = true;
   if (newImage) body.image = newImage;
   const btn = $("dlgSubmit"); btn.disabled = true;
   try {

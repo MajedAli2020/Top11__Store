@@ -1656,6 +1656,12 @@ const rvAvatar = (g) => g === "female"
         if (p.id === "boosts") return HOME_ICONS.rocket;
         return HOME_ICONS[{ bots: "code", accounts: "user", subs: "bell" }[p.group]] || HOME_ICONS.spark;
       }
+      function homeMedia(p, allImages) {
+        const ic = p.homeIcon || "auto";
+        if (ic === "image") return `<img src="${esc(p.homeImage || p.image)}" alt="" loading="lazy">`;
+        if (HOME_ICONS[ic]) return HOME_ICONS[ic];
+        return allImages ? `<img src="${esc(p.homeImage || p.image)}" alt="" loading="lazy">` : homeIcon(p);
+      }
       function renderHomeFeatured() {
         const box = document.getElementById("homeFeat"), grid = document.getElementById("homeFeatGrid");
         if (!box || !grid) return;
@@ -1667,12 +1673,12 @@ const rvAvatar = (g) => g === "female"
         box.hidden = st.homeProducts === false || !list.length;
         if (box.hidden) { grid.textContent = ""; return; }
         grid.innerHTML = list.map((p) => {
-          const cat = String(p.category || "").split(" - ")[0];
+          const cat = p.homeChip || String(p.category || "").split(" - ")[0];
           const id = esc(p.id);
           return `<article class="hp-card${p.soldOut ? " is-sold" : ""}" tabindex="0" role="button" aria-label="${esc(p.name)}" onclick="explore('${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();explore('${id}')}">
             <div class="hp-top"><span class="hp-chip">${esc(p.soldOut ? "نفدت الكمية" : cat)}</span>${p.discount ? `<span class="hp-disc">خصم ${Number(p.discount)}%</span>` : ""}</div>
-            <div class="hp-ico">${st.homeImages ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : homeIcon(p)}</div>
-            <h3>${esc(p.name)}</h3>
+            <div class="hp-ico">${homeMedia(p, st.homeImages)}</div>
+            <h3>${esc(p.homeName || p.name)}</h3>
             <div class="hp-price"><span class="hp-now">${fmtP(p.price)}<small> ر.س</small></span>${p.discount && p.oldPrice ? `<s class="hp-old">${fmtP(p.oldPrice)}<small> ر.س</small></s>` : ""}</div>
           </article>`;
         }).join("");

@@ -71,7 +71,7 @@ setInterval(() => hits.clear(), 60 * 60 * 1000).unref();
 /* ---------- API المتجر (عام) ---------- */
 const publicProduct = (p) => {
   const d = db.activeDiscount(p), final = db.effectivePrice(p);
-  return { soldOut: p.soldOut === true, featured: p.featured === true, id: p.id, group: p.group, name: p.name, category: p.category, description: p.description, price: final, oldPrice: d ? p.price : null, discount: d, discountEnds: d ? (p.discountEnds || "") : "", image: p.image, note: p.note || "", details: p.details || "", delivery: p.delivery || "", method: p.method || "" };
+  return { soldOut: p.soldOut === true, featured: p.featured === true, homeName: p.homeName || "", homeChip: p.homeChip || "", homeIcon: p.homeIcon || "auto", homeImage: p.homeImage || "", id: p.id, group: p.group, name: p.name, category: p.category, description: p.description, price: final, oldPrice: d ? p.price : null, discount: d, discountEnds: d ? (p.discountEnds || "") : "", image: p.image, note: p.note || "", details: p.details || "", delivery: p.delivery || "", method: p.method || "" };
 };
 const publicOrder = (o) => ({
   id: o.id, date: o.createdAt, status: o.status, transferor: o.transferor,
@@ -329,6 +329,7 @@ app.get("/api/admin/me", requireStaff, (req, res) =>
   res.json({ id: req.staff.uid, name: req.staff.name, avatar: req.staff.avatar, owner: bot.isOwner(req.staff.uid) }));
 
 app.get("/api/admin/stats", requireStaff, (req, res) => res.json(db.getStats()));
+app.post("/api/admin/stats/reset-sales", requireStaff, (req, res) => res.json(db.resetSales()));
 
 app.get("/api/admin/orders", requireStaff, (req, res) =>
   res.json(db.listOrders().map(adminOrder)));
