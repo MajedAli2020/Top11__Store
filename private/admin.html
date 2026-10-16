@@ -228,6 +228,9 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
 .empty { border-radius:18px; background:#ffffff05; }
 
 /* الأنيميشن مرة وحدة فقط: التحديث التلقائي/الأزرار ما يعيدون حركة الدخول (كانت تسبب وميض) */
+#vstats { grid-template-columns:repeat(3,1fr); }
+.stat-rst { margin-top:10px; }
+@media (max-width:700px) { #vstats { grid-template-columns:1fr; } }
 .seen .stat, .seen .order, .seen .prow, .seen .set-card { animation:none !important; }
 @keyframes pxDrift { to { transform:translate3d(6vmax,4vmax,0) scale(1.2); } }
 @keyframes pxShine { to { background-position:-200% 0; } }
@@ -442,11 +445,20 @@ function renderOrders() {
   const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
   paint($("ordersList"), (list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
 }
-async function loadVisitors() {
+async function loadVisitors(force) {
   try {
-    const v = await api("/api/admin/stats"); if (same("vstats", v)) return; const n = (x) => Number(x).toLocaleString("ar-SA");
+    const v = await api("/api/admin/stats"); if (!force && same("vstats", v)) return; const n = (x) => Number(x).toLocaleString("ar-SA");
     const cell = (a, l) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l));
-    paint($("vstats"), [cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.weekVisitors), "زوار آخر 7 أيام"), cell(n(v.visitors), "إجمالي الزوار"), cell(n(v.visits), "إجمالي الزيارات")]);
+    const rst = (what, label, msg) => h("button", { class:"btn ghost sm stat-rst", type:"button", onclick: async () => {
+      if (!confirm(msg)) return;
+      try { const r = await api("/api/admin/stats/reset", { method:"POST", body:{ what } }); same.m.vstats = JSON.stringify(r); loadVisitors(true); toast("تم التصفير"); } catch (e) { fail(e); }
+    } }, label);
+    const cell2 = (a, l, btn) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l), btn);
+    paint($("vstats"), [
+      cell2(n(v.todayVisitors), "زوار اليوم"),
+      cell2(n(v.visits), "إجمالي الزيارات", rst("visits", "تصفير", "تصفير الزيارات (زوار اليوم وإجمالي الزيارات)؟ ما ينفع التراجع.")),
+      cell2(money(v.revenue || 0), "إجمالي الأرباح (الطلبات المسلّمة)", rst("revenue", "تصفير", "تصفير إجمالي الأرباح؟ الطلبات نفسها تبقى، بس العدّاد يبدأ من الصفر."))
+    ]);
   } catch (e) { /* الطلبات أهم، نتجاهل خطأ الإحصائيات */ }
 }
 async function loadOrders() {
