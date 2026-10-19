@@ -258,6 +258,7 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
       <button class="tab hidden" id="prodTab" data-tab="products" role="tab">المنتجات والأسعار</button>
       <button class="tab hidden" id="revTab" data-tab="reviews" role="tab">تقييم العملاء</button>
       <button class="tab hidden" id="setTab" data-tab="settings" role="tab">إعدادات السيرفر</button>
+      <button class="tab hidden" id="invTab" data-tab="invoice" role="tab">الفاتورة</button>
     </div>
 
     <section id="ordersTab">
@@ -293,6 +294,20 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
         </div>
       </div>
       <div id="setBody"></div>
+    </section>
+
+    <section id="invoiceTab" class="hidden">
+      <div class="sec-head">
+        <div>
+          <h2>الفاتورة</h2>
+          <p>الفاتورة صورة تنرسل للعميل في الخاص أول ما يتحول طلبه إلى «تم التسليم». غيّر النصوص هنا، والمعاينة تتحدث مباشرة قبل الحفظ.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="invReset" type="button">استرجاع الافتراضي</button>
+          <button class="btn primary" id="invSave" type="button">حفظ التغييرات</button>
+        </div>
+      </div>
+      <div id="invBody"></div>
     </section>
 
     <section id="reviewsTab" class="hidden">
@@ -677,6 +692,62 @@ $("rdlgForm").addEventListener("submit", async (e) => {
   btn.disabled = false;
 });
 
+/* ---------- الفاتورة ---------- */
+const INV_GROUPS = [
+  ["الهيدر", [["storeName","اسم المتجر"],["storeSub","النص الصغير تحت الاسم"],["title","كلمة «فاتورة»"]]],
+  ["بيانات الطلب", [["labelCustomer","عنوان: العميل"],["labelDate","عنوان: التاريخ"],["labelTransferor","عنوان: اسم المحوّل"],["labelDelivery","عنوان: وقت التسليم"]]],
+  ["شريط الحالة", [["stepNew","الخطوة 1"],["stepAccepted","الخطوة 2"],["stepDelivered","الخطوة 3"]]],
+  ["جدول المنتجات", [["colProduct","عمود: المنتج"],["colQty","عمود: الكمية"],["colPrice","عمود: السعر"],["currency","العملة"]]],
+  ["الإجمالي والختم", [["labelSubtotal","عنوان: المجموع"],["labelDiscount","عنوان: الخصم"],["labelTotal","عنوان: الإجمالي"],["stamp","نص الختم"]]],
+  ["الخاتمة", [["thanks","جملة الشكر",1],["footer","النص الصغير في الأسفل",1]]],
+];
+const INV_TOGGLES = [["enabled","إرسال الفاتورة للعميل عند التسليم"],["showTimeline","إظهار شريط الحالة (استلام - قبول - تسليم)"],["showStamp","إظهار الختم"],["showBarcode","إظهار الباركود"]];
+let invData = null, invDefs = null, invTimer = null;
+function invCollect() {
+  const body = { texts:{} };
+  INV_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("i_" + k).value; }));
+  INV_TOGGLES.forEach(([k]) => { body[k] = $("it_" + k).checked; });
+  return body;
+}
+async function invPreview() {
+  const img = $("invPrev"); if (!img) return;
+  try { const r = await api("/api/admin/invoice/preview", { method:"POST", body:invCollect() }); img.src = r.image; } catch (e) { fail(e); }
+}
+function invPreviewSoon() { clearTimeout(invTimer); invTimer = setTimeout(invPreview, 500); }
+function renderInvoice() {
+  const st = invData, d = invDefs, parts = [];
+  const prev = h("img", { id:"invPrev", alt:"معاينة الفاتورة", style:"width:min(420px,100%);height:auto;border-radius:10px;border:1px solid var(--line);background:#fff" });
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "المعاينة"),
+    h("div", { style:"font-size:12px;color:var(--muted);margin-bottom:10px" }, "المنتجات والأسعار واسم العميل في المعاينة أمثلة فقط. في الفاتورة الحقيقية تتعبّى من الطلب نفسه."), prev));
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "خيارات الفاتورة"), INV_TOGGLES.map(([k, l]) => {
+    const cb = h("input", { type:"checkbox", id:"it_" + k, checked: st[k] !== false });
+    cb.addEventListener("change", invPreviewSoon);
+    return h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin-bottom:12px" }, h("span", { class:"switch" }, cb, h("span")), l);
+  })));
+  for (const [title, fields] of INV_GROUPS) {
+    parts.push(h("div", { class:"set-card" }, h("h3", {}, title), h("div", { class:"set-grid" }, fields.map(([k, l, big]) => {
+      const inp = big ? h("textarea", { id:"i_" + k, maxlength:"120", rows:"2" }) : h("input", { type:"text", id:"i_" + k, maxlength:"40" });
+      inp.value = st.texts[k] || d.texts[k];
+      inp.addEventListener("input", invPreviewSoon);
+      return h("div", { class:big ? "wide" : "" }, h("label", { for:"i_" + k }, l), inp);
+    }))));
+  }
+  $("invBody").replaceChildren(...parts);
+  invPreview();
+}
+async function loadInvoice() {
+  try { const r = await api("/api/admin/invoice"); invData = r.invoice; invDefs = r.defaults; renderInvoice(); } catch (e) { fail(e); }
+}
+async function saveInvoice(reset) {
+  const body = reset ? { texts:{}, enabled:true, showTimeline:true, showStamp:true, showBarcode:true } : invCollect();
+  const btns = [$("invSave"), $("invReset")]; btns.forEach((b) => (b.disabled = true));
+  try { const r = await api("/api/admin/invoice", { method:"PUT", body }); invData = r.invoice; invDefs = r.defaults; renderInvoice(); toast(reset ? "رجعت الفاتورة للوضع الافتراضي" : "تم حفظ الفاتورة"); }
+  catch (e) { fail(e); }
+  btns.forEach((b) => (b.disabled = false));
+}
+$("invSave").addEventListener("click", () => saveInvoice(false));
+$("invReset").addEventListener("click", () => { if (confirm("استرجاع نصوص الفاتورة وخياراتها للوضع الافتراضي؟")) saveInvoice(true); });
+
 /* ---------- إعدادات السيرفر (للمالك فقط) ---------- */
 const COLOR_FIELDS = [["bg","خلفية الموقع"],["panel","البطاقات والقوائم"],["text","لون النص"],["muted","النص الخافت"],["accent","اللون الأساسي"],["accent2","اللون الثانوي (الأزرار والتمييز)"],["ice","اللون الفاتح"]];
 const TEXT_GROUPS = [
@@ -818,7 +889,9 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
   $("productsTab").classList.toggle("hidden", t.dataset.tab !== "products");
   $("reviewsTab").classList.toggle("hidden", t.dataset.tab !== "reviews");
   $("settingsTab").classList.toggle("hidden", t.dataset.tab !== "settings");
+  $("invoiceTab").classList.toggle("hidden", t.dataset.tab !== "invoice");
   if (t.dataset.tab === "settings") loadSettings();
+  if (t.dataset.tab === "invoice") loadInvoice();
   if (t.dataset.tab === "products") loadProducts();
   if (t.dataset.tab === "reviews") loadReviews();
 }));
@@ -828,7 +901,7 @@ $("search").addEventListener("input", renderOrders);
   try { me = await api("/api/admin/me"); } catch (e) { return; }
   $("meName").textContent = me.name;
   if (me.avatar) $("meAvatar").src = `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=64`; else $("meAvatar").classList.add("hidden");
-  { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); }
+  { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); $("invTab").classList.remove("hidden"); }
   $("appView").classList.remove("hidden");
   renderChips(); loadOrders(); loadSections();
   timer = setInterval(loadOrders, 15000);
