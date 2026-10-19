@@ -80,7 +80,7 @@
   .grp-head { display:flex; align-items:baseline; gap:10px; margin:24px 0 10px; }
   .grp-head h3 { font-size:16px; color:var(--ice); }
   .grp-head .count { color:var(--muted); font-size:13px; }
-  .prow { display:grid; grid-template-columns:56px 1fr auto auto auto auto; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:8px; }
+  .prow { display:grid; grid-template-columns:56px 1fr auto auto auto auto auto; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:8px; }
   .prow.off { opacity:.55; }
   .tgl { display:flex; flex-direction:column; align-items:center; gap:4px; } .tgl small { font-size:11px; color:var(--muted); }
   .prow .thumb { width:56px; height:56px; object-fit:contain; border-radius:10px; background:var(--bg); border:1px solid var(--line); }
@@ -227,11 +227,6 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
 .toast.show { transform:none; }
 .empty { border-radius:18px; background:#ffffff05; }
 
-/* الأنيميشن مرة وحدة فقط: التحديث التلقائي/الأزرار ما يعيدون حركة الدخول (كانت تسبب وميض) */
-#vstats { grid-template-columns:repeat(3,1fr); }
-.stat-rst { margin-top:10px; }
-@media (max-width:700px) { #vstats { grid-template-columns:1fr; } }
-.seen .stat, .seen .order, .seen .prow, .seen .set-card { animation:none !important; }
 @keyframes pxDrift { to { transform:translate3d(6vmax,4vmax,0) scale(1.2); } }
 @keyframes pxShine { to { background-position:-200% 0; } }
 @keyframes pxPing { 0% { box-shadow:0 0 0 0 #c9a07a99; } 100% { box-shadow:0 0 0 11px transparent; } }
@@ -263,6 +258,7 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
       <button class="tab hidden" id="prodTab" data-tab="products" role="tab">المنتجات والأسعار</button>
       <button class="tab hidden" id="revTab" data-tab="reviews" role="tab">تقييم العملاء</button>
       <button class="tab hidden" id="setTab" data-tab="settings" role="tab">إعدادات السيرفر</button>
+      <button class="tab hidden" id="invTab" data-tab="invoice" role="tab">الفاتورة</button>
     </div>
 
     <section id="ordersTab">
@@ -298,6 +294,20 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
         </div>
       </div>
       <div id="setBody"></div>
+    </section>
+
+    <section id="invoiceTab" class="hidden">
+      <div class="sec-head">
+        <div>
+          <h2>الفاتورة</h2>
+          <p>الفاتورة صورة تنرسل للعميل في الخاص أول ما يتحول طلبه إلى «تم التسليم». غيّر النصوص هنا، والمعاينة تتحدث مباشرة قبل الحفظ.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="invReset" type="button">استرجاع الافتراضي</button>
+          <button class="btn primary" id="invSave" type="button">حفظ التغييرات</button>
+        </div>
+      </div>
+      <div id="invBody"></div>
     </section>
 
     <section id="reviewsTab" class="hidden">
@@ -339,10 +349,23 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
     </div>
     <div><label for="fCat">التصنيف (الشارة فوق البطاقة)</label><input type="text" id="fCat" maxlength="40" placeholder="مثال: خدمات" /></div>
     <div><label for="fNote">ملاحظة تحت السعر (اختياري)</label><input type="text" id="fNote" maxlength="60" placeholder="مثال: السعر غير ثابت" /></div>
+    <div><label for="fDisc">نسبة الخصم % (0 = بدون خصم)</label><input type="number" id="fDisc" min="0" max="95" step="1" placeholder="مثال: 20" /></div>
+    <div><label for="fDiscEnd">ينتهي الخصم في (اختياري)</label><input type="datetime-local" id="fDiscEnd" /></div>
+    <div class="full" id="fDiscPrev" style="font-size:13px;color:var(--muted);margin-top:-4px"></div>
     <div class="full"><label for="fDesc">الوصف المختصر (يظهر على البطاقة)</label><textarea id="fDesc" maxlength="300"></textarea></div>
     <div class="full"><label for="fDetails">الشرح (يظهر في نافذة «استكشاف»)</label><textarea id="fDetails" maxlength="1500" rows="5" placeholder="اكتب الشرح. أي سطر يبدأ بـ - يطلع نقطة مرقّمة مع شارة VIP. مثال: - سورس الدعم الفني   (أو - [جديد] نص لتغيير الشارة)"></textarea></div>
     <div><label for="fDelivery">مدة التسليم</label><input type="text" id="fDelivery" maxlength="200" placeholder="مثال: خلال 10 دقائق" /></div>
     <div><label for="fMethod">طريقة الاستلام</label><input type="text" id="fMethod" maxlength="300" placeholder="مثال: عبر التكت في Discord" /></div>
+    <div class="full" style="border:1px dashed var(--line);border-radius:12px;padding:12px">
+      <b style="color:var(--text)">بطاقة الرئيسية (اختياري)</b>
+      <div style="font-size:12px;color:var(--muted);margin:4px 0 10px">لو تركتها فاضية تاخذ اسم المنتج وتصنيفه الأصلي.</div>
+      <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label for="fHomeName">الاسم في الرئيسية</label><input type="text" id="fHomeName" maxlength="80" /></div>
+        <div><label for="fHomeChip">التصنيف الصغير فوق البطاقة</label><input type="text" id="fHomeChip" maxlength="30" /></div>
+        <div><label for="fHomeIcon">الأيقونة / الصورة</label><select id="fHomeIcon"><option value="auto">تلقائي</option><option value="discord">ديسكورد</option><option value="rocket">صاروخ</option><option value="code">كود</option><option value="user">حساب</option><option value="bell">جرس</option><option value="spark">نجمة</option><option value="image">صورة (ارفع صورة أو تاخذ صورة المنتج)</option></select></div>
+        <div><label for="fHomeFile">صورة البطاقة</label><input type="file" id="fHomeFile" accept="image/png,image/jpeg,image/webp" /><button type="button" class="btn ghost sm" id="fHomeReset" style="margin-top:6px">حذف صورة البطاقة</button></div>
+      </div>
+    </div>
     <div class="full">
       <label for="fFile">صورة المنتج</label>
       <div class="imgpick">
@@ -355,6 +378,7 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
     </div>
     <div class="dlg-foot">
       <label class="grow" style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fActive" checked /><span></span></span> ظاهر في المتجر</label>
+      <label style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fFeat" /><span></span></span> يظهر في الرئيسية</label>
       <label style="margin:0;color:var(--text)"><span class="switch"><input type="checkbox" id="fSold" /><span></span></span> نفدت الكمية</label>
       <button type="button" class="btn" id="dlgCancel">إلغاء</button>
       <button type="submit" class="btn primary" id="dlgSubmit">حفظ</button>
@@ -393,15 +417,6 @@ async function api(url, opts = {}) {
   if (!r.ok) throw new Error(data.error || "خطأ");
   return data;
 }
-// يرسم القائمة؛ أول مرة بحركة (أو بدون لو quiet) والمرات بعدها بدون إعادة حركة
-function paint(c, nodes, quiet) {
-  const first = !c.dataset.painted;
-  c.replaceChildren(...nodes);
-  c.dataset.painted = "1";
-  if (quiet || !first) c.classList.add("seen");
-}
-const same = (key, data) => { const s = JSON.stringify(data); if (same.m[key] === s) return true; same.m[key] = s; return false; };
-same.m = {};
 const fail = (e) => { if (e.message !== "auth") toast(e.message); };
 
 /* ---------- الطلبات ---------- */
@@ -410,12 +425,12 @@ function renderStats() {
   const todays = orders.filter((o) => new Date(o.date).toDateString() === today);
   const sum = (arr) => arr.filter((o) => o.status !== "rejected").reduce((s, o) => s + o.total, 0);
   const cell = (n, l) => h("div", { class:"stat" }, h("b", {}, n), h("span", {}, l));
-  paint($("stats"), [
+  $("stats").replaceChildren(
     cell(orders.filter((o) => o.status === "new").length, "طلبات جديدة"),
     cell(orders.filter((o) => o.status === "accepted").length, "قيد التنفيذ"),
     cell(todays.length, "طلبات اليوم"),
     cell(money(sum(todays)), "مبيعات اليوم")
-  ]);
+  );
 }
 function renderChips() {
   $("chips").replaceChildren(...FILTERS.map(([k, l]) => h("button", { class:"chip" + (filter === k ? " on" : ""), onclick:() => { filter = k; renderChips(); renderOrders(); } }, l)));
@@ -443,26 +458,24 @@ function orderCard(o) {
 function renderOrders() {
   const q = $("search").value.trim().toLowerCase();
   const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
-  paint($("ordersList"), (list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
+  $("ordersList").replaceChildren(...(list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
 }
-async function loadVisitors(force) {
+function salesCell(v) {
+  const btn = h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick: async () => {
+    if (!confirm("تصفير إجمالي المبيعات؟\n\nما راح تنحذف الطلبات، بس يبدأ الحساب من الصفر من الحين.")) return;
+    try { await api("/api/admin/stats/reset-sales", { method:"POST", body:{} }); toast("تم تصفير إجمالي المبيعات"); loadVisitors(); } catch (e) { fail(e); }
+  } }, "تصفير");
+  return h("div", { class:"stat" }, h("b", {}, money(v.salesTotal || 0)), h("span", {}, "إجمالي المبيعات" + (v.salesSince ? " (منذ " + new Date(v.salesSince).toLocaleDateString("ar-SA") + ")" : "")), btn);
+}
+async function loadVisitors() {
   try {
-    const v = await api("/api/admin/stats"); if (!force && same("vstats", v)) return; const n = (x) => Number(x).toLocaleString("ar-SA");
+    const v = await api("/api/admin/stats"), n = (x) => Number(x).toLocaleString("ar-SA");
     const cell = (a, l) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l));
-    const rst = (what, label, msg) => h("button", { class:"btn ghost sm stat-rst", type:"button", onclick: async () => {
-      if (!confirm(msg)) return;
-      try { const r = await api("/api/admin/stats/reset", { method:"POST", body:{ what } }); same.m.vstats = JSON.stringify(r); loadVisitors(true); toast("تم التصفير"); } catch (e) { fail(e); }
-    } }, label);
-    const cell2 = (a, l, btn) => h("div", { class:"stat" }, h("b", {}, a), h("span", {}, l), btn);
-    paint($("vstats"), [
-      cell2(n(v.todayVisitors), "زوار اليوم"),
-      cell2(n(v.visits), "إجمالي الزيارات", rst("visits", "تصفير", "تصفير الزيارات (زوار اليوم وإجمالي الزيارات)؟ ما ينفع التراجع.")),
-      cell2(money(v.revenue || 0), "إجمالي الأرباح (الطلبات المسلّمة)", rst("revenue", "تصفير", "تصفير إجمالي الأرباح؟ الطلبات نفسها تبقى، بس العدّاد يبدأ من الصفر."))
-    ]);
+    $("vstats").replaceChildren(cell(n(v.todayVisitors), "زوار اليوم"), cell(n(v.visits), "إجمالي الزيارات"), salesCell(v));
   } catch (e) { /* الطلبات أهم، نتجاهل خطأ الإحصائيات */ }
 }
 async function loadOrders() {
-  try { const d = await api("/api/admin/orders"); if (!same("orders", d)) { orders = d; renderStats(); renderOrders(); } } catch (e) { fail(e); }
+  try { orders = await api("/api/admin/orders"); renderStats(); renderOrders(); } catch (e) { fail(e); }
   loadVisitors();
 }
 async function setStatus(id, status, btn) {
@@ -495,6 +508,11 @@ function prodRow(p, i, n) {
     try { Object.assign(p, await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"PATCH", body:{ soldOut:on } })); renderProducts(); toast(on ? "تم وضعه «نفدت الكمية» ولا يمكن طلبه" : "رجع متوفر للطلب"); }
     catch (err) { e.target.checked = !on; fail(err); }
   } });
+  const feat = h("input", { type:"checkbox", checked:p.featured === true, "aria-label":"يظهر في الرئيسية", onchange: async (e) => {
+    const on = e.target.checked;
+    try { Object.assign(p, await api("/api/admin/products/" + encodeURIComponent(p.id), { method:"PATCH", body:{ featured:on } })); renderProducts(); toast(on ? "صار يظهر في الرئيسية" : "انشال من الرئيسية"); }
+    catch (err) { e.target.checked = !on; fail(err); }
+  } });
   const move = (dir, label) => h("button", { class:"btn ghost sm", "aria-label":label, disabled: dir === "up" ? i === 0 : i === n - 1, onclick: async () => {
     try { products = await api("/api/admin/products/" + encodeURIComponent(p.id) + "/move", { method:"POST", body:{ dir } }); renderProducts(); } catch (err) { fail(err); }
   } }, dir === "up" ? "▲" : "▼");
@@ -506,8 +524,9 @@ function prodRow(p, i, n) {
   return h("div", { class:"prow" + (p.active ? "" : " off") },
     h("img", { class:"thumb", src:p.image, alt:"" }),
     h("div", {}, h("div", { class:"p-name" }, p.name), h("div", { class:"p-sub" }, p.category + (p.note ? " · " + p.note : "") + (p.active ? "" : " · مخفي") + (p.soldOut ? " · نفدت الكمية" : ""))),
-    h("div", { class:"p-price" }, money(p.price)),
+    h("div", { class:"p-price" }, (p.discount > 0 && !(p.discountEnds && Date.now() >= Date.parse(p.discountEnds))) ? [h("div", { style:"text-decoration:line-through;opacity:.55;font-size:12px" }, money(p.price)), h("div", {}, money(Math.round(p.price * (1 - p.discount / 100) * 100) / 100)), h("div", { style:"font-size:11px;color:#ff8da1" }, "خصم " + p.discount + "%")] : money(p.price)),
     h("div", { class:"tgl" }, h("label", { class:"switch", title:"ظاهر في المتجر" }, vis, h("span")), h("small", {}, "ظاهر")),
+    h("div", { class:"tgl" }, h("label", { class:"switch", title:"يظهر في قسم المنتجات في الصفحة الرئيسية" }, feat, h("span")), h("small", {}, "الرئيسية")),
     h("div", { class:"tgl" }, h("label", { class:"switch", title:"نفدت الكمية (ما يقدر يطلبه أحد)" }, sold, h("span")), h("small", {}, "نفدت الكمية")),
     h("div", { class:"p-actions" }, move("up", "تحريك لفوق"), move("down", "تحريك لتحت"), h("button", { class:"btn sm", onclick:() => openDialog(p) }, "تعديل"), del));
 }
@@ -519,7 +538,7 @@ function renderProducts() {
     if (!list.length) parts.push(h("div", { class:"empty small" }, "لا يوجد منتجات في هذا القسم."));
     list.forEach((p, i) => parts.push(prodRow(p, i, list.length)));
   }
-  paint($("prodList"), parts, true);
+  $("prodList").replaceChildren(...parts);
 }
 function fillGroupSelect() {
   const sel = $("fGroup"), cur = sel.value;
@@ -527,7 +546,7 @@ function fillGroupSelect() {
   if (cur) sel.value = cur;
 }
 async function loadSections() { try { const st = await fetch("/api/settings").then((r) => r.json()); if (Array.isArray(st.sections)) SECTIONS = st.sections; fillGroupSelect(); } catch (e) { /* نكمل بالأسماء الافتراضية */ } }
-async function loadProducts() { await loadSections(); try { const d = await api("/api/admin/products"); if (!same("products", d)) { products = d; renderProducts(); } } catch (e) { fail(e); } }
+async function loadProducts() { await loadSections(); try { products = await api("/api/admin/products"); renderProducts(); } catch (e) { fail(e); } }
 
 /* ---------- نافذة الإضافة / التعديل ---------- */
 const WEBP = document.createElement("canvas").toDataURL("image/webp").startsWith("data:image/webp");
@@ -553,6 +572,13 @@ function compressImage(file, maxDim = 640, maxLen = 200000) {
     img.src = url;
   });
 }
+function toLocalInput(iso) { const d = new Date(iso); if (isNaN(d)) return ""; const z = (n) => String(n).padStart(2, "0"); return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes()); }
+function updDiscPrev() {
+  const pr = Number($("fPrice").value), d = Number($("fDisc").value), box = $("fDiscPrev");
+  if (!(d > 0) || !(pr >= 0) || $("fPrice").value === "") { box.textContent = ""; return; }
+  box.textContent = "السعر بعد الخصم: " + (Math.round(pr * (1 - Math.min(d, 95) / 100) * 100) / 100) + " ر.س (بدل " + pr + " ر.س)";
+}
+["fPrice", "fDisc"].forEach((id) => $(id).addEventListener("input", updDiscPrev));
 function openDialog(p) {
   editing = p || null; newImage = "";
   $("dlgTitle").textContent = p ? "تعديل: " + p.name : "إضافة منتج جديد";
@@ -561,18 +587,32 @@ function openDialog(p) {
   $("fGroup").value = p ? p.group : "main";
   $("fCat").value = p ? p.category : "";
   $("fNote").value = p ? p.note || "" : "";
+  $("fDisc").value = p && p.discount ? p.discount : "";
+  $("fDiscEnd").value = p && p.discountEnds ? toLocalInput(p.discountEnds) : "";
+  updDiscPrev();
   $("fDesc").value = p ? p.description || "" : "";
   $("fDetails").value = p ? p.details || "" : "";
   $("fDelivery").value = p ? p.delivery || "" : "";
   $("fMethod").value = p ? p.method || "" : "";
   $("fActive").checked = p ? p.active : true;
   $("fSold").checked = p ? p.soldOut === true : false;
+  $("fFeat").checked = p ? p.featured === true : false;
+  $("fHomeName").value = p ? p.homeName || "" : ""; $("fHomeChip").value = p ? p.homeChip || "" : "";
+  $("fHomeIcon").value = p ? p.homeIcon || "auto" : "auto"; $("fHomeFile").value = ""; newHomeImage = ""; resetHomeImage = false;
   $("fFile").value = "";
   $("fPreview").hidden = !p; if (p) $("fPreview").src = p.image;
   $("fImgHint").textContent = p ? "اتركها فاضية إذا ما تبي تغيّر الصورة." : "الصورة مطلوبة — PNG أو JPG أو WEBP، وتنضغط تلقائياً قبل الرفع.";
   $("dlg").showModal();
   $("fName").focus();
 }
+let newHomeImage = "", resetHomeImage = false;
+$("fHomeFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; newHomeImage = "";
+  if (!f) return;
+  try { newHomeImage = await compressImage(f); resetHomeImage = false; if ($("fHomeIcon").value !== "image") $("fHomeIcon").value = "image"; toast("تم اختيار صورة البطاقة"); }
+  catch (err) { toast(err.message); e.target.value = ""; }
+});
+$("fHomeReset").addEventListener("click", () => { newHomeImage = ""; resetHomeImage = true; $("fHomeFile").value = ""; toast("تنحذف صورة البطاقة عند الحفظ"); });
 $("addBtn").addEventListener("click", () => openDialog(null));
 $("dlgCancel").addEventListener("click", () => $("dlg").close());
 $("dlg").addEventListener("click", (e) => { if (e.target === $("dlg")) $("dlg").close(); });
@@ -589,7 +629,9 @@ $("dlgForm").addEventListener("submit", async (e) => {
   if ($("fPrice").value === "" || Number($("fPrice").value) < 0) return toast("اكتب سعر صحيح");
   if (!editing && !newImage) return toast("اختر صورة للمنتج");
   const body = { name:$("fName").value, price:$("fPrice").value, group:$("fGroup").value, category:$("fCat").value,
-    note:$("fNote").value, description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked };
+    note:$("fNote").value, discount:$("fDisc").value || 0, discountEnds:$("fDiscEnd").value ? new Date($("fDiscEnd").value).toISOString() : "", description:$("fDesc").value, details:$("fDetails").value, delivery:$("fDelivery").value, method:$("fMethod").value, active:$("fActive").checked, soldOut:$("fSold").checked, featured:$("fFeat").checked, homeName:$("fHomeName").value, homeChip:$("fHomeChip").value, homeIcon:$("fHomeIcon").value };
+  if (newHomeImage) body.homeImage = newHomeImage;
+  if (resetHomeImage) body.resetHomeImage = true;
   if (newImage) body.image = newImage;
   const btn = $("dlgSubmit"); btn.disabled = true;
   try {
@@ -626,9 +668,9 @@ function revRow(r) {
       } }, "حذف")));
 }
 function renderReviews() {
-  paint($("revList"), (reviews.length ? reviews.map(revRow) : [h("div", { class:"empty small" }, "لا يوجد تقييمات.")]), true);
+  $("revList").replaceChildren(...(reviews.length ? reviews.map(revRow) : [h("div", { class:"empty small" }, "لا يوجد تقييمات.")]));
 }
-async function loadReviews() { try { const d = await api("/api/admin/reviews"); if (!same("reviews", d)) { reviews = d; renderReviews(); } } catch (e) { fail(e); } }
+async function loadReviews() { try { reviews = await api("/api/admin/reviews"); renderReviews(); } catch (e) { fail(e); } }
 function openRevDialog(r) {
   editingRev = r || null;
   $("rdlgTitle").textContent = r ? "تعديل التقييم" : "إضافة تقييم";
@@ -650,16 +692,73 @@ $("rdlgForm").addEventListener("submit", async (e) => {
   btn.disabled = false;
 });
 
+/* ---------- الفاتورة ---------- */
+const INV_GROUPS = [
+  ["الهيدر", [["storeName","اسم المتجر"],["storeSub","النص الصغير تحت الاسم"],["title","كلمة «فاتورة»"]]],
+  ["بيانات الطلب", [["labelCustomer","عنوان: العميل"],["labelDate","عنوان: التاريخ"],["labelTransferor","عنوان: اسم المحوّل"],["labelDelivery","عنوان: وقت التسليم"]]],
+  ["شريط الحالة", [["stepNew","الخطوة 1"],["stepAccepted","الخطوة 2"],["stepDelivered","الخطوة 3"]]],
+  ["جدول المنتجات", [["colProduct","عمود: المنتج"],["colQty","عمود: الكمية"],["colPrice","عمود: السعر"],["currency","العملة"]]],
+  ["الإجمالي والختم", [["labelSubtotal","عنوان: المجموع"],["labelDiscount","عنوان: الخصم"],["labelTotal","عنوان: الإجمالي"],["stamp","نص الختم"]]],
+  ["الخاتمة", [["thanks","جملة الشكر",1],["footer","النص الصغير في الأسفل",1]]],
+];
+const INV_TOGGLES = [["enabled","إرسال الفاتورة للعميل عند التسليم"],["showTimeline","إظهار شريط الحالة (استلام - قبول - تسليم)"],["showStamp","إظهار الختم"],["showBarcode","إظهار الباركود"]];
+let invData = null, invDefs = null, invTimer = null;
+function invCollect() {
+  const body = { texts:{} };
+  INV_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("i_" + k).value; }));
+  INV_TOGGLES.forEach(([k]) => { body[k] = $("it_" + k).checked; });
+  return body;
+}
+async function invPreview() {
+  const img = $("invPrev"); if (!img) return;
+  try { const r = await api("/api/admin/invoice/preview", { method:"POST", body:invCollect() }); img.src = r.image; } catch (e) { fail(e); }
+}
+function invPreviewSoon() { clearTimeout(invTimer); invTimer = setTimeout(invPreview, 500); }
+function renderInvoice() {
+  const st = invData, d = invDefs, parts = [];
+  const prev = h("img", { id:"invPrev", alt:"معاينة الفاتورة", style:"width:min(420px,100%);height:auto;border-radius:10px;border:1px solid var(--line);background:#fff" });
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "المعاينة"),
+    h("div", { style:"font-size:12px;color:var(--muted);margin-bottom:10px" }, "المنتجات والأسعار واسم العميل في المعاينة أمثلة فقط. في الفاتورة الحقيقية تتعبّى من الطلب نفسه."), prev));
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "خيارات الفاتورة"), INV_TOGGLES.map(([k, l]) => {
+    const cb = h("input", { type:"checkbox", id:"it_" + k, checked: st[k] !== false });
+    cb.addEventListener("change", invPreviewSoon);
+    return h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin-bottom:12px" }, h("span", { class:"switch" }, cb, h("span")), l);
+  })));
+  for (const [title, fields] of INV_GROUPS) {
+    parts.push(h("div", { class:"set-card" }, h("h3", {}, title), h("div", { class:"set-grid" }, fields.map(([k, l, big]) => {
+      const inp = big ? h("textarea", { id:"i_" + k, maxlength:"120", rows:"2" }) : h("input", { type:"text", id:"i_" + k, maxlength:"40" });
+      inp.value = st.texts[k] || d.texts[k];
+      inp.addEventListener("input", invPreviewSoon);
+      return h("div", { class:big ? "wide" : "" }, h("label", { for:"i_" + k }, l), inp);
+    }))));
+  }
+  $("invBody").replaceChildren(...parts);
+  invPreview();
+}
+async function loadInvoice() {
+  try { const r = await api("/api/admin/invoice"); invData = r.invoice; invDefs = r.defaults; renderInvoice(); } catch (e) { fail(e); }
+}
+async function saveInvoice(reset) {
+  const body = reset ? { texts:{}, enabled:true, showTimeline:true, showStamp:true, showBarcode:true } : invCollect();
+  const btns = [$("invSave"), $("invReset")]; btns.forEach((b) => (b.disabled = true));
+  try { const r = await api("/api/admin/invoice", { method:"PUT", body }); invData = r.invoice; invDefs = r.defaults; renderInvoice(); toast(reset ? "رجعت الفاتورة للوضع الافتراضي" : "تم حفظ الفاتورة"); }
+  catch (e) { fail(e); }
+  btns.forEach((b) => (b.disabled = false));
+}
+$("invSave").addEventListener("click", () => saveInvoice(false));
+$("invReset").addEventListener("click", () => { if (confirm("استرجاع نصوص الفاتورة وخياراتها للوضع الافتراضي؟")) saveInvoice(true); });
+
 /* ---------- إعدادات السيرفر (للمالك فقط) ---------- */
 const COLOR_FIELDS = [["bg","خلفية الموقع"],["panel","البطاقات والقوائم"],["text","لون النص"],["muted","النص الخافت"],["accent","اللون الأساسي"],["accent2","اللون الثانوي (الأزرار والتمييز)"],["ice","اللون الفاتح"]];
 const TEXT_GROUPS = [
   ["الهوية", [["storeName","اسم المتجر"],["navSub","النص الصغير تحت الاسم"],["tabSuffix","عنوان التبويب (بعد اسم المتجر)"]]],
   ["الواجهة الرئيسية", [["heroEyebrow","الشارة فوق العنوان"],["heroTitle1","العنوان - السطر 1"],["heroTitle2","العنوان - السطر 2 (ملوّن)"],["heroTitle3","العنوان - السطر 3"],["heroLead","الوصف تحت العنوان",1],["btnProducts","زر المنتجات"],["btnCart","زر السلة"]]],
   ["أسماء القوائم", [["navHome","القائمة: الرئيسية"],["navProducts","القائمة: المنتجات"],["navHow","القائمة: كيف تطلب؟"],["navTrack","القائمة: تتبع طلبي"],["navCart","زر السلة"],["catAllLabel","تبويب «الكل» في المنتجات"],["catAllSub","وصف «الكل» في القائمة المنسدلة"]]],
+  ["المنتجات في الرئيسية", [["homeProductsTitle","عنوان القسم"],["homeProductsAll","نص زر «عرض الكل»"]]],
   ["الفوتر", [["visitorsLabel","كلمة «عدد الزوار»"]]],
   ["أقسام الصفحة", [["homeHeading","عنوان قسم المميزات"],["ctaTitle","عنوان «جاهز تبدأ؟»"],["ctaText","نص «جاهز تبدأ؟»",1],["ctaButton","زر «جاهز تبدأ؟»"],["reviewsTitle","عنوان التقييمات"],["footerLeft","نص الفوتر (يمين)"],["footerRight","نص الفوتر (يسار)"]]],
 ];
-let setData = null, setDefs = null, setLogoNew = "", setLogoReset = false, setSections = [], setHeroNew = "", setHeroReset = false;
+let setBgNew = "", setBgReset = false, setData = null, setDefs = null, setLogoNew = "", setLogoReset = false, setSections = [], setHeroNew = "", setHeroReset = false;
 function colorField(k, label, val) {
   const t = h("input", { type:"text", id:"c_" + k, value:val, maxlength:"7", "aria-label":label });
   const c = h("input", { type:"color", value:val, "aria-label":label + " (اختيار)" });
@@ -687,10 +786,36 @@ function renderSettings() {
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "صورة الواجهة الرئيسية"), h("div", { class:"logo-row" }, hPrev,
     h("div", {}, hFile, h("div", { style:"font-size:12px;color:var(--muted);margin-top:4px" }, "تظهر بجانب العنوان في أول الصفحة. الأفضل صورة عريضة بنسبة 16:9."),
       h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setHeroNew = ""; setHeroReset = true; hFile.value = ""; hPrev.src = "assets/hero.webp"; toast("ترجع الصورة الافتراضية عند الحفظ"); } }, "استرجاع الصورة الافتراضية")))));
+  const bPrev = h("img", { id:"bgPrev", alt:"", src: setBgReset ? "" : (setBgNew || setData.bgImage || ""), style:"width:min(320px,100%);height:auto;aspect-ratio:16/9;border-radius:14px;border:1px solid var(--line);object-fit:cover;background:#0003" + ((setBgReset || !(setBgNew || setData.bgImage)) ? ";display:none" : "") });
+  const bFile = h("input", { type:"file", id:"bgFile", accept:"image/png,image/jpeg,image/webp" });
+  bFile.addEventListener("change", async (e) => {
+    const f = e.target.files[0]; setBgNew = ""; if (!f) return;
+    try { setBgNew = await compressImage(f, 1600, 420000); setBgReset = false; bPrev.src = setBgNew; bPrev.style.display = ""; }
+    catch (err) { toast(err.message); e.target.value = ""; }
+  });
+  const dimR = h("input", { type:"range", id:"bgDim", min:"0", max:"90", step:"1", value: String(setData.bgDim ?? 45), style:"width:min(320px,100%)" });
+  const dimV = h("span", { style:"margin-inline-start:8px;color:var(--text)" }, (setData.bgDim ?? 45) + "%");
+  dimR.addEventListener("input", () => { dimV.textContent = dimR.value + "%"; });
+  const shp = h("input", { type:"checkbox", id:"shapes", checked: setData.shapes !== false });
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "خلفية الموقع والأشكال"),
+    h("div", { class:"logo-row" }, bPrev,
+      h("div", {}, bFile,
+        h("div", { style:"font-size:12px;color:var(--muted);margin-top:4px" }, "ارفع أي صورة تبيها خلفية للموقع كله (PNG أو JPG أو WEBP، تنضغط تلقائياً). الأفضل صورة عريضة. لو ما رفعت شي تظهر الخلفية البنفسجية الافتراضية."),
+        h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick:() => { setBgNew = ""; setBgReset = true; bFile.value = ""; bPrev.removeAttribute("src"); bPrev.style.display = "none"; toast("ترجع الخلفية الافتراضية عند الحفظ"); } }, "حذف الخلفية (رجوع للبنفسجي)"))),
+    h("div", { style:"margin-top:14px" }, h("label", { for:"bgDim" }, "قوة تعتيم الخلفية (كل ما زادت صار النص أوضح)"), h("div", {}, dimR, dimV)),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin-top:14px" }, h("span", { class:"switch" }, shp, h("span")), "إظهار أشكال النجوم والشبكة المتحركة في الخلفية")));
   const mnt = h("input", { type:"checkbox", id:"maintenance", checked: !!setData.maintenance });
   parts.unshift(h("div", { class:"set-card", style: setData.maintenance ? "border-color:var(--amber,#e0b36a)" : "" }, h("h3", {}, "وضع الصيانة المؤقتة"),
     h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, mnt, h("span")), "تفعيل وضع الصيانة المؤقتة"),
     h("div", { style:"font-size:12px;color:var(--muted);margin-top:8px" }, "عند التفعيل يظهر لأي زائر يدخل المتجر بلور مع رسالة «صيانة مؤقتة» ويتعطّل إرسال الطلبات، وتتوقف مقدمة «السعودية خط أحمر». أنت وأصحاب رتبة الإدارة تتصفحون المتجر والطلبات عادي (سجّل دخول بديسكورد من زر «دخول الإدارة» أسفل رسالة الصيانة، أو افتح /admin مباشرة). اضغط «حفظ التغييرات» ليبدأ أو يتوقف.")));
+  const hpOn = h("input", { type:"checkbox", id:"homeProducts", checked: setData.homeProducts !== false });
+  const hpImg = h("input", { type:"checkbox", id:"homeImages", checked: !!setData.homeImages });
+  const hpCnt = h("select", { id:"homeCount", style:"width:min(220px,100%)" }, [3, 4, 5, 6].map((n) => h("option", { value:String(n), selected: (setData.homeCount || 3) === n }, n + " منتجات")));
+  parts.push(h("div", { class:"set-card" }, h("h3", {}, "قسم المنتجات في الرئيسية"),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, hpOn, h("span")), "إظهار قسم المنتجات في الصفحة الرئيسية"),
+    h("div", { style:"margin-top:14px" }, h("label", { for:"homeCount" }, "عدد المنتجات المعروضة"), hpCnt),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin-top:14px" }, h("span", { class:"switch" }, hpImg, h("span")), "عرض صورة المنتج بدل الأيقونة"),
+    h("div", { style:"font-size:12px;color:var(--muted);margin-top:8px;line-height:1.9" }, "اختر المنتجات اللي تظهر من تبويب «المنتجات والأسعار»: مفتاح «الرئيسية» على كل منتج، أو من نافذة «تعديل». لو ما علّمت أي منتج تظهر أول المنتجات تلقائياً. الخصم (النسبة وتاريخ نهايته) تضبطه من نافذة «تعديل» للمنتج، ويظهر على البطاقة مع السعر القديم مشطوب. عنوان القسم ونص زر «عرض الكل» تغيّرهم من البطاقة الموجودة تحت (المنتجات في الرئيسية).")));
   const vis = h("input", { type:"checkbox", id:"showVisitors", checked: !!setData.showVisitors });
   parts.push(h("div", { class:"set-card" }, h("h3", {}, "عدّاد الزوار"),
     h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer" }, h("span", { class:"switch" }, vis, h("span")), "إظهار عدد الزوار في أسفل المتجر"),
@@ -717,10 +842,10 @@ function renderSettings() {
       return h("div", { class:big ? "wide" : "" }, h("label", { for:"t_" + k }, l), inp);
     }))));
   }
-  paint($("setBody"), parts, true);
+  $("setBody").replaceChildren(...parts);
 }
 async function loadSettings() {
-  try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); renderSettings(); } catch (e) { fail(e); }
+  try { const r = await api("/api/admin/settings"); setData = r.settings; setDefs = r.defaults; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setBgNew = ""; setBgReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); renderSettings(); } catch (e) { fail(e); }
 }
 async function saveSettings(reset) {
   const body = { colors:{}, texts:{} };
@@ -733,16 +858,23 @@ async function saveSettings(reset) {
     TEXT_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("t_" + k).value; }));
     body.sections = setSections.map((x) => ({ id:x.id, label:x.label, sub:x.sub }));
     body.showVisitors = $("showVisitors").checked;
+    body.homeProducts = $("homeProducts").checked;
+    body.homeCount = $("homeCount").value;
+    body.homeImages = $("homeImages").checked;
     body.maintenance = $("maintenance").checked;
     if (setLogoNew) body.logo = setLogoNew;
     if (setHeroNew) body.heroImage = setHeroNew;
+    if (setBgNew) body.bgImage = setBgNew;
+    if (setBgReset) body.resetBgImage = true;
+    body.bgDim = $("bgDim").value;
+    body.shapes = $("shapes").checked;
     if (setHeroReset) body.resetHeroImage = true;
     if (setLogoReset) body.resetLogo = true;
-  } else { body.resetLogo = true; body.resetHeroImage = true; }
+  } else { body.resetLogo = true; body.resetHeroImage = true; body.resetBgImage = true; body.shapes = true; }
   const btns = [$("setSave"), $("setReset")]; btns.forEach((b) => (b.disabled = true));
   try {
     const r = await api("/api/admin/settings", { method:"PUT", body });
-    setData = r.settings; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); SECTIONS = r.settings.sections; fillGroupSelect(); renderSettings();
+    setData = r.settings; setLogoNew = ""; setLogoReset = false; setHeroNew = ""; setHeroReset = false; setBgNew = ""; setBgReset = false; setSections = r.settings.sections.map((x) => ({ ...x })); SECTIONS = r.settings.sections; fillGroupSelect(); renderSettings();
     toast(reset ? "رجعت الإعدادات الافتراضية" : "تم الحفظ وظهر في المتجر");
   } catch (e) { fail(e); }
   btns.forEach((b) => (b.disabled = false));
@@ -757,7 +889,9 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
   $("productsTab").classList.toggle("hidden", t.dataset.tab !== "products");
   $("reviewsTab").classList.toggle("hidden", t.dataset.tab !== "reviews");
   $("settingsTab").classList.toggle("hidden", t.dataset.tab !== "settings");
-  if (t.dataset.tab === "settings" && !setData) loadSettings();
+  $("invoiceTab").classList.toggle("hidden", t.dataset.tab !== "invoice");
+  if (t.dataset.tab === "settings") loadSettings();
+  if (t.dataset.tab === "invoice") loadInvoice();
   if (t.dataset.tab === "products") loadProducts();
   if (t.dataset.tab === "reviews") loadReviews();
 }));
@@ -767,10 +901,10 @@ $("search").addEventListener("input", renderOrders);
   try { me = await api("/api/admin/me"); } catch (e) { return; }
   $("meName").textContent = me.name;
   if (me.avatar) $("meAvatar").src = `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=64`; else $("meAvatar").classList.add("hidden");
-  { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); }
+  { $("prodTab").classList.remove("hidden"); $("revTab").classList.remove("hidden"); $("setTab").classList.remove("hidden"); $("invTab").classList.remove("hidden"); }
   $("appView").classList.remove("hidden");
   renderChips(); loadOrders(); loadSections();
-  timer = setInterval(() => { if (!document.hidden) loadOrders(); }, 15000);
+  timer = setInterval(loadOrders, 15000);
 })();
 </script>
 <script id="pxAdminJs">

@@ -61,6 +61,23 @@ const clampDim = (v) => (v === undefined || v === null || v === "" || !Number.is
 const clampHome = (v) => (Number.isInteger(Number(v)) && Number(v) >= 3 && Number(v) <= 6 ? Number(v) : 3);
 const normSettings = (x) => ({ colors: { ...((x && x.colors) || {}) }, texts: { ...((x && x.texts) || {}) }, logo: typeof (x && x.logo) === "string" ? x.logo : "", heroImage: typeof (x && x.heroImage) === "string" ? x.heroImage : "", bgImage: typeof (x && x.bgImage) === "string" ? x.bgImage : "", bgDim: clampDim(x && x.bgDim), shapes: !(x && x.shapes === false), showVisitors: !!(x && x.showVisitors), maintenance: !!(x && x.maintenance), homeProducts: !(x && x.homeProducts === false), homeCount: clampHome(x && x.homeCount), homeImages: !!(x && x.homeImages), sections: Array.isArray(x && x.sections) ? x.sections : null });
 
+// نصوص الفاتورة (صورة تنرسل للعميل بعد التسليم): [النص الافتراضي, أقصى طول]
+const INVOICE_FIELDS = {
+  storeName: ["توب ستور", 30], storeSub: ["TOP STORE", 30], title: ["فاتورة", 20],
+  labelCustomer: ["العميل", 20], labelDate: ["التاريخ", 20], labelTransferor: ["اسم المحوّل", 20], labelDelivery: ["وقت التسليم", 20],
+  stepNew: ["استلام", 14], stepAccepted: ["قبول", 14], stepDelivered: ["تسليم", 14],
+  colProduct: ["المنتج", 14], colQty: ["الكمية", 14], colPrice: ["السعر", 14],
+  labelSubtotal: ["المجموع", 20], labelDiscount: ["الخصم", 20], labelTotal: ["الإجمالي", 20],
+  stamp: ["مدفوع", 12], currency: ["ر.س", 10],
+  thanks: ["شكراً لثقتك بتوب ستور", 70], footer: ["احتفظ بالفاتورة، ولأي استفسار افتح تكت وأرفق رقمها", 90],
+};
+const INVOICE_DEFAULTS = { texts: Object.fromEntries(Object.entries(INVOICE_FIELDS).map(([k, [v]]) => [k, v])), enabled: true, showTimeline: true, showStamp: true, showBarcode: true };
+const normInvoice = (x) => ({
+  texts: { ...((x && x.texts) || {}) },
+  enabled: !(x && x.enabled === false), showTimeline: !(x && x.showTimeline === false),
+  showStamp: !(x && x.showStamp === false), showBarcode: !(x && x.showBarcode === false),
+});
+
 // إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
 const normStats = (x) => ({ salesResetAt: typeof (x && x.salesResetAt) === "string" ? x.salesResetAt : "", visitors: Number(x && x.visitors) || 0, visits: Number(x && x.visits) || 0, days: { ...((x && x.days) || {}) } });
 const dayKey = (t = Date.now()) => new Date(t + 3 * 3600 * 1000).toISOString().slice(0, 10); // توقيت السعودية
@@ -98,10 +115,10 @@ const fromRaw = (s) => {
   // ترحيل (مرة وحدة): نضيف تقييمات العملاء الافتراضية، ولو حذفتها كلها بعدها ما ترجع
   const reviews = (Array.isArray(s.reviews) ? s.reviews : (s.v || 0) < 4 ? SEED_REVIEWS.map((r) => ({ ...r })) : [])
     .map((r) => ({ ...r, gender: r.gender === "female" || r.gender === "male" ? r.gender : (SEED_REVIEWS.find((x) => x.id === r.id) || {}).gender || "male" }));
-  return { v: 5, orders: s.orders || [], products, reviews, settings: normSettings(s.settings), stats: normStats(s.stats) };
+  return { v: 5, orders: s.orders || [], products, reviews, settings: normSettings(s.settings), invoice: normInvoice(s.invoice), stats: normStats(s.stats) };
 };
 
-let state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings(), stats: normStats() };
+let state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings(), invoice: normInvoice(), stats: normStats() };
 
 // تخزين خارجي اختياري (Upstash Redis - مجاني بدون بطاقة) للاستضافات اللي تمسح الملفات مثل Render
 const REMOTE_URL = (process.env.UPSTASH_REDIS_REST_URL || "").replace(/\/$/, "");
@@ -147,7 +164,7 @@ function load() {
   try {
     state = fromRaw(JSON.parse(fs.readFileSync(FILE, "utf8")));
   } catch (e) {
-    state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings(), stats: normStats() };
+    state = { v: 5, orders: [], products: SEED_PRODUCTS.map(normProduct), reviews: SEED_REVIEWS.map((r) => ({ ...r })), settings: normSettings(), invoice: normInvoice(), stats: normStats() };
   }
   save();
 }
@@ -387,6 +404,33 @@ function moveProduct(id, dir) {
 }
 
 /* ---------- إعدادات المتجر ---------- */
+// الفاتورة: getInvoice يرجّع النصوص النهائية (الافتراضي + تعديلات الإدارة)
+const getInvoice = () => ({ ...state.invoice, texts: { ...INVOICE_DEFAULTS.texts, ...state.invoice.texts } });
+function updateInvoice(b) {
+  b = b || {};
+  const bt = b.texts || {}, next = { texts: {}, enabled: state.invoice.enabled, showTimeline: state.invoice.showTimeline, showStamp: state.invoice.showStamp, showBarcode: state.invoice.showBarcode };
+  for (const k of ["enabled", "showTimeline", "showStamp", "showBarcode"]) if (b[k] !== undefined) next[k] = b[k] === true || b[k] === "true";
+  for (const [k, [def, max]] of Object.entries(INVOICE_FIELDS)) {
+    const v = String(bt[k] ?? "").replace(/\s+/g, " ").trim();
+    if (!v || v === def) continue;
+    if (v.length > max) fail("النص طويل (حد أقصى " + max + " حرف)");
+    next.texts[k] = v;
+  }
+  state.invoice = next;
+  save();
+  return getInvoice();
+}
+// يبني إعدادات فاتورة من بيانات الواجهة بدون حفظ (للمعاينة)
+function previewInvoice(b) {
+  b = b || {};
+  const bt = b.texts || {}, texts = { ...INVOICE_DEFAULTS.texts };
+  for (const [k, [def, max]] of Object.entries(INVOICE_FIELDS)) {
+    const v = String(bt[k] ?? "").replace(/\s+/g, " ").trim();
+    if (v) texts[k] = v.slice(0, max);
+  }
+  const on = (k) => (b[k] === undefined ? true : b[k] === true || b[k] === "true");
+  return { texts, enabled: true, showTimeline: on("showTimeline"), showStamp: on("showStamp"), showBarcode: on("showBarcode") };
+}
 const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
   const cur = state.settings, next = { colors: {}, texts: {}, logo: cur.logo, heroImage: cur.heroImage || "", bgImage: cur.bgImage || "", bgDim: cur.bgDim, shapes: b.shapes === undefined ? cur.shapes !== false : (b.shapes === true || b.shapes === "true"), showVisitors: b.showVisitors === undefined ? !!cur.showVisitors : (b.showVisitors === true || b.showVisitors === "true"), maintenance: b.maintenance === undefined ? !!cur.maintenance : (b.maintenance === true || b.maintenance === "true"), homeProducts: b.homeProducts === undefined ? cur.homeProducts !== false : (b.homeProducts === true || b.homeProducts === "true"), homeCount: clampHome(cur.homeCount), homeImages: b.homeImages === undefined ? !!cur.homeImages : (b.homeImages === true || b.homeImages === "true"), sections: null };
@@ -560,7 +604,7 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
-  activeDiscount, effectivePrice, getSettings, updateSettings, SETTINGS_DEFAULTS, trackVisit, getStats, resetSales, flush,
+  activeDiscount, effectivePrice, getSettings, updateSettings, SETTINGS_DEFAULTS, getInvoice, updateInvoice, previewInvoice, INVOICE_DEFAULTS, trackVisit, getStats, resetSales, flush,
   getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };

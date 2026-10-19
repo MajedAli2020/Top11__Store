@@ -4,6 +4,7 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require("discord.js");
 const db = require("./db");
+const { buildInvoice } = require("./invoice");
 
 const { DISCORD_TOKEN, GUILD_ID, STAFF_ROLE_ID, NOTIFY_CHANNEL_ID, OWNER_ID } = process.env;
 
@@ -128,11 +129,24 @@ async function notifyCustomer(order, adminMessage) {
   const [title, baseDesc] = DM_TEXT[order.status];
   const desc = customerMsg ? `${baseDesc}\n\n📩 **رسالة من الإدارة:**\n${customerMsg}` : baseDesc;
   let ok = false;
+  // فاتورة بصورة تنرسل مع رسالة التسليم (لو فشل رسمها نكمل بدونها)
+  let invoiceFile = null;
+  const invCfg = db.getInvoice();
+  if (order.status === "delivered" && invCfg.enabled) {
+    try {
+      const buf = await buildInvoice(order, { settings: invCfg, deliveredAt: new Date().toISOString() });
+      invoiceFile = new AttachmentBuilder(buf, { name: `invoice-${order.id}.png` });
+    } catch (e) {
+      console.warn("[bot] تعذر إنشاء الفاتورة:", e.message);
+    }
+  }
   try {
     const user = await client.users.fetch(order.customer.id);
     await user.send({
+      ...(invoiceFile ? { files: [invoiceFile] } : {}),
       embeds: [
-        new EmbedBuilder()
+        (() => {
+          const emb = new EmbedBuilder()
           .setTitle(title)
           .setDescription(desc)
           .setColor(STATUS_COLOR[order.status] || STATUS_COLOR.new)
@@ -142,7 +156,10 @@ async function notifyCustomer(order, adminMessage) {
             { name: "المنتجات", value: order.items.map((i) => `• ${i.name} × ${i.quantity}`).join("\n").slice(0, 1000) },
           )
           .setFooter({ text: "توب ستور" })
-          .setTimestamp(),
+          .setTimestamp();
+          if (invoiceFile) emb.setImage(`attachment://invoice-${order.id}.png`);
+          return emb;
+        })(),
       ],
     });
     ok = true;

@@ -3,6 +3,7 @@ const express = require("express");
 const crypto = require("crypto");
 const path = require("path");
 const db = require("./db");
+const { buildInvoice, sampleOrder } = require("./invoice");
 const bot = require("./bot");
 
 const PORT = +process.env.PORT || 3000;
@@ -375,6 +376,16 @@ app.delete("/api/admin/products/:id", requireStaff, wrap(async (req, res) => {
 app.get("/api/admin/settings", requireStaff, (req, res) => res.json({ settings: db.getSettings(), defaults: db.SETTINGS_DEFAULTS }));
 app.put("/api/admin/settings", requireStaff, wrap(async (req, res) => {
   res.json({ settings: await db.updateSettings(req.body || {}), defaults: db.SETTINGS_DEFAULTS });
+}));
+
+// الفاتورة: نصوص الصورة اللي تنرسل للعميل بعد التسليم
+app.get("/api/admin/invoice", requireStaff, (req, res) => res.json({ invoice: db.getInvoice(), defaults: db.INVOICE_DEFAULTS }));
+app.put("/api/admin/invoice", requireStaff, wrap(async (req, res) => {
+  res.json({ invoice: db.updateInvoice(req.body || {}), defaults: db.INVOICE_DEFAULTS });
+}));
+app.post("/api/admin/invoice/preview", requireStaff, wrap(async (req, res) => {
+  const buf = await buildInvoice(sampleOrder(), { settings: db.previewInvoice(req.body || {}) });
+  res.json({ image: "data:image/png;base64," + buf.toString("base64") });
 }));
 
 // تقييمات العملاء (للمالك فقط)
