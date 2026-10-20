@@ -88,6 +88,7 @@
   function step(ts) {
     if (!running) return;
     requestAnimationFrame(step);
+    if (document.documentElement.classList.contains("nav-busy")) return; // لحظة التنقل بين الصفحات: نوقف رسم الأشكال
     var gap = small ? 50 : 33; // جوال ~20fps، كمبيوتر ~30fps
     if (ts - last < gap) return;
     last = ts;

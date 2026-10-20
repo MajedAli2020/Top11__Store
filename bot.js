@@ -171,6 +171,32 @@ async function notifyCustomer(order, adminMessage) {
   return ok;
 }
 
+// فاتورة مرفوضة يرسلها الأدمن يدوياً للعميل في الخاص (مع سبب الرفض لو انكتب). ترجع true/false، أو null لو ما في عميل/البوت متوقف
+async function sendRejectedInvoice(order) {
+  if (!ready || !order.customer) return null;
+  const ri = order.rejectInvoice || {};
+  let ok = false;
+  try {
+    const buf = await buildInvoice(order, { settings: db.getInvoice(), variant: "rejected", reason: ri.reason, at: ri.at });
+    const file = new AttachmentBuilder(buf, { name: `invoice-${order.id}.png` });
+    const emb = new EmbedBuilder()
+      .setTitle("📄 فاتورة طلبك المرفوض")
+      .setDescription(ri.reason ? `تعذّر قبول طلبك.\n\n**السبب:** ${ri.reason}\n\nلو تعتقد أن الرفض خطأ، افتح تكت في السيرفر وأرفق رقم الطلب.` : "تعذّر قبول طلبك. لو تعتقد أن الرفض خطأ، افتح تكت في السيرفر وأرفق رقم الطلب.")
+      .setColor(STATUS_COLOR.rejected)
+      .addFields({ name: "رقم الطلب", value: `\`${order.id}\``, inline: true }, { name: "الإجمالي", value: money(order.total), inline: true })
+      .setImage(`attachment://invoice-${order.id}.png`)
+      .setFooter({ text: "توب ستور" })
+      .setTimestamp();
+    const user = await client.users.fetch(order.customer.id);
+    await user.send({ files: [file], embeds: [emb] });
+    ok = true;
+  } catch (e) {
+    console.warn(`[bot] تعذر إرسال الفاتورة المرفوضة (${order.customer.name}):`, e.message);
+  }
+  db.setLastDm(order.id, { status: "rejected", ok, at: new Date().toISOString() });
+  return ok;
+}
+
 function buildEmbed(o) {
   const e = new EmbedBuilder()
     .setTitle(`طلب ${o.id}`)
@@ -309,4 +335,4 @@ function startBot() {
   });
 }
 
-module.exports = { GIFT_DEFAULT, notifyCustomer, isMember, startBot, notifyNewOrder, syncOrderMessage, isStaff, isOwner, botEnabled };
+module.exports = { GIFT_DEFAULT, notifyCustomer, sendRejectedInvoice, isMember, startBot, notifyNewOrder, syncOrderMessage, isStaff, isOwner, botEnabled };

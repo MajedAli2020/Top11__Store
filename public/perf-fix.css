@@ -1,0 +1,14 @@
+/* توب ستور — إصلاح التقطيع عند التنقل بين الصفحات
+   السبب: بلور الخلفية (backdrop-filter) على كل البطاقات + الأشكال والخلفية الحية يتحركون تحتها، فالمتصفح يعيد حساب البلور كل فريم.
+   الحل: نشيل البلور من البطاقات (نخلي خلفيتها أغمق شوي)، ونوقف حركة الخلفية لحظة التنقل فقط. */
+@media (min-width: 851px) and (hover: hover) {
+  .product, .rec-card, .step, .rv-card, .hp-card, .tag, .toast { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .product, .rec-card, .step, .rv-card, .hp-card { background-color: color-mix(in srgb, var(--panel, #24113d) 62%, transparent); }
+}
+.topbar { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: color-mix(in srgb, var(--bg) 93%, transparent) !important; }
+.px-aurora i { will-change: transform; transform: translateZ(0); }
+.page { animation-duration: .32s; }
+
+/* أثناء التنقل (نحو ثانية إلا ربع): توقف الحركات الخلفية عشان الصفحة الجديدة تنزل بسلاسة */
+.nav-busy .px-aurora i, .nav-busy .hero-art img, .nav-busy .hero-art::before, .nav-busy .rec-track, .nav-busy .eyebrow .dot,
+.nav-busy .hero .btn.primary::after { animation-play-state: paused !important; }

@@ -124,6 +124,27 @@
   .dlg-foot { grid-column:1/-1; display:flex; gap:10px; justify-content:flex-end; align-items:center; border-top:1px solid var(--line); padding-top:14px; }
   .dlg-foot .grow { flex:1; display:flex; align-items:center; gap:10px; font-size:14px; }
 
+
+  /* محرر الفاتورة والختم */
+  .inv-edit { display:grid; grid-template-columns:minmax(0,440px) minmax(0,1fr); gap:18px; align-items:start; }
+  .inv-edit .col-prev { position:sticky; top:74px; }
+  .inv-stage { position:relative; width:100%; max-width:420px; margin:6px auto 0; user-select:none; -webkit-user-select:none; }
+  .inv-stage img.base { display:block; width:100%; height:auto; filter:drop-shadow(0 10px 26px #000b); pointer-events:none; -webkit-user-drag:none; }
+  .inv-stage img.stampimg { position:absolute; cursor:grab; touch-action:none; outline:1.5px dashed transparent; outline-offset:3px; border-radius:8px; -webkit-user-drag:none; }
+  .inv-stage img.stampimg:hover, .inv-stage img.stampimg.drag { outline-color:var(--accent); }
+  .inv-stage img.stampimg.drag { cursor:grabbing; }
+  .seg2 { display:flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:12px; }
+  .seg2 button { flex:1; border:0; background:transparent; padding:9px 8px; color:var(--muted); font-weight:700; }
+  .seg2 button.on { background:var(--accent); color:#15100c; }
+  .rng { display:grid; grid-template-columns:96px 1fr 56px; gap:10px; align-items:center; margin-bottom:10px; font-size:13px; color:var(--muted); }
+  .rng input[type=range] { width:100%; accent-color:var(--accent); }
+  .rng output { text-align:center; color:var(--ice); font-variant-numeric:tabular-nums; direction:ltr; }
+  .stamp-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  .stamp-row input[type=color] { width:100%; height:40px; border:1px solid var(--line); background:var(--bg); border-radius:10px; padding:3px; cursor:pointer; }
+  .stamp-row select, .set-card textarea.rsn { width:100%; border:1px solid var(--line); background:var(--bg); border-radius:10px; padding:9px 11px; }
+  .o-inv { color:var(--muted); font-size:12.5px; margin-top:10px; }
+  #invdlg img#invdlgImg { display:block; width:min(380px,100%); height:auto; margin:auto; border-radius:10px; background:#fff; }
+  @media (max-width:900px) { .inv-edit { grid-template-columns:1fr; } .inv-edit .col-prev { position:static; } }
   .toast { position:fixed; bottom:20px; left:20px; z-index:50; background:var(--panel2); border:1px solid var(--accent); border-radius:12px; padding:11px 16px; opacity:0; transform:translateY(10px); transition:.2s; pointer-events:none; }
   .toast.show { opacity:1; transform:none; }
   @media (max-width:700px) {
@@ -300,7 +321,7 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
       <div class="sec-head">
         <div>
           <h2>الفاتورة</h2>
-          <p>الفاتورة صورة تنرسل للعميل في الخاص أول ما يتحول طلبه إلى «تم التسليم». غيّر النصوص هنا، والمعاينة تتحدث مباشرة قبل الحفظ.</p>
+          <p>الفاتورة صورة تنرسل للعميل في الخاص أول ما يتحول طلبه إلى «تم التسليم». غيّر النصوص هنا، وتحكم بالختم (مكانه، لونه، شكله) بالسحب، والمعاينة تتحدث مباشرة قبل الحفظ.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn ghost" id="invReset" type="button">استرجاع الافتراضي</button>
@@ -386,6 +407,22 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
   </form>
 </dialog>
 
+<dialog id="invdlg">
+  <form id="invdlgForm" class="dlg-in" method="dialog" novalidate>
+    <h3 id="invdlgTitle">الفاتورة</h3>
+    <div class="full" id="invdlgReasonBox">
+      <label for="invdlgReason">سبب الرفض (اختياري — يظهر داخل الفاتورة)</label>
+      <textarea id="invdlgReason" maxlength="140" rows="2" placeholder="مثال: الإيصال غير واضح أو مبلغ التحويل أقل من المطلوب"></textarea>
+      <div class="hint">راح تنرسل للعميل في الخاص، وتظهر له في صفحة «تتبع طلبي» بجانب طلبه.</div>
+    </div>
+    <div class="full"><img id="invdlgImg" alt="معاينة الفاتورة" /></div>
+    <div class="dlg-foot">
+      <button type="button" class="btn" id="invdlgClose">إغلاق</button>
+      <button type="button" class="btn primary" id="invdlgSend">إرسال للعميل</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -442,6 +479,8 @@ function orderCard(o) {
   if (o.status === "new") actions.push(act("accepted", "قبول", "primary"), act("rejected", "رفض", "ghost"));
   if (o.status === "accepted") actions.push(act("delivered", "تم التسليم", "primary"), act("rejected", "رفض", "ghost"));
   if (o.status === "rejected" || o.status === "delivered") actions.push(act("new", "إعادة فتح", "ghost"));
+  if (o.status === "rejected") actions.push(h("button", { class:"btn " + (o.rejectInvoice ? "ghost" : "primary"), type:"button", onclick:() => openInvoiceDlg(o, "send") }, o.rejectInvoice ? "📄 إعادة إرسال الفاتورة المرفوضة" : "📄 إرسال فاتورة مرفوضة"));
+  if (o.status === "rejected" || o.status === "delivered") actions.push(h("button", { class:"btn ghost", type:"button", onclick:() => openInvoiceDlg(o, "view") }, "👁 عرض الفاتورة"));
   const last = o.history[o.history.length - 1];
   return h("article", { class:"order" + (o.status === "new" ? " is-new" : "") },
     h("div", { class:"o-head" }, h("span", { class:"o-id" }, o.id), h("span", { class:"o-date" }, new Date(o.date).toLocaleString("ar-SA")), h("span", { class:"pill " + o.status }, LABEL[o.status])),
@@ -453,6 +492,7 @@ function orderCard(o) {
         h("div", { class:"o-total" }, h("span", {}, "الإجمالي"), h("span", {}, money(o.total))))),
     o.lastDm && o.lastDm.ok === false ? h("div", { class:"o-warn" }, "⚠️ تعذر إرسال الرسالة الخاصة (الخاص مغلق أو ما هو داخل السيرفر). لو كانت هدية نيترو ما انرسل الرابط لأحد.") : null,
     h("div", { class:"o-actions" }, actions),
+    o.rejectInvoice ? h("div", { class:"o-inv" }, "📄 أُرسلت فاتورة مرفوضة للعميل — " + new Date(o.rejectInvoice.at).toLocaleString("ar-SA") + (o.rejectInvoice.reason ? " — السبب: " + o.rejectInvoice.reason : "")) : null,
     last && last.status !== "new" ? h("div", { class:"o-hist" }, "آخر تحديث: " + last.by + " — " + new Date(last.at).toLocaleString("ar-SA")) : null);
 }
 function renderOrders() {
@@ -494,6 +534,40 @@ async function setStatus(id, status, btn) {
     renderStats(); renderOrders(); toast("تم تحديث الحالة: " + LABEL[status]);
   } catch (e) { fail(e); btn.disabled = false; }
 }
+
+/* ---------- نافذة الفاتورة: عرض أي فاتورة، أو إرسال فاتورة مرفوضة للعميل ---------- */
+let invDlgOrder = null, invDlgTimer = null;
+function invDlgImg() {
+  const o = invDlgOrder; if (!o) return;
+  const rej = o.status === "rejected", q = new URLSearchParams({ variant: rej ? "rejected" : "paid", t: Date.now() });
+  if (rej) q.set("reason", $("invdlgReason").value.trim());
+  $("invdlgImg").src = "/api/admin/orders/" + encodeURIComponent(o.id) + "/invoice.png?" + q;
+}
+function openInvoiceDlg(o, mode) {
+  invDlgOrder = o;
+  const send = mode === "send";
+  $("invdlgTitle").textContent = (send ? "إرسال فاتورة مرفوضة — " : "فاتورة الطلب — ") + o.id;
+  $("invdlgReasonBox").classList.toggle("hidden", !send);
+  $("invdlgSend").classList.toggle("hidden", !send);
+  $("invdlgSend").textContent = o.rejectInvoice ? "إعادة الإرسال للعميل" : "إرسال للعميل";
+  $("invdlgReason").value = (o.rejectInvoice && o.rejectInvoice.reason) || "";
+  invDlgImg();
+  $("invdlg").showModal();
+}
+$("invdlgReason").addEventListener("input", () => { clearTimeout(invDlgTimer); invDlgTimer = setTimeout(invDlgImg, 450); });
+$("invdlgClose").addEventListener("click", () => $("invdlg").close());
+$("invdlgSend").addEventListener("click", async () => {
+  const o = invDlgOrder; if (!o) return;
+  const btn = $("invdlgSend"); btn.disabled = true;
+  try {
+    const r = await api("/api/admin/orders/" + encodeURIComponent(o.id) + "/reject-invoice", { method:"POST", body:{ reason: $("invdlgReason").value.trim() } });
+    orders = orders.map((x) => (x.id === o.id ? r.order : x));
+    renderOrders();
+    $("invdlg").close();
+    toast(r.sent === true ? "تم إرسال الفاتورة المرفوضة للعميل" : "انحفظت وتظهر في صفحة طلبه، لكن تعذر إرسالها في الخاص (الخاص مغلق أو البوت متوقف)");
+  } catch (e) { fail(e); }
+  btn.disabled = false;
+});
 
 /* ---------- المنتجات (للمالك فقط) ---------- */
 function prodRow(p, i, n) {
@@ -698,55 +772,158 @@ const INV_GROUPS = [
   ["بيانات الطلب", [["labelCustomer","عنوان: العميل"],["labelDate","عنوان: التاريخ"],["labelTransferor","عنوان: اسم المحوّل"],["labelDelivery","عنوان: وقت التسليم"]]],
   ["شريط الحالة", [["stepNew","الخطوة 1"],["stepAccepted","الخطوة 2"],["stepDelivered","الخطوة 3"]]],
   ["جدول المنتجات", [["colProduct","عمود: المنتج"],["colQty","عمود: الكمية"],["colPrice","عمود: السعر"],["currency","العملة"]]],
-  ["الإجمالي والختم", [["labelSubtotal","عنوان: المجموع"],["labelDiscount","عنوان: الخصم"],["labelTotal","عنوان: الإجمالي"],["stamp","نص الختم"]]],
+  ["الإجمالي والختم", [["labelSubtotal","عنوان: المجموع"],["labelDiscount","عنوان: الخصم"],["labelTotal","عنوان: الإجمالي"],["stamp","نص ختم «مدفوع»"]]],
   ["الخاتمة", [["thanks","جملة الشكر",1],["footer","النص الصغير في الأسفل",1]]],
+  ["الفاتورة المرفوضة", [["titleRejected","عنوان الفاتورة المرفوضة"],["stampRejected","نص ختم «مرفوض»"],["stepReview","الخطوة 2 (مراجعة)"],["stepRejected","الخطوة 3 (مرفوض)"],["labelStatus","عنوان: الحالة"],["statusRejected","نص الحالة"],["labelReason","عنوان: سبب الرفض"],["thanksRejected","جملة الاعتذار",1],["footerRejected","النص الصغير في الأسفل",1]]],
 ];
 const INV_TOGGLES = [["enabled","إرسال الفاتورة للعميل عند التسليم"],["showTimeline","إظهار شريط الحالة (استلام - قبول - تسليم)"],["showStamp","إظهار الختم"],["showBarcode","إظهار الباركود"]];
-let invData = null, invDefs = null, invTimer = null;
+const STAMP_SHAPE_LABEL = [["box","مستطيل"],["double","مستطيل بإطار مزدوج"],["round","بيضاوي"],["plain","بدون إطار (نص فقط)"]];
+let invData = null, invDefs = null, invTimer = null, invStamps = null, invVariant = "paid", invMeta = null, invSeq = 0, invReason = "الإيصال غير واضح، ارفع إيصال جديد";
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
 function invCollect() {
-  const body = { texts:{} };
+  const body = { texts:{}, stamps: invStamps, variant: invVariant, reason: invReason };
   INV_GROUPS.forEach(([, f]) => f.forEach(([k]) => { body.texts[k] = $("i_" + k).value; }));
   INV_TOGGLES.forEach(([k]) => { body[k] = $("it_" + k).checked; });
   return body;
 }
-async function invPreview() {
-  const img = $("invPrev"); if (!img) return;
-  try { const r = await api("/api/admin/invoice/preview", { method:"POST", body:invCollect() }); img.src = r.image; } catch (e) { fail(e); }
+
+// مكان الختم فوق الورقة: (نقطة الارتكاز + الإزاحة) × مقياس العرض الحالي
+function placeStamp() {
+  const img = $("invStampImg"), base = $("invPrev");
+  if (!img || !base || !invMeta || !base.clientWidth) return;
+  const st = invStamps[invVariant], k = base.clientWidth / invMeta.W;
+  img.style.width = invMeta.stamp.w * k + "px";
+  img.style.left = (invMeta.anchor.x + st.dx - invMeta.stamp.w / 2) * k + "px";
+  img.style.top = (invMeta.anchor.y + st.dy - invMeta.stamp.h / 2) * k + "px";
+  img.style.opacity = st.opacity;
+  img.style.display = $("it_showStamp") && !$("it_showStamp").checked ? "none" : "";
+  const sx = $("sc_dx"), sy = $("sc_dy");
+  if (sx) { sx.value = st.dx; $("so_dx").textContent = Math.round(st.dx); }
+  if (sy) { sy.value = st.dy; $("so_dy").textContent = Math.round(st.dy); }
 }
-function invPreviewSoon() { clearTimeout(invTimer); invTimer = setTimeout(invPreview, 500); }
+async function invPreview() {
+  const base = $("invPrev"); if (!base) return;
+  const my = ++invSeq;
+  try {
+    const r = await api("/api/admin/invoice/preview", { method:"POST", body:invCollect() });
+    if (my !== invSeq) return; // وصل رد أحدث
+    invMeta = r.meta;
+    base.onload = placeStamp;
+    base.src = r.base;
+    $("invStampImg").src = r.stamp;
+    placeStamp();
+  } catch (e) { fail(e); }
+}
+function invPreviewSoon() { clearTimeout(invTimer); invTimer = setTimeout(invPreview, 350); }
+
+// سحب الختم بالماوس أو اللمس
+function wireStampDrag() {
+  const img = $("invStampImg"), base = $("invPrev");
+  let drag = null;
+  img.addEventListener("pointerdown", (e) => {
+    if (!invMeta) return;
+    e.preventDefault();
+    const st = invStamps[invVariant];
+    drag = { x: e.clientX, y: e.clientY, dx: st.dx, dy: st.dy, k: base.clientWidth / invMeta.W };
+    img.setPointerCapture(e.pointerId); img.classList.add("drag");
+  });
+  img.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const st = invStamps[invVariant], m = invMeta;
+    // نخلي مركز الختم داخل الورقة
+    st.dx = Math.round(Math.min(m.W - m.anchor.x, Math.max(-m.anchor.x, drag.dx + (e.clientX - drag.x) / drag.k)) * 10) / 10;
+    st.dy = Math.round(Math.min(m.H - m.anchor.y, Math.max(-m.anchor.y, drag.dy + (e.clientY - drag.y) / drag.k)) * 10) / 10;
+    placeStamp();
+  });
+  const end = () => { drag = null; img.classList.remove("drag"); };
+  img.addEventListener("pointerup", end); img.addEventListener("pointercancel", end);
+  window.addEventListener("resize", placeStamp);
+}
+
+// أدوات الختم (للنوع المحدّد: مدفوعة أو مرفوضة)
+function renderStampCtl() {
+  const st = invStamps[invVariant], box = $("stampCtl"); if (!box) return;
+  const rng = (key, label, min, max, step, fmt, refetch) => {
+    const out = h("output", { id:"so_" + key }, fmt ? fmt(st[key]) : String(st[key]));
+    const inp = h("input", { type:"range", id:"sc_" + key, min, max, step, value:st[key] });
+    inp.addEventListener("input", () => {
+      st[key] = Number(inp.value); out.textContent = fmt ? fmt(st[key]) : String(st[key]);
+      refetch ? invPreviewSoon() : placeStamp();
+    });
+    return h("div", { class:"rng" }, h("label", { for:"sc_" + key, style:"margin:0" }, label), inp, out);
+  };
+  const color = h("input", { type:"color", id:"sc_color", value:st.color });
+  color.addEventListener("input", () => { st.color = color.value; invPreviewSoon(); });
+  const shape = h("select", { id:"sc_shape" }, STAMP_SHAPE_LABEL.map(([v, l]) => h("option", { value:v, selected: st.shape === v }, l)));
+  shape.addEventListener("change", () => { st.shape = shape.value; invPreviewSoon(); });
+  const grunge = h("input", { type:"checkbox", id:"sc_grunge", checked: st.grunge });
+  grunge.addEventListener("change", () => { st.grunge = grunge.checked; invPreviewSoon(); });
+  const rangeX = invMeta ? Math.round(invMeta.W) : 420;
+  box.replaceChildren(
+    h("div", { class:"stamp-row" }, h("div", {}, h("label", { for:"sc_color", style:"display:block;font-size:13px;color:var(--muted);margin-bottom:5px" }, "لون الختم"), color), h("div", {}, h("label", { for:"sc_shape", style:"display:block;font-size:13px;color:var(--muted);margin-bottom:5px" }, "شكل الإطار"), shape)),
+    rng("rot", "الزاوية", -60, 60, 1, (v) => Math.round(v) + "°", true),
+    rng("scale", "الحجم", 0.5, 2.2, 0.05, (v) => Math.round(v * 100) + "%", true),
+    rng("opacity", "الشفافية", 0.3, 1, 0.05, (v) => Math.round(v * 100) + "%", false),
+    rng("dx", "يمين / يسار", -rangeX / 2, rangeX / 2, 1, (v) => String(Math.round(v)), false),
+    rng("dy", "فوق / تحت", -700, 300, 1, (v) => String(Math.round(v)), false),
+    h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin:6px 0 12px" }, h("span", { class:"switch" }, grunge, h("span")), "تأثير حبر قديم على الختم"),
+    h("div", { style:"display:flex;gap:8px;flex-wrap:wrap" },
+      h("button", { class:"btn ghost sm", type:"button", onclick:() => { const d = clone(invDefs.stamps[invVariant]); Object.assign(st, d); renderStampCtl(); invPreview(); } }, "رجّع الختم للافتراضي"),
+      h("button", { class:"btn ghost sm", type:"button", onclick:() => { const d = invDefs.stamps[invVariant]; st.dx = d.dx; st.dy = d.dy; renderStampCtl(); placeStamp(); } }, "رجّع المكان فقط")));
+  placeStamp();
+}
+
 function renderInvoice() {
   const st = invData, d = invDefs, parts = [];
-  const prev = h("img", { id:"invPrev", alt:"معاينة الفاتورة", style:"width:min(420px,100%);height:auto;border-radius:10px;border:1px solid var(--line);background:#fff" });
-  parts.push(h("div", { class:"set-card" }, h("h3", {}, "المعاينة"),
-    h("div", { style:"font-size:12px;color:var(--muted);margin-bottom:10px" }, "المنتجات والأسعار واسم العميل في المعاينة أمثلة فقط. في الفاتورة الحقيقية تتعبّى من الطلب نفسه."), prev));
-  parts.push(h("div", { class:"set-card" }, h("h3", {}, "خيارات الفاتورة"), INV_TOGGLES.map(([k, l]) => {
+  invStamps = clone(st.stamps || d.stamps);
+  const stamp = h("img", { id:"invStampImg", class:"stampimg", alt:"الختم", draggable:"false" });
+  const prev = h("img", { id:"invPrev", class:"base", alt:"معاينة الفاتورة", draggable:"false" });
+  const seg = h("div", { class:"seg2", role:"tablist" }, [["paid","فاتورة مدفوعة"],["rejected","فاتورة مرفوضة"]].map(([v, l]) =>
+    h("button", { type:"button", class: invVariant === v ? "on" : "", onclick:(e) => {
+      invVariant = v; seg.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === e.currentTarget));
+      $("invReasonBox").classList.toggle("hidden", v !== "rejected");
+      $("stampTitle").textContent = "ختم «" + (v === "paid" ? "مدفوع" : "مرفوض") + "»";
+      renderStampCtl(); invPreview();
+    } }, l)));
+  const reason = h("input", { type:"text", id:"invReason", maxlength:"140", value:invReason, class:"rsn", style:"width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 11px" });
+  reason.addEventListener("input", () => { invReason = reason.value; invPreviewSoon(); });
+  const left = h("div", { class:"col-prev" }, h("div", { class:"set-card" }, h("h3", {}, "المعاينة"), seg,
+    h("div", { id:"invReasonBox", class: invVariant === "rejected" ? "" : "hidden", style:"margin-bottom:10px" }, h("div", { style:"font-size:12px;color:var(--muted);margin-bottom:5px" }, "سبب رفض تجريبي (للمعاينة فقط)"), reason),
+    h("div", { style:"font-size:12px;color:var(--muted)" }, "اسحب الختم بالماوس أو بإصبعك لأي مكان فوق الفاتورة. المنتجات والأسماء أمثلة فقط، والفاتورة الحقيقية تتعبّى من الطلب."),
+    h("div", { class:"inv-stage" }, prev, stamp)));
+  const right = [];
+  right.push(h("div", { class:"set-card" }, h("h3", { id:"stampTitle" }, "ختم «" + (invVariant === "paid" ? "مدفوع" : "مرفوض") + "»"), h("div", { id:"stampCtl" })));
+  right.push(h("div", { class:"set-card" }, h("h3", {}, "خيارات الفاتورة"), INV_TOGGLES.map(([k, l]) => {
     const cb = h("input", { type:"checkbox", id:"it_" + k, checked: st[k] !== false });
-    cb.addEventListener("change", invPreviewSoon);
+    cb.addEventListener("change", () => { invPreviewSoon(); placeStamp(); });
     return h("label", { style:"display:flex;gap:10px;align-items:center;color:var(--text);cursor:pointer;margin-bottom:12px" }, h("span", { class:"switch" }, cb, h("span")), l);
   })));
   for (const [title, fields] of INV_GROUPS) {
-    parts.push(h("div", { class:"set-card" }, h("h3", {}, title), h("div", { class:"set-grid" }, fields.map(([k, l, big]) => {
+    right.push(h("div", { class:"set-card" }, h("h3", {}, title), h("div", { class:"set-grid" }, fields.map(([k, l, big]) => {
       const inp = big ? h("textarea", { id:"i_" + k, maxlength:"120", rows:"2" }) : h("input", { type:"text", id:"i_" + k, maxlength:"40" });
       inp.value = st.texts[k] || d.texts[k];
       inp.addEventListener("input", invPreviewSoon);
       return h("div", { class:big ? "wide" : "" }, h("label", { for:"i_" + k }, l), inp);
     }))));
   }
-  $("invBody").replaceChildren(...parts);
+  $("invBody").replaceChildren(h("div", { class:"inv-edit" }, left, h("div", {}, right)));
+  wireStampDrag();
+  renderStampCtl();
   invPreview();
 }
 async function loadInvoice() {
   try { const r = await api("/api/admin/invoice"); invData = r.invoice; invDefs = r.defaults; renderInvoice(); } catch (e) { fail(e); }
 }
 async function saveInvoice(reset) {
-  const body = reset ? { texts:{}, enabled:true, showTimeline:true, showStamp:true, showBarcode:true } : invCollect();
+  const body = reset ? { texts:{}, enabled:true, showTimeline:true, showStamp:true, showBarcode:true, stamps: invDefs.stamps } : invCollect();
   const btns = [$("invSave"), $("invReset")]; btns.forEach((b) => (b.disabled = true));
   try { const r = await api("/api/admin/invoice", { method:"PUT", body }); invData = r.invoice; invDefs = r.defaults; renderInvoice(); toast(reset ? "رجعت الفاتورة للوضع الافتراضي" : "تم حفظ الفاتورة"); }
   catch (e) { fail(e); }
   btns.forEach((b) => (b.disabled = false));
 }
 $("invSave").addEventListener("click", () => saveInvoice(false));
-$("invReset").addEventListener("click", () => { if (confirm("استرجاع نصوص الفاتورة وخياراتها للوضع الافتراضي؟")) saveInvoice(true); });
+$("invReset").addEventListener("click", () => { if (confirm("استرجاع نصوص الفاتورة وخياراتها وشكل الأختام للوضع الافتراضي؟")) saveInvoice(true); });
 
 /* ---------- إعدادات السيرفر (للمالك فقط) ---------- */
 const COLOR_FIELDS = [["bg","خلفية الموقع"],["panel","البطاقات والقوائم"],["text","لون النص"],["muted","النص الخافت"],["accent","اللون الأساسي"],["accent2","اللون الثانوي (الأزرار والتمييز)"],["ice","اللون الفاتح"]];

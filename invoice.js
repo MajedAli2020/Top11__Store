@@ -19,6 +19,7 @@ const C = {
   paper: "#fbf8f3", dark: "#2b2118", bronze: "#c9a07a", light: "#e3c19a", cream: "#f3e6d3",
   line: "#d9c3a6", soft: "#e8d9c4", muted: "#8a7560", text: "#2b2118", text2: "#5a4838",
   tile: "#f1e3cf", tileInk: "#7a5632", green: "#3b6d11", greenDark: "#27500a",
+  red: "#b3342f", redDark: "#7d211d", redTint: "#f8e8e5", redSoft: "#f0a39d",
 };
 
 
@@ -148,11 +149,71 @@ function wrapLines(ctx, s, maxW, size, weight, maxLines = 3) {
   return lines.slice(0, maxLines);
 }
 
-function sampleOrder() {
+
+// وقت آخر مرة وصل فيها الطلب لحالة معيّنة
+function statusAt(order, status) {
+  const h = (order && order.history) || [];
+  const hit = h.slice().reverse().find((x) => x.status === status);
+  return hit ? hit.at : null;
+}
+
+/* ---------- الختم ----------
+   الختم يُرسم كـ «ملصق» (sprite) شفاف مستقل: نفس الدالة تستخدم في صورة الفاتورة وفي معاينة الإدارة
+   وفي أنميشن الموقع، فيطلع شكله مطابق في كل مكان. الإحداثيات بوحدات تخطيط الفاتورة (عرضها 420). */
+const STAMP_SHAPES = ["box", "double", "round", "plain"];
+function renderStampSprite(label, cfg, S = 2) {
+  const mctx = createCanvas(10, 10).getContext("2d");
+  const size = fitSize(mctx, label, 168, 24, 700, 12);
+  mctx.font = `700 ${size}px ${FAMILY}`;
+  const tw = mctx.measureText(String(label)).width;
+  const bw = Math.min(200, Math.max(88, tw + 32)), bh = 44;
+  const round = cfg.shape === "round";
+  const ex = (round ? bw / 2 + 8 : bw / 2) + 4, ey = (round ? 30 : bh / 2) + 4;
+  const a = (cfg.rot * Math.PI) / 180, sc = cfg.scale;
+  const hw = (Math.abs(Math.cos(a)) * ex + Math.abs(Math.sin(a)) * ey) * sc + 6;
+  const hh = (Math.abs(Math.sin(a)) * ex + Math.abs(Math.cos(a)) * ey) * sc + 6;
+  const w = Math.ceil(hw * 2), h = Math.ceil(hh * 2);
+  const canvas = createCanvas(w * S, h * S);
+  const ctx = canvas.getContext("2d");
+  ctx.scale(S, S);
+  ctx.translate(w / 2, h / 2);
+  ctx.rotate(a);
+  ctx.scale(sc, sc);
+  ctx.strokeStyle = cfg.color; ctx.fillStyle = cfg.color;
+  ctx.lineWidth = 2.6; ctx.lineJoin = "round";
+  if (cfg.shape === "box" || cfg.shape === "double") {
+    rr(ctx, -bw / 2, -bh / 2, bw, bh, 7); ctx.stroke();
+    if (cfg.shape === "double") { ctx.lineWidth = 1.2; rr(ctx, -bw / 2 + 4.5, -bh / 2 + 4.5, bw - 9, bh - 9, 4); ctx.stroke(); }
+  } else if (round) {
+    ctx.beginPath(); ctx.ellipse(0, 0, bw / 2 + 8, 30, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(0, 0, bw / 2 + 2.5, 24.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  text(ctx, label, 0, size * 0.375, { size, weight: 700, color: cfg.color, align: "center" });
+  // تأثير حبر قديم: نقاط صغيرة تُمسح من الختم (ثابتة لنفس النص عشان ما تتغير بين المعاينة والفاتورة)
+  if (cfg.grunge) {
+    ctx.setTransform(S, 0, 0, S, 0, 0);
+    ctx.globalCompositeOperation = "destination-out";
+    let seed = hash(String(label) + cfg.shape);
+    for (let i = 0; i < 110; i++) {
+      seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
+      const x = (seed % 1000) / 1000 * w;
+      seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
+      const y = (seed % 1000) / 1000 * h;
+      seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
+      ctx.globalAlpha = 0.25 + (seed % 50) / 100;
+      ctx.beginPath(); ctx.arc(x, y, 0.5 + (seed % 17) / 10, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  return { canvas, w, h };
+}
+
+function sampleOrder(status) {
+  const t0 = new Date(Date.now() - 12 * 60000).toISOString(), t1 = new Date().toISOString();
+  const rejected = status === "rejected";
   return {
-    id: "TS-4F9A2C", createdAt: new Date(Date.now() - 12 * 60000).toISOString(), status: "delivered",
+    id: "TS-4F9A2C", createdAt: t0, status: rejected ? "rejected" : "delivered",
     customer: { id: "0", name: "اسم العميل" }, transferor: "اسم المحوّل",
-    history: [{ status: "new", at: new Date(Date.now() - 12 * 60000).toISOString() }, { status: "delivered", at: new Date().toISOString() }],
+    history: [{ status: "new", at: t0 }, { status: rejected ? "rejected" : "delivered", at: t1 }],
     items: [
       { id: "nitro", name: "نيترو جيمنج", price: 40.5, oldPrice: 45, discount: 10, quantity: 1 },
       { id: "boosts", name: "سيرفر بوست 14", price: 30, quantity: 2 },
@@ -162,18 +223,25 @@ function sampleOrder() {
   };
 }
 
-async function buildInvoice(order, opts = {}) {
+// يرسم الفاتورة. opts: { transparent، settings, variant: "paid" | "rejected", reason, at, deliveredAt, stamp: false (بدون ختم) }
+// يرجع { canvas, meta, sprite } — meta فيها أبعاد الورقة ومكان الختم بوحدات التخطيط (العرض 420)
+async function drawInvoice(order, opts = {}) {
   ensureFonts();
-  const cfg = opts.settings || require("./db").getInvoice();
-  const T = { ...require("./db").INVOICE_DEFAULTS.texts, ...(cfg.texts || {}) };
-  const showTimeline = cfg.showTimeline !== false, showStamp = cfg.showStamp !== false, showBarcode = cfg.showBarcode !== false;
+  const db = require("./db");
+  const cfg = opts.settings || db.getInvoice();
+  const T = { ...db.INVOICE_DEFAULTS.texts, ...(cfg.texts || {}) };
+  const variant = opts.variant === "rejected" ? "rejected" : "paid";
+  const rej = variant === "rejected";
+  const reason = rej ? String(opts.reason || "").replace(/\s+/g, " ").trim().slice(0, 140) : "";
+  const stampCfg = ((cfg.stamps || {})[variant]) || db.STAMP_DEFAULTS[variant];
+  const stampText = rej ? T.stampRejected : T.stamp;
+  const showTimeline = cfg.showTimeline !== false, showStamp = cfg.showStamp !== false && opts.stamp !== false, showBarcode = cfg.showBarcode !== false;
   const money = (n) => `${Math.round(Number(n) * 100) / 100} ${T.currency}`;
   const mctx = createCanvas(10, 10).getContext("2d");
   const S = 2; // دقة مضاعفة
   const W = 420;
   const items = order.items || [];
   const rowH = 62;
-  const hasDiscount = items.some((i) => i.oldPrice && i.oldPrice > i.price);
   const subtotal = Math.round(items.reduce((s, i) => s + (i.oldPrice && i.oldPrice > i.price ? i.oldPrice : i.price) * i.quantity, 0) * 100) / 100;
   const discount = Math.round((subtotal - Number(order.total)) * 100) / 100;
 
@@ -181,19 +249,20 @@ async function buildInvoice(order, opts = {}) {
   const metaH = 118;
   const timelineH = showTimeline ? 86 : 22;
   const itemsHead = 40;
+  const reasonLines = reason ? wrapLines(mctx, reason, W - 40 - 36, 14.5, 500, 3) : [];
+  const reasonH = reason ? 66 + reasonLines.length * 21 : 0;
   const totalsH = (discount > 0.009 ? 108 : 78) + 26;
   const barcodeH = showBarcode ? 98 : 30;
-  const thanksLines = wrapLines(mctx, T.thanks, W - 60, 15, 500, 2);
-  const footerLines = wrapLines(mctx, T.footer, W - 60, 12.5, 400, 3);
+  const thanksLines = wrapLines(mctx, rej ? T.thanksRejected : T.thanks, W - 60, 15, 500, 2);
+  const footerLines = wrapLines(mctx, rej ? T.footerRejected : T.footer, W - 60, 12.5, 400, 3);
   const footerH = 34 + thanksLines.length * 22 + footerLines.length * 19;
   const tearH = 14;
-  const H = headerH + metaH + timelineH + itemsHead + items.length * rowH + totalsH + barcodeH + footerH + tearH + 8;
+  const H = headerH + metaH + timelineH + itemsHead + items.length * rowH + reasonH + totalsH + barcodeH + footerH + tearH + 8;
 
   const canvas = createCanvas(W * S, H * S);
   const ctx = canvas.getContext("2d");
   ctx.scale(S, S);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, W, H);
+  if (!opts.transparent) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H); } // خلفية بيضاء للإرسال في ديسكورد، وشفافة للموقع
 
   // ورقة الفاتورة مع حافة ممزقة بالأسفل
   const paperH = H - tearH;
@@ -216,6 +285,7 @@ async function buildInvoice(order, opts = {}) {
   // الهيدر
   ctx.fillStyle = C.dark;
   ctx.fillRect(0, 0, W, headerH);
+  if (rej) { ctx.fillStyle = C.red; ctx.fillRect(0, headerH - 4, W, 4); }
   const logoX = W - 20 - 50;
   try {
     const logo = await loadImage(path.join(__dirname, "public", "assets", "logo.png"));
@@ -234,7 +304,8 @@ async function buildInvoice(order, opts = {}) {
   text(ctx, T.storeName, logoX - 14, headerH / 2 + 2, { size: nameSize, weight: 700, color: C.light });
   const subSize = fitSize(mctx, T.storeSub, 140, 12, 400, 9);
   text(ctx, T.storeSub, logoX - 14, headerH / 2 + 22, { size: subSize, color: C.bronze, align: "right", dir: "ltr" });
-  text(ctx, T.title, 20, 38, { size: 14, color: C.bronze, align: "left", dir: "rtl" });
+  const titleStr = rej ? T.titleRejected : T.title;
+  text(ctx, titleStr, 20, 38, { size: fitSize(mctx, titleStr, 130, 14, 400, 10), color: rej ? C.redSoft : C.bronze, align: "left", dir: "rtl" });
   text(ctx, `#${order.id}`, 20, 64, { size: 19, weight: 500, color: C.cream, align: "left" });
 
   // بيانات الطلب
@@ -243,36 +314,42 @@ async function buildInvoice(order, opts = {}) {
   const colL = W / 2 - 4;
   const cust = (order.customer && order.customer.name) || "—";
   const dur = deliveryDuration(order);
+  const whenIso = rej ? (opts.at || statusAt(order, "rejected") || undefined) : (opts.deliveredAt || order.createdAt);
   const meta = [
     [T.labelCustomer, cust, colR, y],
-    [T.labelDate, riyadhDate(opts.deliveredAt || order.createdAt), colL, y],
+    [T.labelDate, riyadhDate(whenIso), colL, y],
     [T.labelTransferor, order.transferor || "—", colR, y + 54],
-    [T.labelDelivery, dur || "—", colL, y + 54],
+    rej ? [T.labelStatus, T.statusRejected, colL, y + 54] : [T.labelDelivery, dur || "—", colL, y + 54],
   ];
   for (const [label, val, x, yy] of meta) {
     text(ctx, label, x, yy, { size: 13, color: C.muted });
     let v = String(val);
     if (v.length > 22) v = v.slice(0, 21) + "…";
-    text(ctx, v, x, yy + 22, { size: 16, weight: 500 });
+    text(ctx, v, x, yy + 22, { size: 16, weight: 500, color: rej && val === T.statusRejected ? C.red : C.text });
   }
 
   // شريط الحالة
   y = headerH + metaH;
   dashed(ctx, 20, W - 20, y);
   if (showTimeline) {
-  const steps = [[T.stepNew, false], [T.stepAccepted, false], [T.stepDelivered, true]];
-  const cxs = [W - 60, W / 2, 60];
-  const ty = y + 28;
-  ctx.strokeStyle = C.bronze; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(cxs[0] - 14, ty); ctx.lineTo(cxs[1] + 14, ty); ctx.moveTo(cxs[1] - 14, ty); ctx.lineTo(cxs[2] + 14, ty); ctx.stroke();
-  steps.forEach(([label, last], i) => {
-    ctx.fillStyle = last ? C.green : C.bronze;
-    ctx.beginPath(); ctx.arc(cxs[i], ty, 13, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.beginPath(); ctx.moveTo(cxs[i] - 5, ty); ctx.lineTo(cxs[i] - 1, ty + 4); ctx.lineTo(cxs[i] + 6, ty - 4); ctx.stroke();
-    text(ctx, label, cxs[i], ty + 34, { size: 13, weight: last ? 700 : 400, color: last ? C.greenDark : C.text2, align: "center" });
-  });
-  dashed(ctx, 20, W - 20, y + timelineH - 6);
+    const steps = rej ? [[T.stepNew, "ok"], [T.stepReview, "ok"], [T.stepRejected, "bad"]] : [[T.stepNew, ""], [T.stepAccepted, ""], [T.stepDelivered, "last"]];
+    const cxs = [W - 60, W / 2, 60];
+    const ty = y + 28;
+    ctx.strokeStyle = C.bronze; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cxs[0] - 14, ty); ctx.lineTo(cxs[1] + 14, ty); ctx.moveTo(cxs[1] - 14, ty); ctx.lineTo(cxs[2] + 14, ty); ctx.stroke();
+    if (rej) { ctx.strokeStyle = C.red; ctx.beginPath(); ctx.moveTo(cxs[1] - 14, ty); ctx.lineTo(cxs[2] + 14, ty); ctx.stroke(); }
+    steps.forEach(([label, kind], i) => {
+      const last = kind === "last", bad = kind === "bad";
+      ctx.fillStyle = bad ? C.red : last ? C.green : C.bronze;
+      ctx.beginPath(); ctx.arc(cxs[i], ty, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath();
+      if (bad) { ctx.moveTo(cxs[i] - 4.5, ty - 4.5); ctx.lineTo(cxs[i] + 4.5, ty + 4.5); ctx.moveTo(cxs[i] + 4.5, ty - 4.5); ctx.lineTo(cxs[i] - 4.5, ty + 4.5); }
+      else { ctx.moveTo(cxs[i] - 5, ty); ctx.lineTo(cxs[i] - 1, ty + 4); ctx.lineTo(cxs[i] + 6, ty - 4); }
+      ctx.stroke();
+      text(ctx, label, cxs[i], ty + 34, { size: 13, weight: last || bad ? 700 : 400, color: bad ? C.redDark : last ? C.greenDark : C.text2, align: "center" });
+    });
+    dashed(ctx, 20, W - 20, y + timelineH - 6);
   } else dashed(ctx, 20, W - 20, y + timelineH - 6);
 
   // المنتجات
@@ -307,9 +384,20 @@ async function buildInvoice(order, opts = {}) {
     if (idx === items.length - 1) solid(ctx, 20, W - 20, y, C.line);
   });
 
+  // سبب الرفض (فاتورة مرفوضة فقط، واختياري)
+  if (reason) {
+    const by = y + 16, bh = reasonH - 26;
+    ctx.fillStyle = C.redTint;
+    rr(ctx, 20, by, W - 40, bh, 9); ctx.fill();
+    ctx.save(); ctx.strokeStyle = C.red; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+    rr(ctx, 20, by, W - 40, bh, 9); ctx.stroke(); ctx.restore();
+    text(ctx, T.labelReason, W - 36, by + 24, { size: 13, weight: 700, color: C.red });
+    reasonLines.forEach((ln, i) => text(ctx, ln, W - 36, by + 47 + i * 21, { size: 14.5, weight: 500, color: C.redDark }));
+    y += reasonH;
+  }
+
   // الإجماليات
   y += 22;
-  const stampCy = discount > 0.009 ? y + 12 : y - 4;
   text(ctx, T.labelSubtotal, W - 20, y, { size: 15, color: C.text2 });
   text(ctx, money(subtotal), 20, y, { size: 15, color: C.text2, align: "left", dir: "rtl" });
   if (discount > 0.009) {
@@ -321,20 +409,20 @@ async function buildInvoice(order, opts = {}) {
   ctx.fillStyle = C.dark;
   rr(ctx, 20, y, W - 40, 56, 8); ctx.fill();
   text(ctx, T.labelTotal, W - 36, y + 35, { size: 16, color: C.cream });
-  text(ctx, money(order.total), 36, y + 38, { size: 25, weight: 700, color: C.light, align: "left", dir: "rtl" });
-
-  // ختم مدفوع (في المنتصف بين المجموع والخصم)
-  if (showStamp) {
-  ctx.save();
-  ctx.translate(W / 2 + 6, stampCy);
-  ctx.rotate(-0.21);
-  ctx.strokeStyle = C.green; ctx.lineWidth = 2.6;
-  rr(ctx, -44, -22, 88, 44, 7); ctx.stroke();
-  const stSize = fitSize(mctx, T.stamp, 70, 24, 700, 12);
-  text(ctx, T.stamp, 0, 9, { size: stSize, weight: 700, color: C.green, align: "center" });
-  ctx.restore();
-  }
+  text(ctx, money(order.total), 36, y + 38, { size: 25, weight: 700, color: rej ? C.redSoft : C.light, align: "left", dir: "rtl" });
+  // مركز صندوق الإجمالي = نقطة الارتكاز للختم (إزاحة الختم تُحسب منها، فيبقى مكانه ثابت مهما اختلف عدد المنتجات)
+  const anchor = { x: W / 2, y: y + 28 };
   y += 56;
+
+  // الختم (مكانه وشكله وزاويته من إعدادات الإدارة)
+  const sprite = renderStampSprite(stampText, stampCfg, S);
+  const stampPos = { x: anchor.x + stampCfg.dx, y: anchor.y + stampCfg.dy, w: sprite.w, h: sprite.h };
+  if (showStamp) {
+    ctx.save();
+    ctx.globalAlpha = stampCfg.opacity;
+    ctx.drawImage(sprite.canvas, stampPos.x - sprite.w / 2, stampPos.y - sprite.h / 2, sprite.w, sprite.h);
+    ctx.restore();
+  }
 
   // باركود (من رقم الطلب)
   if (showBarcode) {
@@ -359,7 +447,22 @@ async function buildInvoice(order, opts = {}) {
   y += (thanksLines.length - 1) * 22 + 22;
   footerLines.forEach((ln, i) => text(ctx, ln, W / 2, y + i * 19, { size: 12.5, color: C.muted, align: "center" }));
 
-  return canvas.toBuffer("image/png");
+  return {
+    canvas, sprite,
+    meta: { W, H, variant, paperH, anchor, stamp: { ...stampPos, opacity: stampCfg.opacity, enabled: cfg.showStamp !== false } },
+  };
 }
 
-module.exports = { buildInvoice, sampleOrder };
+// صورة الفاتورة كاملة (مع الختم): للإرسال في الخاص والتحميل
+async function buildInvoice(order, opts = {}) {
+  const r = await drawInvoice(order, opts);
+  return r.canvas.toBuffer("image/png");
+}
+
+// الفاتورة على طبقتين: الورقة بدون ختم + الختم لوحده (شفاف)، عشان الواجهة تحرّك الختم وتنزّله بأنميشن أو تسحبه بالمعاينة
+async function buildInvoiceLayers(order, opts = {}) {
+  const r = await drawInvoice(order, { ...opts, stamp: false, transparent: true });
+  return { base: r.canvas.toBuffer("image/png"), stamp: r.sprite.canvas.toBuffer("image/png"), meta: r.meta };
+}
+
+module.exports = { buildInvoice, buildInvoiceLayers, sampleOrder, statusAt };

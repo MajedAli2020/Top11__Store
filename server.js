@@ -3,7 +3,7 @@ const express = require("express");
 const crypto = require("crypto");
 const path = require("path");
 const db = require("./db");
-const { buildInvoice, sampleOrder } = require("./invoice");
+const { buildInvoice, buildInvoiceLayers, sampleOrder, statusAt } = require("./invoice");
 const bot = require("./bot");
 
 const PORT = +process.env.PORT || 3000;
@@ -69,6 +69,15 @@ function limit(max, windowMs) {
 }
 setInterval(() => hits.clear(), 60 * 60 * 1000).unref();
 
+const wrap = (fn) => async (req, res) => {
+  try { await fn(req, res); }
+  catch (e) {
+    if (e.status) return res.status(e.status).json({ error: e.message });
+    console.error("[server]", e);
+    res.status(500).json({ error: "خطأ في السيرفر" });
+  }
+};
+
 /* ---------- API المتجر (عام) ---------- */
 const publicProduct = (p) => {
   const d = db.activeDiscount(p), final = db.effectivePrice(p);
@@ -79,7 +88,7 @@ const publicOrder = (o) => ({
   serverLink: o.serverLink, nitroUser: o.nitroUser, nitroId: o.nitroId || "", items: o.items, total: o.total,
   customerName: o.customer ? o.customer.name : "",
 });
-const adminOrder = (o) => ({ ...publicOrder(o), history: o.history, customer: o.customer || null, lastDm: o.lastDm || null });
+const adminOrder = (o) => ({ ...publicOrder(o), history: o.history, customer: o.customer || null, lastDm: o.lastDm || null, rejectInvoice: o.rejectInvoice || null });
 // الإيصال: صورة (png/jpeg/webp) كـ data URL، نتحقق من النوع الحقيقي من أول بايتات الملف
 const RECEIPT_MAX = 2.5 * 1024 * 1024;
 function parseReceipt(v) {
@@ -248,14 +257,47 @@ app.get("/api/my/orders", (req, res) => {
   res.json(db.listOrders().filter((o) => o.customer && o.customer.id === c.uid).map(publicOrder));
 });
 
-// تفاصيل الطلب لصاحبه فقط (أو الإدارة). غير صاحب الطلب يشوف نفس رسالة «ما لقيت هذا الرقم» عشان ما يتخمّن الأرقام
-app.get("/api/orders/:id", limit(120, 10 * 60 * 1000), async (req, res) => {
+// الطلب لصاحبه فقط (أو الإدارة). غير صاحب الطلب يشوف نفس رسالة «ما لقيت هذا الرقم» عشان ما يتخمّن الأرقام
+async function ownedOrder(req, res) {
   const c = readCustomer(req);
-  if (!c) return res.status(401).json({ error: "سجّل الدخول بحساب Discord عشان تشوف طلبك" });
+  if (!c) { res.status(401).json({ error: "سجّل الدخول بحساب Discord عشان تشوف طلبك" }); return null; }
   const o = db.getOrder(String(req.params.id).toUpperCase());
-  if (!o || !((o.customer && o.customer.id === c.uid) || (await bot.isStaff(c.uid)))) return res.status(404).json({ error: "ما لقيت هذا الرقم" });
-  res.json(publicOrder(o));
+  if (!o || !((o.customer && o.customer.id === c.uid) || (await bot.isStaff(c.uid)))) { res.status(404).json({ error: "ما لقيت هذا الرقم" }); return null; }
+  return o;
+}
+app.get("/api/orders/:id", limit(120, 10 * 60 * 1000), async (req, res) => {
+  const o = await ownedOrder(req, res);
+  if (o) res.json(publicOrder(o));
 });
+
+// أي فاتورة متاحة لهذا الطلب؟ مدفوعة (بعد التسليم) أو مرفوضة (بعد ما ترسلها الإدارة)
+function invoiceFor(o) {
+  const cfg = db.getInvoice();
+  if (o.status === "delivered" && cfg.enabled) return { variant: "paid", opts: { settings: cfg, deliveredAt: statusAt(o, "delivered") || undefined } };
+  if (o.status === "rejected" && o.rejectInvoice) return { variant: "rejected", opts: { settings: cfg, variant: "rejected", reason: o.rejectInvoice.reason, at: o.rejectInvoice.at } };
+  return null;
+}
+const dataUrl = (buf) => "data:image/png;base64," + buf.toString("base64");
+// طبقتين (الورقة + الختم) عشان صفحة الطلب تنزّل الختم بأنميشن
+app.get("/api/orders/:id/invoice", limit(60, 10 * 60 * 1000), wrap(async (req, res) => {
+  const o = await ownedOrder(req, res);
+  if (!o) return;
+  const inv = invoiceFor(o);
+  res.set("Cache-Control", "no-store");
+  if (!inv) return res.status(404).json({ error: "لا توجد فاتورة لهذا الطلب" });
+  const L = await buildInvoiceLayers(o, inv.opts);
+  res.json({ variant: inv.variant, key: `${o.id}:${inv.variant}:${(o.rejectInvoice && o.rejectInvoice.at) || statusAt(o, "delivered") || ""}`, base: dataUrl(L.base), stamp: dataUrl(L.stamp), meta: L.meta });
+}));
+// الصورة كاملة للتحميل
+app.get("/api/orders/:id/invoice.png", limit(60, 10 * 60 * 1000), wrap(async (req, res) => {
+  const o = await ownedOrder(req, res);
+  if (!o) return;
+  const inv = invoiceFor(o);
+  if (!inv) return res.status(404).json({ error: "لا توجد فاتورة لهذا الطلب" });
+  const buf = await buildInvoice(o, inv.opts);
+  res.set({ "Content-Type": "image/png", "Cache-Control": "no-store", "Content-Disposition": `attachment; filename="invoice-${o.id}.png"` });
+  res.send(buf);
+}));
 
 /* ---------- تسجيل الدخول بديسكورد ---------- */
 // الكل يسجّل من نفس المكان. اللي عنده رتبة الإدارة (أو المالك) يفتح له النظام اللوحة تلقائياً.
@@ -317,14 +359,6 @@ async function requireStaff(req, res, next) {
   req.staff = s;
   next();
 }
-const wrap = (fn) => async (req, res) => {
-  try { await fn(req, res); }
-  catch (e) {
-    if (e.status) return res.status(e.status).json({ error: e.message });
-    console.error("[server]", e);
-    res.status(500).json({ error: "خطأ في السيرفر" });
-  }
-};
 
 app.get("/api/admin/me", requireStaff, (req, res) =>
   res.json({ id: req.staff.uid, name: req.staff.name, avatar: req.staff.avatar, owner: bot.isOwner(req.staff.uid) }));
@@ -383,9 +417,31 @@ app.get("/api/admin/invoice", requireStaff, (req, res) => res.json({ invoice: db
 app.put("/api/admin/invoice", requireStaff, wrap(async (req, res) => {
   res.json({ invoice: db.updateInvoice(req.body || {}), defaults: db.INVOICE_DEFAULTS });
 }));
+// معاينة (بدون حفظ): ترجع الورقة والختم كطبقتين، عشان محرر الختم يقدر يسحبه
 app.post("/api/admin/invoice/preview", requireStaff, wrap(async (req, res) => {
-  const buf = await buildInvoice(sampleOrder(), { settings: db.previewInvoice(req.body || {}) });
-  res.json({ image: "data:image/png;base64," + buf.toString("base64") });
+  const b = req.body || {}, rej = b.variant === "rejected";
+  const L = await buildInvoiceLayers(sampleOrder(rej ? "rejected" : "paid"), { settings: db.previewInvoice(b), variant: rej ? "rejected" : "paid", reason: rej ? String(b.reason || "").slice(0, 140) : "" });
+  res.json({ base: dataUrl(L.base), stamp: dataUrl(L.stamp), meta: L.meta });
+}));
+// أي طلب: شوف فاتورته (مدفوعة أو مرفوضة) كصورة كاملة
+app.get("/api/admin/orders/:id/invoice.png", requireStaff, wrap(async (req, res) => {
+  const o = db.getOrder(String(req.params.id));
+  if (!o) return res.status(404).json({ error: "الطلب غير موجود" });
+  const rej = req.query.variant === "rejected" || o.status === "rejected";
+  const buf = await buildInvoice(o, { settings: db.getInvoice(), variant: rej ? "rejected" : "paid", reason: rej ? String(req.query.reason || (o.rejectInvoice && o.rejectInvoice.reason) || "").slice(0, 140) : "", deliveredAt: statusAt(o, "delivered") || undefined, at: statusAt(o, "rejected") || undefined });
+  res.set({ "Content-Type": "image/png", "Cache-Control": "no-store" });
+  res.send(buf);
+}));
+// يرسل فاتورة مرفوضة للعميل (في الخاص) وتظهر له في صفحة طلبه. السبب اختياري
+app.post("/api/admin/orders/:id/reject-invoice", requireStaff, wrap(async (req, res) => {
+  const cur = db.getOrder(String(req.params.id));
+  if (!cur) return res.status(404).json({ error: "الطلب غير موجود" });
+  if (cur.status !== "rejected") return res.status(400).json({ error: "الفاتورة المرفوضة تنرسل للطلبات المرفوضة فقط" });
+  const reason = String((req.body && req.body.reason) || "").replace(/\s+/g, " ").trim();
+  if (reason.length > 140) return res.status(400).json({ error: "سبب الرفض طويل (حد أقصى 140 حرف)" });
+  const o = db.setRejectInvoice(cur.id, reason, `${req.staff.name} (الموقع)`);
+  const sent = await bot.sendRejectedInvoice(o);
+  res.json({ order: adminOrder(db.getOrder(cur.id)), sent });
 }));
 
 // تقييمات العملاء (للمالك فقط)

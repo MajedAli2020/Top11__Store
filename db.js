@@ -70,12 +70,35 @@ const INVOICE_FIELDS = {
   labelSubtotal: ["المجموع", 20], labelDiscount: ["الخصم", 20], labelTotal: ["الإجمالي", 20],
   stamp: ["مدفوع", 12], currency: ["ر.س", 10],
   thanks: ["شكراً لثقتك بتوب ستور", 70], footer: ["احتفظ بالفاتورة، ولأي استفسار افتح تكت وأرفق رقمها", 90],
+  // الفاتورة المرفوضة
+  titleRejected: ["فاتورة مرفوضة", 20], stampRejected: ["مرفوض", 12], stepReview: ["مراجعة", 14], stepRejected: ["مرفوض", 14],
+  labelStatus: ["الحالة", 20], statusRejected: ["طلب مرفوض", 24], labelReason: ["سبب الرفض", 20],
+  thanksRejected: ["نعتذر عن عدم إتمام طلبك", 70], footerRejected: ["لو تعتقد أن الرفض خطأ، افتح تكت وأرفق رقم الفاتورة", 90],
 };
-const INVOICE_DEFAULTS = { texts: Object.fromEntries(Object.entries(INVOICE_FIELDS).map(([k, [v]]) => [k, v])), enabled: true, showTimeline: true, showStamp: true, showBarcode: true };
+// الختم: لكل نوع فاتورة (مدفوعة / مرفوضة) لون وشكل ومكان وزاوية وحجم. المكان إزاحة (dx, dy) عن مركز صندوق الإجمالي
+const STAMP_SHAPES = ["box", "double", "round", "plain"];
+const STAMP_DEFAULTS = {
+  paid: { color: "#3b6d11", dx: 6, dy: -60, rot: -12, scale: 1, opacity: 1, shape: "box", grunge: false },
+  rejected: { color: "#b3342f", dx: 6, dy: -60, rot: -12, scale: 1, opacity: 1, shape: "double", grunge: true },
+};
+const clampN = (v, lo, hi, def) => { const n = Number(v); return Number.isFinite(n) ? Math.round(Math.min(hi, Math.max(lo, n)) * 100) / 100 : def; };
+function normStamp(x, def) {
+  x = x || {};
+  return {
+    color: /^#[0-9a-f]{6}$/i.test(x.color || "") ? String(x.color).toLowerCase() : def.color,
+    dx: clampN(x.dx, -210, 210, def.dx), dy: clampN(x.dy, -900, 400, def.dy),
+    rot: clampN(x.rot, -60, 60, def.rot), scale: clampN(x.scale, 0.5, 2.2, def.scale), opacity: clampN(x.opacity, 0.3, 1, def.opacity),
+    shape: STAMP_SHAPES.includes(x.shape) ? x.shape : def.shape,
+    grunge: x.grunge === undefined ? def.grunge : x.grunge === true || x.grunge === "true",
+  };
+}
+const normStamps = (x) => ({ paid: normStamp(x && x.paid, STAMP_DEFAULTS.paid), rejected: normStamp(x && x.rejected, STAMP_DEFAULTS.rejected) });
+const INVOICE_DEFAULTS = { texts: Object.fromEntries(Object.entries(INVOICE_FIELDS).map(([k, [v]]) => [k, v])), enabled: true, showTimeline: true, showStamp: true, showBarcode: true, stamps: normStamps() };
 const normInvoice = (x) => ({
   texts: { ...((x && x.texts) || {}) },
   enabled: !(x && x.enabled === false), showTimeline: !(x && x.showTimeline === false),
   showStamp: !(x && x.showStamp === false), showBarcode: !(x && x.showBarcode === false),
+  stamps: normStamps(x && x.stamps),
 });
 
 // إحصائيات الزوار: بدون تخزين أي IP أو معرّف. الزائر الجديد = متصفح ما عنده كوكي الزيارة، واليومي = أول زيارة له اليوم.
@@ -408,7 +431,7 @@ function moveProduct(id, dir) {
 const getInvoice = () => ({ ...state.invoice, texts: { ...INVOICE_DEFAULTS.texts, ...state.invoice.texts } });
 function updateInvoice(b) {
   b = b || {};
-  const bt = b.texts || {}, next = { texts: {}, enabled: state.invoice.enabled, showTimeline: state.invoice.showTimeline, showStamp: state.invoice.showStamp, showBarcode: state.invoice.showBarcode };
+  const bt = b.texts || {}, next = { texts: {}, enabled: state.invoice.enabled, showTimeline: state.invoice.showTimeline, showStamp: state.invoice.showStamp, showBarcode: state.invoice.showBarcode, stamps: b.stamps ? normStamps(b.stamps) : state.invoice.stamps };
   for (const k of ["enabled", "showTimeline", "showStamp", "showBarcode"]) if (b[k] !== undefined) next[k] = b[k] === true || b[k] === "true";
   for (const [k, [def, max]] of Object.entries(INVOICE_FIELDS)) {
     const v = String(bt[k] ?? "").replace(/\s+/g, " ").trim();
@@ -429,7 +452,7 @@ function previewInvoice(b) {
     if (v) texts[k] = v.slice(0, max);
   }
   const on = (k) => (b[k] === undefined ? true : b[k] === true || b[k] === "true");
-  return { texts, enabled: true, showTimeline: on("showTimeline"), showStamp: on("showStamp"), showBarcode: on("showBarcode") };
+  return { texts, enabled: true, showTimeline: on("showTimeline"), showStamp: on("showStamp"), showBarcode: on("showBarcode"), stamps: b.stamps ? normStamps(b.stamps) : state.invoice.stamps };
 }
 const getSettings = () => ({ ...state.settings, sections: state.settings.sections || SECTION_DEFAULTS });
 async function updateSettings(b) {
@@ -587,6 +610,15 @@ function setStatus(id, status, by) {
   return o;
 }
 
+// فاتورة مرفوضة أرسلتها الإدارة للعميل (السبب اختياري). تظهر للعميل في صفحة الطلب طالما الطلب مرفوض
+function setRejectInvoice(id, reason, by) {
+  const o = getOrder(id);
+  if (!o || o.status !== "rejected") return null;
+  o.rejectInvoice = { at: new Date().toISOString(), reason: String(reason || "").replace(/\s+/g, " ").trim().slice(0, 140), by: by || "system" };
+  save();
+  return o;
+}
+
 function setLastDm(id, v) {
   const o = getOrder(id);
   if (!o) return;
@@ -604,7 +636,7 @@ function setNotifyRef(id, ref) {
 module.exports = {
   ready, setLastDm, STATUSES, PROTECTED,
   getProducts, getActiveProducts, getProduct, createProduct, updateProduct, deleteProduct, moveProduct, getImage,
-  activeDiscount, effectivePrice, getSettings, updateSettings, SETTINGS_DEFAULTS, getInvoice, updateInvoice, previewInvoice, INVOICE_DEFAULTS, trackVisit, getStats, resetSales, flush,
+  activeDiscount, effectivePrice, getSettings, updateSettings, SETTINGS_DEFAULTS, getInvoice, updateInvoice, previewInvoice, INVOICE_DEFAULTS, STAMP_DEFAULTS, setRejectInvoice, trackVisit, getStats, resetSales, flush,
   getReviews, getActiveReviews, createReview, updateReview, deleteReview,
   createOrder, getOrder, listOrders, setStatus, setNotifyRef,
 };

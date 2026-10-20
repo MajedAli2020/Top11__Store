@@ -730,6 +730,8 @@
       <link rel="stylesheet" href="mobile-lite.css" />
       <link rel="stylesheet" href="theme-purple.css" />
       <link rel="stylesheet" href="home-products.css" />
+      <link rel="stylesheet" href="invoice-fx.css" />
+      <link rel="stylesheet" href="perf-fix.css" />
   </head>
   <body>
 
@@ -1104,9 +1106,14 @@
           <small class="mono" style="color: var(--blue2)">07 / ORDER</small>
           <h1 class="page-title" style="margin-top: 10px">تم تسجيل طلبك ✓</h1>
           <p class="page-subtitle">اتبع الخطوات التالية عشان نسلّمك طلبك.</p>
-          <div id="orderTicket" class="surface" style="margin-top: 28px; max-width: 760px"></div>
-          <div class="form-actions" style="max-width: 760px; margin-top: 14px">
-            <button class="btn" onclick="copyOrderId()">نسخ رقم الطلب</button>
+          <div class="order-layout" id="orderLayout">
+            <div class="ol-main">
+              <div id="orderTicket" class="surface"></div>
+              <div class="form-actions" style="margin-top: 14px">
+                <button class="btn" onclick="copyOrderId()">نسخ رقم الطلب</button>
+              </div>
+            </div>
+            <aside class="inv-pane" id="invPane" hidden></aside>
           </div>
           <div class="steps" style="margin-top: 32px">
             <article class="step">
@@ -1829,7 +1836,12 @@ const rvAvatar = (g) => g === "female"
         if (id === "cart") renderCart();
         if (id === "checkout") renderCheckout();
         if (id === "tracking") renderMyOrders();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // نوقف حركة الخلفية لحظة التنقل ونرجع للأعلى مباشرة (السكرول الناعم مع تحريك الصفحة كان يسبب تقطيع)
+        const rootEl = document.documentElement;
+        rootEl.classList.add("nav-busy");
+        clearTimeout(window.__navBusy);
+        window.__navBusy = setTimeout(() => rootEl.classList.remove("nav-busy"), 650);
+        window.scrollTo(0, 0);
       }
       const DISCORD_URL = "https://discord.gg/xwGKcEQ7B"; // دعوة روم التكت
       const STATUS_LABEL = { new: "قيد المعالجة", accepted: "تم قبول طلبك", delivered: "تم تسليم المنتج بنجاح", rejected: "تم رفض الطلب" };
@@ -1993,6 +2005,7 @@ const rvAvatar = (g) => g === "female"
         t.append(mk("span", "", "الإجمالي"), mk("span", "", money(o.total)));
         box.append(t);
         box.dataset.id = o.id;
+        if (window.InvoiceFX) InvoiceFX.sync(o); // الفاتورة تطلع يسار الطلب بأنميشن (بعد التسليم أو لو الإدارة أرسلت فاتورة مرفوضة)
       }
       function copyOrderId() {
         const id = document.getElementById("orderTicket").dataset.id || "";
@@ -2152,6 +2165,7 @@ const rvAvatar = (g) => g === "female"
     </script>
   <script src="premium.js" defer></script>
   <script src="shapes.js" defer></script>
+  <script src="invoice-fx.js" defer></script>
   <script>
 (function(){
   var bg=document.querySelector('.hp-bg'); if(!bg) return;
