@@ -260,124 +260,34 @@ dialog::backdrop { background:#000000a8; backdrop-filter:blur(7px); animation:px
 @media (prefers-reduced-motion:reduce) { .px-aurora i, .bar h1, .pill.new, .stat, .order, .prow { animation:none !important; } }
 </style>
 
-<style id="orbitTheme">
-:root{--bg:#0b0907;--panel:#15110d;--panel2:#1d1711;--line:#3a2d20;--text:#f7f1ea;--muted:#a8967f;--accent:#c9a07a;--ice:#ecd5bb;--soft:#c9a07a1f;--glow:#c9a07a;--selbg:#ecd5bb;--seltx:#15100c;--glass:#15110dcc}
-:root[data-theme=light]{--bg:#f6f1ea;--panel:#fff;--panel2:#f3ece3;--line:#0000001a;--text:#2a1d10;--muted:#7a6650;--accent:#a9783f;--ice:#6b4a24;--soft:#a9783f1a;--glow:#a9783f;--selbg:#a9783f;--seltx:#fff;--glass:#ffffffd9}
-body{background:radial-gradient(900px 500px at 85% -10%,#c9a07a22,transparent 60%),radial-gradient(700px 500px at 0% 100%,#c9a07a12,transparent 60%),var(--bg);background-attachment:fixed}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 30%,#000,transparent 75%)}
-:root[data-theme=light] body::before{opacity:.4}
-.px-aurora{display:none!important}
-.bar{background:transparent!important;border:0!important;backdrop-filter:none!important;box-shadow:none!important}
-.bar-in{max-width:1180px;padding:16px 22px;gap:14px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
-.brand b{font-size:18px}.brand small{color:var(--muted)}
-.bar img.logo{width:38px;height:38px;border-radius:12px}
-.toplinks{flex:1;display:flex;justify-content:center;gap:26px}
-.toplinks a{color:var(--muted);text-decoration:none;font-size:14px}.toplinks a:hover{color:var(--ice)}
-.iconbtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--glass);color:var(--text)}
-.me img{width:36px;height:36px;border:2px solid var(--accent)}
-.shell{max-width:1180px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:26px;align-items:start;padding-top:8px}
-.side,.tbl-wrap,.stat,.order,.set-card,.prow{background:var(--glass);border:1px solid var(--line);border-radius:20px;backdrop-filter:blur(14px)}
-.side{padding:14px;position:sticky;top:12px}
-.store-card{display:flex;align-items:center;gap:10px;padding:14px;border-radius:16px;background:linear-gradient(135deg,var(--ice),var(--accent));color:#15100c;margin-bottom:14px}
-.store-card .av{width:34px;height:34px;border-radius:10px;background:#15100c1f;display:grid;place-items:center;font-weight:800}
-.store-card small{display:block;opacity:.75;font-size:12px}
-.side-label{font-size:12px;color:var(--muted);margin:6px 10px}
-.tabs{flex-direction:column;border:0!important;gap:4px;margin:0!important}
-.tab{display:flex!important;align-items:center;gap:10px;width:100%;text-align:right;border-radius:14px!important;padding:12px 14px!important;color:var(--muted);background:none;box-shadow:none}
-.tab i{font-style:normal;width:22px;text-align:center}.tab span{flex:1}
-.tab:hover{background:var(--soft)!important;color:var(--text)!important}
-.tab.on{background:var(--selbg)!important;color:var(--seltx)!important;box-shadow:0 10px 24px -12px #000a!important;font-weight:800}
-.badge{font-style:normal;background:var(--accent);color:#15100c;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:800}
-.tab.on .badge{background:#15100c;color:var(--ice)}
-.sec-head h2{font-size:26px}.sec-head p{color:var(--muted)}
-.chips-row{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
-.chip{margin:0;background:var(--glass);padding:7px 15px}
-.chip.on{background:var(--accent);color:#15100c;border-color:var(--accent)}
-.stats{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.tbl-wrap{overflow-x:auto;padding:6px 10px}
-.otbl{width:100%;border-collapse:collapse;font-size:14px}
-.otbl th{color:var(--muted);font-weight:500;text-align:right;padding:14px 12px;font-size:12.5px}
-.otbl td{padding:14px 12px;border-top:1px solid var(--line);vertical-align:middle}
-.otbl tr.is-new td{background:var(--soft)}
-.otbl .acts{text-align:left}.otbl .o-actions{justify-content:flex-start}
-.otbl .d-row td{background:var(--panel2);padding:14px 18px}
-.pill{border-radius:8px}
-.pill.rejected{border-color:var(--line);color:var(--muted)}
-.pill.delivered{background:var(--soft)}
-.btn.primary{background:linear-gradient(135deg,var(--ice),var(--accent));border-color:transparent;color:#15100c}
-.btn.primary:hover{filter:brightness(1.07);background:linear-gradient(135deg,var(--ice),var(--accent))}
-@media(max-width:860px){.shell{grid-template-columns:1fr}.side{position:static}.tabs{flex-direction:row!important;overflow-x:auto}.tab{width:auto;white-space:nowrap}.toplinks{display:none}}
-
-.pill{white-space:nowrap;display:inline-block;animation:none!important;box-shadow:none!important}
-.otbl td,.otbl th{white-space:nowrap}
-.otbl td:nth-child(3){white-space:normal;min-width:130px}
-.otbl .acts{white-space:normal}
-.otbl .o-id{font-size:12.5px;letter-spacing:.4px;direction:ltr;text-align:right}
-.otbl .o-actions{flex-wrap:wrap;gap:6px}
-.stat::before,.stat::after{display:none!important}
-.stat{padding:12px 16px!important;transform:none!important;box-shadow:none!important}
-.stat b{font-size:22px!important}.stat span{font-size:12px}
-#ordersTab{display:flex;flex-direction:column}
-#ordersTab>.sec-head{order:0}#ordersTab>.chips-row{order:1}#ordersTab>.tools{order:2}#ordersList{order:3}#stats{order:4;margin:18px 0 12px}#vstats{order:5}
-
-.brand b span{color:var(--accent)}
-.bar img.logo{width:42px;height:42px;border-radius:13px;box-shadow:0 0 0 1px #ecd5bb40,0 8px 26px #c9a07a30}
-.grow{flex:1}
-.navlinks{display:flex;gap:2px;padding:5px;border-radius:20px;background:#ffffff07;border:1px solid #ffffff12;box-shadow:inset 0 1px 0 #ffffff0a}
-.navlinks button{border:0;background:none;padding:9px 18px;border-radius:13px;font-size:14px;font-weight:700;color:#ffffff77;transition:color .2s,background .2s}
-.navlinks button:hover{color:var(--text);background:#ffffff0c}
-.navlinks button.active{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--ice);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
-:root[data-theme=light] .navlinks{background:#0000000a;border-color:#0000001a}:root[data-theme=light] .navlinks button{color:#0009}
-.nav-icon{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 14px;border-radius:13px;font-weight:700;font-size:13px;color:var(--text);text-decoration:none;background:#ffffff08;border:1px solid #ffffff14;transition:background .25s,border-color .25s,transform .3s}
-.nav-icon:hover{background:#ffffff12;border-color:color-mix(in srgb,var(--ice) 40%,transparent);transform:translateY(-2px)}
-:root[data-theme=light] .nav-icon{background:#0000000a;border-color:#0000001a}
-.nav-icon.sq{width:42px;padding:0;justify-content:center}
-.me.nav-icon{padding:0 6px 0 14px}.me.nav-icon img{width:30px;height:30px}
-@media(max-width:860px){.navlinks{display:none}}
-</style>
 </head>
 <body>
 
 <div id="appView" class="hidden">
   <header class="bar">
     <div class="bar-in">
-      <a class="brand" href="/"><img class="logo" src="/assets/logo.png" alt="" /><b>توب <span>ستور</span></b></a>
-      <nav class="navlinks" id="topNav">
-        <button type="button" data-go="orders" class="active">الطلبات</button>
-        <button type="button" data-go="products" class="hidden">المنتجات</button>
-        <button type="button" data-go="reviews" class="hidden">التقييمات</button>
-        <button type="button" data-go="settings" class="hidden">الإعدادات</button>
-        <button type="button" data-go="invoice" class="hidden">الفاتورة</button>
-      </nav>
-      <span class="grow"></span>
-      <a class="nav-icon" href="/">المتجر</a>
-      <a class="nav-icon" href="/auth/logout">خروج</a>
-      <button class="nav-icon sq" id="themeBtn" type="button" aria-label="تبديل الثيم">☀</button>
-      <div class="me nav-icon"><img id="meAvatar" alt="" /><span id="meName"></span></div>
+      <img class="logo" src="/assets/logo.png" alt="" />
+      <h1>لوحة إدارة توب ستور</h1>
+      <div class="me"><img id="meAvatar" alt="" /><span id="meName"></span></div>
+      <a class="btn" href="/">المتجر</a>
+      <a class="btn" href="/auth/logout">خروج</a>
     </div>
   </header>
-  <main class="wrap shell">
-    <aside class="side">
-      <div class="store-card"><span class="av">ت</span><div><b>توب ستور</b><small>لوحة الإدارة</small></div></div>
-      <div class="side-label">إدارة المتجر</div>
-      <div class="tabs" role="tablist">
-        <button class="tab on" data-tab="orders" role="tab"><i>🧾</i><span>إدارة الطلبات</span><em id="newBadge" class="badge hidden"></em></button>
-        <button class="tab hidden" id="prodTab" data-tab="products" role="tab"><i>📦</i><span>المنتجات والأسعار</span></button>
-        <button class="tab hidden" id="revTab" data-tab="reviews" role="tab"><i>⭐</i><span>تقييم العملاء</span></button>
-        <button class="tab hidden" id="setTab" data-tab="settings" role="tab"><i>⚙</i><span>إعدادات السيرفر</span></button>
-        <button class="tab hidden" id="invTab" data-tab="invoice" role="tab"><i>📄</i><span>الفاتورة</span></button>
-      </div>
-    </aside>
-    <div class="content">
+  <main class="wrap">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="orders" role="tab">الطلبات</button>
+      <button class="tab hidden" id="prodTab" data-tab="products" role="tab">المنتجات والأسعار</button>
+      <button class="tab hidden" id="revTab" data-tab="reviews" role="tab">تقييم العملاء</button>
+      <button class="tab hidden" id="setTab" data-tab="settings" role="tab">إعدادات السيرفر</button>
+      <button class="tab hidden" id="invTab" data-tab="invoice" role="tab">الفاتورة</button>
+    </div>
 
     <section id="ordersTab">
-      <div class="sec-head"><div><h2>إدارة الطلبات</h2><p>راجع الإيصالات وسلّم الطلبات للعملاء في الخاص.</p></div></div>
-      <div class="chips-row" id="chips"></div>
       <div class="stats" id="stats"></div>
       <div class="stats" id="vstats"></div>
       <div class="tools">
         <input id="search" type="search" placeholder="ابحث برقم الطلب أو اسم المحوّل" />
+        <div id="chips"></div>
       </div>
       <div id="ordersList"></div>
     </section>
@@ -431,7 +341,6 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background-im
       </div>
       <div id="revList"></div>
     </section>
-    </div>
   </main>
 </div>
 
@@ -517,8 +426,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background-im
 <div id="toast" class="toast"></div>
 
 <script>
-const LABEL = { new:"بانتظار المراجعة", accepted:"بانتظار التسليم", delivered:"مسلَّم", rejected:"مرفوض" };
-const FILTERS = [["all","الكل"],["new","بانتظار المراجعة"],["accepted","بانتظار التسليم"],["delivered","مسلَّمة"],["rejected","مرفوضة"]];
+const LABEL = { new:"جديد", accepted:"مقبول", delivered:"تم التسليم", rejected:"مرفوض" };
+const FILTERS = [["all","الكل"],["new","جدد"],["accepted","مقبولة"],["delivered","مسلّمة"],["rejected","مرفوضة"]];
 let SECTIONS = [{ id:"main", label:"نيترو وبوست", sub:"" }, { id:"subs", label:"اشتراكات", sub:"" }, { id:"accounts", label:"حسابات ديسكورد", sub:"" }, { id:"bots", label:"سورسات (بوتات الديسكورد)", sub:"" }];
 const GROUP_LABEL = new Proxy({}, { get: (_, id) => (SECTIONS.find((x) => x.id === id) || {}).label || String(id) });
 const PROTECTED = ["nitro", "boosts"]; // منتجات أساسية: تُخفى فقط ولا تُحذف
@@ -549,8 +458,6 @@ const fail = (e) => { if (e.message !== "auth") toast(e.message); };
 
 /* ---------- الطلبات ---------- */
 function renderStats() {
-  renderChips();
-  { const nb = $("newBadge"), nn = orders.filter((o) => o.status === "new").length; nb.textContent = nn; nb.classList.toggle("hidden", !nn); }
   const today = new Date().toDateString();
   const todays = orders.filter((o) => new Date(o.date).toDateString() === today);
   const sum = (arr) => arr.filter((o) => o.status !== "rejected").reduce((s, o) => s + o.total, 0);
@@ -563,7 +470,7 @@ function renderStats() {
   );
 }
 function renderChips() {
-  $("chips").replaceChildren(...FILTERS.map(([k, l]) => h("button", { class:"chip" + (filter === k ? " on" : ""), onclick:() => { filter = k; renderChips(); renderOrders(); } }, l + " (" + orders.filter((o) => k === "all" || o.status === k).length + ")")));
+  $("chips").replaceChildren(...FILTERS.map(([k, l]) => h("button", { class:"chip" + (filter === k ? " on" : ""), onclick:() => { filter = k; renderChips(); renderOrders(); } }, l)));
 }
 function orderCard(o) {
   const row = (k, v) => v ? [h("div", { class:"k" }, k), h("div", {}, v)] : [];
@@ -588,41 +495,10 @@ function orderCard(o) {
     o.rejectInvoice ? h("div", { class:"o-inv" }, "📄 أُرسلت فاتورة مرفوضة للعميل — " + new Date(o.rejectInvoice.at).toLocaleString("ar-SA") + (o.rejectInvoice.reason ? " — السبب: " + o.rejectInvoice.reason : "")) : null,
     last && last.status !== "new" ? h("div", { class:"o-hist" }, "آخر تحديث: " + last.by + " — " + new Date(last.at).toLocaleString("ar-SA")) : null);
 }
-const openRows = new Set();
-function orderRows(o) {
-  const act = (status, label, cls) => h("button", { class:"btn sm " + cls, onclick:(e) => setStatus(o.id, status, e.target) }, label);
-  const b = [];
-  if (o.status === "new") b.push(act("accepted", "قبول", "primary"), act("rejected", "رفض", "ghost"));
-  if (o.status === "accepted") b.push(act("delivered", "📦 تسليم الطلب", "primary"), act("rejected", "رفض", "ghost"));
-  if (o.status === "rejected" || o.status === "delivered") b.push(h("button", { class:"btn sm", type:"button", onclick:() => openInvoiceDlg(o, "view") }, "🧾 الإيصال"), act("new", "إعادة فتح", "ghost"));
-  if (o.status === "rejected") b.push(h("button", { class:"btn sm " + (o.rejectInvoice ? "ghost" : "primary"), type:"button", onclick:() => openInvoiceDlg(o, "send") }, o.rejectInvoice ? "إعادة إرسال الفاتورة" : "إرسال فاتورة مرفوضة"));
-  const open = openRows.has(o.id);
-  b.push(h("button", { class:"btn sm ghost", type:"button", onclick:() => { open ? openRows.delete(o.id) : openRows.add(o.id); renderOrders(); } }, open ? "إخفاء" : "تفاصيل"));
-  const names = o.items.map((i) => i.name + (i.quantity > 1 ? " ×" + i.quantity : ""));
-  const row = (k, v) => v ? [h("div", { class:"k" }, k), h("div", {}, v)] : [];
-  const last = o.history[o.history.length - 1];
-  const rows = [h("tr", { class:o.status === "new" ? "is-new" : "" },
-    h("td", { class:"o-id" }, o.id),
-    h("td", {}, o.customer ? o.customer.name : o.transferor),
-    h("td", {}, names[0] + (names.length > 1 ? " +" + (names.length - 1) : "")),
-    h("td", {}, money(o.total)),
-    h("td", {}, h("span", { class:"pill " + o.status }, LABEL[o.status])),
-    h("td", { class:"acts" }, h("div", { class:"o-actions" }, b)))];
-  if (open) rows.push(h("tr", { class:"d-row" }, h("td", { colspan:6 },
-    h("div", { class:"o-body" },
-      row("التاريخ", new Date(o.date).toLocaleString("ar-SA")),
-      row("حساب Discord", o.customer ? o.customer.name + " — " + o.customer.id : ""),
-      row("اسم المحوّل", o.transferor), row("مستلم النيترو", o.nitroUser), o.nitroId ? h("a", { href:"discord://-/users/" + o.nitroId, class:"o-dm" }, "فتح الخاص مع المستلم") : null, row("رابط السيرفر", o.serverLink),
-      h("div", { class:"o-items" }, o.items.map((i) => h("div", {}, h("span", {}, i.name + " × " + i.quantity), h("span", {}, money(i.price * i.quantity)))), h("div", { class:"o-total" }, h("span", {}, "الإجمالي"), h("span", {}, money(o.total))))),
-    o.lastDm && o.lastDm.ok === false ? h("div", { class:"o-warn" }, "⚠️ تعذر إرسال الرسالة الخاصة (الخاص مغلق أو ما هو داخل السيرفر). لو كانت هدية نيترو ما انرسل الرابط لأحد.") : null,
-    o.rejectInvoice ? h("div", { class:"o-inv" }, "📄 أُرسلت فاتورة مرفوضة للعميل — " + new Date(o.rejectInvoice.at).toLocaleString("ar-SA") + (o.rejectInvoice.reason ? " — السبب: " + o.rejectInvoice.reason : "")) : null,
-    last && last.status !== "new" ? h("div", { class:"o-hist" }, "آخر تحديث: " + last.by + " — " + new Date(last.at).toLocaleString("ar-SA")) : null)));
-  return rows;
-}
 function renderOrders() {
   const q = $("search").value.trim().toLowerCase();
   const list = orders.filter((o) => (filter === "all" || o.status === filter) && (!q || o.id.toLowerCase().includes(q) || o.transferor.toLowerCase().includes(q)));
-  $("ordersList").replaceChildren(...(list.length ? [h("div", { class:"tbl-wrap" }, h("table", { class:"otbl" }, h("thead", {}, h("tr", {}, ...["#", "العميل", "المنتج", "المبلغ", "الحالة", "الإجراءات"].map((x) => h("th", {}, x)))), h("tbody", {}, ...list.flatMap(orderRows))))] : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
+  $("ordersList").replaceChildren(...(list.length ? list.map(orderCard) : [h("div", { class:"empty" }, orders.length ? "ما في طلبات تطابق البحث." : "لا توجد طلبات بعد. أول طلب يوصل يظهر هنا ويجيك إشعار في Discord.")]));
 }
 function salesCell(v) {
   const btn = h("button", { class:"btn ghost sm", type:"button", style:"margin-top:8px", onclick: async () => {
@@ -1248,17 +1124,6 @@ $("search").addEventListener("input", renderOrders);
     new MutationObserver(function(){ box.querySelectorAll(".stat b").forEach(count); }).observe(box, { childList: true });
   });
 })();
-</script>
-<script>
-(function(){var r=document.documentElement,k="adminTheme";try{r.dataset.theme=localStorage.getItem(k)||"dark"}catch(e){r.dataset.theme="dark"}
-var b=document.getElementById("themeBtn");function s(){b.textContent=r.dataset.theme==="dark"?"☀":"🌙"}s();
-b.addEventListener("click",function(){r.dataset.theme=r.dataset.theme==="dark"?"light":"dark";try{localStorage.setItem(k,r.dataset.theme)}catch(e){}s()})})();
-</script>
-<script>
-(function(){var nav=document.getElementById("topNav"),tabs=[].slice.call(document.querySelectorAll(".tabs .tab"));
-function sync(){[].forEach.call(nav.children,function(b){var t=document.querySelector('.tabs .tab[data-tab="'+b.dataset.go+'"]');if(!t)return;b.classList.toggle("hidden",t.classList.contains("hidden"));b.classList.toggle("active",t.classList.contains("on"))})}
-nav.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var t=document.querySelector('.tabs .tab[data-tab="'+b.dataset.go+'"]');if(t)t.click()});
-tabs.forEach(function(t){new MutationObserver(sync).observe(t,{attributes:true,attributeFilter:["class"]})});sync()})();
 </script>
 </body>
 </html>
