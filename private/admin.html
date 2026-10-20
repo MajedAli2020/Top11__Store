@@ -308,6 +308,33 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background-im
 .btn.primary{background:linear-gradient(135deg,var(--ice),var(--accent));border-color:transparent;color:#15100c}
 .btn.primary:hover{filter:brightness(1.07);background:linear-gradient(135deg,var(--ice),var(--accent))}
 @media(max-width:860px){.shell{grid-template-columns:1fr}.side{position:static}.tabs{flex-direction:row!important;overflow-x:auto}.tab{width:auto;white-space:nowrap}.toplinks{display:none}}
+
+.pill{white-space:nowrap;display:inline-block;animation:none!important;box-shadow:none!important}
+.otbl td,.otbl th{white-space:nowrap}
+.otbl td:nth-child(3){white-space:normal;min-width:130px}
+.otbl .acts{white-space:normal}
+.otbl .o-id{font-size:12.5px;letter-spacing:.4px;direction:ltr;text-align:right}
+.otbl .o-actions{flex-wrap:wrap;gap:6px}
+.stat::before,.stat::after{display:none!important}
+.stat{padding:12px 16px!important;transform:none!important;box-shadow:none!important}
+.stat b{font-size:22px!important}.stat span{font-size:12px}
+#ordersTab{display:flex;flex-direction:column}
+#ordersTab>.sec-head{order:0}#ordersTab>.chips-row{order:1}#ordersTab>.tools{order:2}#ordersList{order:3}#stats{order:4;margin:18px 0 12px}#vstats{order:5}
+
+.brand b span{color:var(--accent)}
+.bar img.logo{width:42px;height:42px;border-radius:13px;box-shadow:0 0 0 1px #ecd5bb40,0 8px 26px #c9a07a30}
+.grow{flex:1}
+.navlinks{display:flex;gap:2px;padding:5px;border-radius:20px;background:#ffffff07;border:1px solid #ffffff12;box-shadow:inset 0 1px 0 #ffffff0a}
+.navlinks button{border:0;background:none;padding:9px 18px;border-radius:13px;font-size:14px;font-weight:700;color:#ffffff77;transition:color .2s,background .2s}
+.navlinks button:hover{color:var(--text);background:#ffffff0c}
+.navlinks button.active{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--ice);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%,transparent)}
+:root[data-theme=light] .navlinks{background:#0000000a;border-color:#0000001a}:root[data-theme=light] .navlinks button{color:#0009}
+.nav-icon{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 14px;border-radius:13px;font-weight:700;font-size:13px;color:var(--text);text-decoration:none;background:#ffffff08;border:1px solid #ffffff14;transition:background .25s,border-color .25s,transform .3s}
+.nav-icon:hover{background:#ffffff12;border-color:color-mix(in srgb,var(--ice) 40%,transparent);transform:translateY(-2px)}
+:root[data-theme=light] .nav-icon{background:#0000000a;border-color:#0000001a}
+.nav-icon.sq{width:42px;padding:0;justify-content:center}
+.me.nav-icon{padding:0 6px 0 14px}.me.nav-icon img{width:30px;height:30px}
+@media(max-width:860px){.navlinks{display:none}}
 </style>
 </head>
 <body>
@@ -315,10 +342,19 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;background-im
 <div id="appView" class="hidden">
   <header class="bar">
     <div class="bar-in">
-      <a class="brand" href="/"><img class="logo" src="/assets/logo.png" alt="" /><b>توب ستور</b><small>Top Store</small></a>
-      <nav class="toplinks"><a href="/">المتجر</a><a href="/auth/logout">خروج</a></nav>
-      <button class="iconbtn" id="themeBtn" type="button" aria-label="تبديل الثيم">☀</button>
-      <div class="me"><img id="meAvatar" alt="" /><span id="meName"></span></div>
+      <a class="brand" href="/"><img class="logo" src="/assets/logo.png" alt="" /><b>توب <span>ستور</span></b></a>
+      <nav class="navlinks" id="topNav">
+        <button type="button" data-go="orders" class="active">الطلبات</button>
+        <button type="button" data-go="products" class="hidden">المنتجات</button>
+        <button type="button" data-go="reviews" class="hidden">التقييمات</button>
+        <button type="button" data-go="settings" class="hidden">الإعدادات</button>
+        <button type="button" data-go="invoice" class="hidden">الفاتورة</button>
+      </nav>
+      <span class="grow"></span>
+      <a class="nav-icon" href="/">المتجر</a>
+      <a class="nav-icon" href="/auth/logout">خروج</a>
+      <button class="nav-icon sq" id="themeBtn" type="button" aria-label="تبديل الثيم">☀</button>
+      <div class="me nav-icon"><img id="meAvatar" alt="" /><span id="meName"></span></div>
     </div>
   </header>
   <main class="wrap shell">
@@ -1217,6 +1253,12 @@ $("search").addEventListener("input", renderOrders);
 (function(){var r=document.documentElement,k="adminTheme";try{r.dataset.theme=localStorage.getItem(k)||"dark"}catch(e){r.dataset.theme="dark"}
 var b=document.getElementById("themeBtn");function s(){b.textContent=r.dataset.theme==="dark"?"☀":"🌙"}s();
 b.addEventListener("click",function(){r.dataset.theme=r.dataset.theme==="dark"?"light":"dark";try{localStorage.setItem(k,r.dataset.theme)}catch(e){}s()})})();
+</script>
+<script>
+(function(){var nav=document.getElementById("topNav"),tabs=[].slice.call(document.querySelectorAll(".tabs .tab"));
+function sync(){[].forEach.call(nav.children,function(b){var t=document.querySelector('.tabs .tab[data-tab="'+b.dataset.go+'"]');if(!t)return;b.classList.toggle("hidden",t.classList.contains("hidden"));b.classList.toggle("active",t.classList.contains("on"))})}
+nav.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;var t=document.querySelector('.tabs .tab[data-tab="'+b.dataset.go+'"]');if(t)t.click()});
+tabs.forEach(function(t){new MutationObserver(sync).observe(t,{attributes:true,attributeFilter:["class"]})});sync()})();
 </script>
 </body>
 </html>
