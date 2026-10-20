@@ -335,19 +335,19 @@ async function drawInvoice(order, opts = {}) {
     const steps = rej ? [[T.stepNew, "ok"], [T.stepReview, "ok"], [T.stepRejected, "bad"]] : [[T.stepNew, ""], [T.stepAccepted, ""], [T.stepDelivered, "last"]];
     const cxs = [W - 60, W / 2, 60];
     const ty = y + 28;
-    ctx.strokeStyle = C.bronze; ctx.lineWidth = 2;
+    ctx.strokeStyle = rej ? C.bronze : C.green; ctx.lineWidth = 2; // تم التسليم: الخط كامل أخضر
     ctx.beginPath(); ctx.moveTo(cxs[0] - 14, ty); ctx.lineTo(cxs[1] + 14, ty); ctx.moveTo(cxs[1] - 14, ty); ctx.lineTo(cxs[2] + 14, ty); ctx.stroke();
     if (rej) { ctx.strokeStyle = C.red; ctx.beginPath(); ctx.moveTo(cxs[1] - 14, ty); ctx.lineTo(cxs[2] + 14, ty); ctx.stroke(); }
     steps.forEach(([label, kind], i) => {
       const last = kind === "last", bad = kind === "bad";
-      ctx.fillStyle = bad ? C.red : last ? C.green : C.bronze;
+      ctx.fillStyle = bad ? C.red : rej ? C.bronze : C.green;
       ctx.beginPath(); ctx.arc(cxs[i], ty, 13, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 2.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
       ctx.beginPath();
       if (bad) { ctx.moveTo(cxs[i] - 4.5, ty - 4.5); ctx.lineTo(cxs[i] + 4.5, ty + 4.5); ctx.moveTo(cxs[i] + 4.5, ty - 4.5); ctx.lineTo(cxs[i] - 4.5, ty + 4.5); }
       else { ctx.moveTo(cxs[i] - 5, ty); ctx.lineTo(cxs[i] - 1, ty + 4); ctx.lineTo(cxs[i] + 6, ty - 4); }
       ctx.stroke();
-      text(ctx, label, cxs[i], ty + 34, { size: 13, weight: last || bad ? 700 : 400, color: bad ? C.redDark : last ? C.greenDark : C.text2, align: "center" });
+      text(ctx, label, cxs[i], ty + 34, { size: 13, weight: last || bad ? 700 : 400, color: bad ? C.redDark : rej ? C.text2 : C.greenDark, align: "center" });
     });
     dashed(ctx, 20, W - 20, y + timelineH - 6);
   } else dashed(ctx, 20, W - 20, y + timelineH - 6);
